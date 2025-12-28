@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/config';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -52,26 +51,27 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
-      const user = userCredential.user;
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password: password,
+      });
 
-      if (user) {
-        // Сохраняем email для обратной совместимости
-        sessionStorage.setItem('userEmail', trimmedEmail);
-        setError('');
+      if (authError) {
+        throw authError;
+      }
+
+      if (data.user) {
         router.push('/projects');
         router.refresh();
       }
     } catch (err: any) {
-      // Обработка различных ошибок Firebase
-      if (err.code === 'auth/email-already-in-use') {
+      // Обработка различных ошибок Supabase
+      if (err.message?.includes('User already registered') || err.message?.includes('already registered')) {
         setError('Пользователь с таким email уже зарегистрирован. Войдите в систему или используйте другой email');
-      } else if (err.code === 'auth/invalid-email') {
+      } else if (err.message?.includes('Invalid email')) {
         setError('Некорректный email адрес. Проверьте правильность ввода');
-      } else if (err.code === 'auth/weak-password') {
+      } else if (err.message?.includes('Password')) {
         setError('Пароль слишком слабый. Используйте более надежный пароль');
-      } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Регистрация через email отключена. Обратитесь в поддержку');
       } else {
         setError('Произошла ошибка при регистрации. Попробуйте еще раз');
       }
@@ -214,4 +214,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

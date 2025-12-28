@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/config';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -16,9 +15,15 @@ export default function ProfilePage() {
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    // Загружаем данные пользователя из хранилища
-    const savedEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || '';
-    setEmail(savedEmail);
+    // Загружаем данные пользователя из Supabase
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setEmail(user.email || '');
+      }
+    };
+    
+    loadUser();
     
     // Загружаем сохраненные данные профиля (если есть)
     const savedProfile = localStorage.getItem('userProfile');
@@ -64,8 +69,8 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      // Редирект произойдет автоматически через LayoutWrapper
+      await supabase.auth.signOut();
+      router.push('/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);
     }

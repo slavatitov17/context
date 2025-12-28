@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/config';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,27 +29,25 @@ export default function LoginPage() {
     const trimmedEmail = email.trim();
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, password);
-      const user = userCredential.user;
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: password,
+      });
 
-      if (user) {
-        // Сохраняем email в localStorage/sessionStorage для обратной совместимости
-        if (rememberMe) {
-          localStorage.setItem('userEmail', trimmedEmail);
-        } else {
-          sessionStorage.setItem('userEmail', trimmedEmail);
-        }
+      if (authError) {
+        throw authError;
+      }
+
+      if (data.user) {
         router.push('/projects');
         router.refresh();
       }
     } catch (err: any) {
-      // Обработка различных ошибок Firebase
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      // Обработка различных ошибок Supabase
+      if (err.message?.includes('Invalid login credentials') || err.message?.includes('Email not confirmed')) {
         setError('Неверный email или пароль. Проверьте данные и попробуйте еще раз');
-      } else if (err.code === 'auth/invalid-email') {
-        setError('Некорректный email адрес');
-      } else if (err.code === 'auth/user-disabled') {
-        setError('Аккаунт заблокирован. Обратитесь в поддержку');
+      } else if (err.message?.includes('Email rate limit exceeded')) {
+        setError('Слишком много попыток входа. Попробуйте позже');
       } else {
         setError('Произошла ошибка при входе. Попробуйте еще раз');
       }
@@ -175,4 +172,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

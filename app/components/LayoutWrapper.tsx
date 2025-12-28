@@ -3,8 +3,8 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/config';
+import type { User } from '@supabase/supabase-js';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,39 +15,50 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Слушаем изменения состояния аутентификации
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setUserEmail(currentUser.email || '');
+    // Проверяем текущего пользователя
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        setUserEmail(user.email || '');
         setIsAuthenticated(true);
-        
-        // Сохраняем для обратной совместимости
-        sessionStorage.setItem('userEmail', currentUser.email || '');
       } else {
         setUser(null);
         setUserEmail('');
         setIsAuthenticated(false);
-        
-        // Очищаем сохраненные данные
-        localStorage.removeItem('userEmail');
-        sessionStorage.removeItem('userEmail');
-        
-        // Если не на странице авторизации, перенаправляем на логин
+        if (!isAuthPage) {
+          router.push('/login');
+        }
+      }
+    };
+
+    checkUser();
+
+    // Слушаем изменения состояния аутентификации
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        setUserEmail(session.user.email || '');
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setUserEmail('');
+        setIsAuthenticated(false);
         if (!isAuthPage) {
           router.push('/login');
         }
       }
     });
 
-    // Очистка подписки при размонтировании компонента
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [isAuthPage, router]);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      // Редирект произойдет автоматически через onAuthStateChanged
+      await supabase.auth.signOut();
+      router.push('/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);
     }
@@ -169,4 +180,3 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     </body>
   );
 }
-
