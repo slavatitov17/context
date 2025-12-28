@@ -1,20 +1,72 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/config';
 
 export default function NewProjectPage() {
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
   const [members, setMembers] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
-  const handleCreate = () => {
-    if (projectName.trim()) {
-      const projectId = projectName.toLowerCase().replace(/\s+/g, '-');
-      router.push(`/projects/${projectId}`);
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+      } else {
+        router.push('/login');
+      }
+    };
+
+    checkUser();
+  }, [router]);
+
+  const handleCreate = async () => {
+    if (!projectName.trim() || !user) return;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          name: projectName.trim(),
+          description: description.trim(),
+          members: members.trim(),
+          user_id: user.id,
+          files: [],
+          messages: [],
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Ошибка при создании проекта:', error);
+        alert('Не удалось создать проект. Попробуйте еще раз.');
+        setLoading(false);
+        return;
+      }
+
+      // Перенаправляем на страницу проекта
+      router.push(`/projects/${data.id}`);
+    } catch (error) {
+      console.error('Ошибка при создании проекта:', error);
+      alert('Не удалось создать проект. Попробуйте еще раз.');
+      setLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Загрузка...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl">
@@ -33,6 +85,7 @@ export default function NewProjectPage() {
             onChange={(e) => setProjectName(e.target.value)}
             placeholder="Введите название проекта..."
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={loading}
           />
         </div>
 
@@ -47,6 +100,7 @@ export default function NewProjectPage() {
             placeholder="Опишите цель проекта..."
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            disabled={loading}
           />
         </div>
 
@@ -61,6 +115,7 @@ export default function NewProjectPage() {
             onChange={(e) => setMembers(e.target.value)}
             placeholder="Введите имена участников через запятую..."
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={loading}
           />
           <p className="text-gray-500 mt-2 text-base">Например: Иван Иванов, Петр Петров</p>
         </div>
@@ -69,10 +124,10 @@ export default function NewProjectPage() {
         <div className="flex space-x-4 pt-4">
           <button
             onClick={handleCreate}
-            disabled={!projectName.trim()}
+            disabled={!projectName.trim() || loading}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-1 text-base font-medium"
           >
-            Загрузить файлы
+            {loading ? 'Создание...' : 'Загрузить файлы'}
           </button>
         </div>
 
