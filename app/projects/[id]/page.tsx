@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/config';
 import type { Project } from '@/lib/supabase/config';
 
@@ -13,7 +13,9 @@ interface UploadedFile {
   progress: number;
 }
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage() {
+  const params = useParams();
+  const projectId = params?.id as string;
   const [projectData, setProjectData] = useState<Project | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -27,6 +29,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   // Загрузка проекта из Supabase
   useEffect(() => {
     const loadProject = async () => {
+      // Проверяем наличие ID
+      if (!projectId) {
+        console.error('[ProjectPage] ID проекта не найден в params');
+        router.replace('/projects');
+        return;
+      }
+
       try {
         setLoading(true);
         
@@ -38,14 +47,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         }
         setUser(currentUser);
 
-        console.log('[ProjectPage] Начало загрузки проекта, ID:', params.id);
+        console.log('[ProjectPage] Начало загрузки проекта, ID:', projectId);
         
         // Загружаем проект (только необходимые поля для ускорения)
         let projectData: any = null;
         const { data, error } = await supabase
           .from('projects')
           .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
-          .eq('id', params.id)
+          .eq('id', projectId)
           .single();
 
         if (error) {
@@ -63,7 +72,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             const { data: retryData, error: retryError } = await supabase
               .from('projects')
               .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
-              .eq('id', params.id)
+              .eq('id', projectId)
               .single();
             
             if (retryError || !retryData) {
@@ -122,7 +131,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     };
 
     loadProject();
-  }, [params.id, router]);
+  }, [projectId, router]);
 
   // Автоматическое сохранение изменений
   const saveProject = useCallback(async (updates: Partial<Project>) => {
@@ -132,7 +141,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const { error } = await supabase
         .from('projects')
         .update(updates)
-        .eq('id', params.id);
+        .eq('id', projectId);
 
       if (error) {
         console.error('Ошибка при сохранении проекта:', error);
@@ -140,7 +149,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     } catch (error) {
       console.error('Ошибка при сохранении проекта:', error);
     }
-  }, [user, projectData, params.id]);
+  }, [user, projectData, projectId]);
 
   // Сохранение файлов
   useEffect(() => {
