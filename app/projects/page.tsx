@@ -60,11 +60,13 @@ export default function ProjectsPage() {
   const loadProjects = async (userId: string) => {
     try {
       setLoading(true);
+      // Загружаем только необходимые поля для ускорения
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select('id, name, description, created_at')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Ограничиваем количество для ускорения
 
       if (error) {
         console.error('Ошибка при загрузке проектов:', error);

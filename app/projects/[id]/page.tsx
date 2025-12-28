@@ -39,69 +39,46 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         setUser(currentUser);
 
         console.log('[ProjectPage] Начало загрузки проекта, ID:', params.id);
-        console.log('[ProjectPage] Текущий пользователь ID:', currentUser.id);
         
-        // Загружаем проект с повторными попытками (на случай если проект только что создан)
-        let projectData = null;
-        let attempts = 0;
-        const maxAttempts = 5; // Увеличил до 5 попыток
-        
-        while (attempts < maxAttempts && !projectData) {
-          console.log(`[ProjectPage] Попытка загрузки проекта ${attempts + 1}/${maxAttempts}`);
-          
-          const { data, error } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('id', params.id)
-            .single();
+        // Загружаем проект (только необходимые поля для ускорения)
+        const { data, error } = await supabase
+          .from('projects')
+          .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
+          .eq('id', params.id)
+          .single();
 
-          console.log('[ProjectPage] Ответ Supabase:', { 
-            hasData: !!data, 
-            error: error?.message || null,
-            errorCode: error?.code || null
+        if (error) {
+          console.error('[ProjectPage] Ошибка при загрузке проекта:', {
+            message: error.message,
+            code: error.code,
+            details: error.details
           });
-
-          if (error) {
-            console.error(`[ProjectPage] Ошибка при загрузке проекта (попытка ${attempts + 1}):`, {
-              message: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint
-            });
+          
+          // Если проект не найден, пробуем еще раз через короткую задержку (только для новых проектов)
+          if (error.code === 'PGRST116') {
+            console.log('[ProjectPage] Проект не найден, повтор через 300ms...');
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            if (attempts < maxAttempts - 1) {
-              const delay = (attempts + 1) * 500; // Увеличиваем задержку с каждой попыткой
-              console.log(`[ProjectPage] Повтор через ${delay}ms...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              attempts++;
-              continue;
-            } else {
-              console.error('[ProjectPage] Проект не найден после всех попыток, редирект на /projects');
-              alert('Проект не найден. Возможно, он еще не успел сохраниться. Попробуйте обновить страницу.');
+            const { data: retryData, error: retryError } = await supabase
+              .from('projects')
+              .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
+              .eq('id', params.id)
+              .single();
+            
+            if (retryError || !retryData) {
+              console.error('[ProjectPage] Проект не найден после повтора');
               router.replace('/projects');
               return;
             }
+            
+            projectData = retryData;
+          } else {
+            router.replace('/projects');
+            return;
           }
-
-          if (data) {
-            console.log('[ProjectPage] Проект найден:', {
-              id: data.id,
-              name: data.name,
-              userId: data.user_id,
-              currentUserId: currentUser.id
-            });
-            projectData = data;
-            break;
-          }
-          
-          attempts++;
-          if (attempts < maxAttempts) {
-            const delay = (attempts + 1) * 500;
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        }
-
-        if (!projectData) {
+        } else if (data) {
+          projectData = data;
+        } else {
           console.error('[ProjectPage] Проект не найден');
           router.replace('/projects');
           return;
@@ -109,15 +86,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
         // Проверяем, что проект принадлежит пользователю
         if (projectData.user_id !== currentUser.id) {
-          console.error('[ProjectPage] Проект не принадлежит пользователю', {
-            projectUserId: projectData.user_id,
-            currentUserId: currentUser.id
-          });
+          console.error('[ProjectPage] Проект не принадлежит пользователю');
           router.replace('/projects');
           return;
         }
-
-        console.log('[ProjectPage] Проект успешно загружен:', projectData.name);
 
         setProjectData(projectData);
 
