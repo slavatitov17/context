@@ -1,27 +1,150 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/config';
+import type { Project } from '@/lib/supabase/config';
 
 interface UploadedFile {
   id: string;
-  file: File;
+  name: string;
+  size: number;
   status: 'uploading' | 'success' | 'error';
   progress: number;
 }
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const [projectData, setProjectData] = useState<Project | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp?: Date }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  // Загрузка проекта из Supabase
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        setLoading(true);
+        
+        // Проверяем пользователя
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) {
+          router.push('/login');
+          return;
+        }
+        setUser(currentUser);
+
+        // Загружаем проект
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', params.id)
+          .single();
+
+        if (error || !data) {
+          console.error('Ошибка при загрузке проекта:', error);
+          router.push('/projects');
+          return;
+        }
+
+        // Проверяем, что проект принадлежит пользователю
+        if (data.user_id !== currentUser.id) {
+          console.error('Проект не принадлежит пользователю');
+          router.push('/projects');
+          return;
+        }
+
+        setProjectData(data);
+
+        // Загружаем файлы
+        if (data.files && Array.isArray(data.files) && data.files.length > 0) {
+          setUploadedFiles(data.files.map((file: any) => ({
+            id: file.id || `file-${Date.now()}`,
+            name: file.name || 'Неизвестный файл',
+            size: file.size || 0,
+            status: 'success' as const,
+            progress: 100,
+          })));
+        }
+
+        // Загружаем сообщения
+        if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages.map((msg: any) => ({
+            text: msg.text || '',
+            isUser: msg.isUser || false,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+          })));
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке проекта:', error);
+        router.push('/projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProject();
+  }, [params.id, router]);
+
+  // Автоматическое сохранение изменений
+  const saveProject = useCallback(async (updates: Partial<Project>) => {
+    if (!user || !projectData) return;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', params.id);
+
+      if (error) {
+        console.error('Ошибка при сохранении проекта:', error);
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении проекта:', error);
+    }
+  }, [user, projectData, params.id]);
+
+  // Сохранение файлов
+  useEffect(() => {
+    if (uploadedFiles.length > 0 && !loading && projectData) {
+      const timer = setTimeout(() => {
+        const filesData = uploadedFiles.map(file => ({
+          id: file.id,
+          name: file.name,
+          size: file.size,
+        }));
+        saveProject({ files: filesData as any });
+      }, 1000); // Debounce на 1 секунду
+      return () => clearTimeout(timer);
+    }
+  }, [uploadedFiles, loading, projectData, saveProject]);
+
+  // Сохранение сообщений
+  useEffect(() => {
+    if (messages.length > 0 && !loading && projectData) {
+      const timer = setTimeout(() => {
+        const messagesData = messages.map(msg => ({
+          text: msg.text,
+          isUser: msg.isUser,
+          timestamp: msg.timestamp || new Date(),
+        }));
+        saveProject({ messages: messagesData as any });
+      }, 1000); // Debounce на 1 секунду
+      return () => clearTimeout(timer);
+    }
+  }, [messages, loading, projectData, saveProject]);
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     const newFiles: UploadedFile[] = Array.from(files).map((file, index) => ({
       id: `${Date.now()}-${index}`,
-      file,
+      name: file.name,
+      size: file.size,
       status: 'uploading' as const,
       progress: 0,
     }));
@@ -30,7 +153,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
     // Имитация загрузки файлов
     newFiles.forEach((fileItem) => {
-      // Симуляция прогресса загрузки
       const interval = setInterval(() => {
         setUploadedFiles(prev => prev.map(f => {
           if (f.id === fileItem.id) {
@@ -49,9 +171,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     // Если это первые файлы, показываем сообщение
     if (uploadedFiles.length === 0) {
       setTimeout(() => {
-        setMessages([{
+        setMessages(prev => [...prev, {
           text: "Документы проанализированы. Теперь можно задавать вопросы по их содержимому.",
-          isUser: false
+          isUser: false,
+          timestamp: new Date(),
         }]);
       }, 2000);
     }
@@ -59,7 +182,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
-    // Сбрасываем значение, чтобы можно было загрузить тот же файл снова
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -118,25 +240,48 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   const handleSendMessage = () => {
     if (message.trim()) {
-      setMessages(prev => [...prev, { text: message, isUser: true }]);
+      const newMessage = {
+        text: message,
+        isUser: true,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, newMessage]);
       setMessage('');
 
       // Имитация ответа системы
       setTimeout(() => {
         setMessages(prev => [...prev, {
           text: "На основе загруженных документов доступна следующая информация...",
-          isUser: false
+          isUser: false,
+          timestamp: new Date(),
         }]);
       }, 1000);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (!projectData) {
+    return null;
+  }
 
   const hasFiles = uploadedFiles.length > 0;
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
 
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-2xl font-medium mb-6">Загрузка файлов</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-medium mb-2">{projectData.name}</h1>
+        {projectData.description && (
+          <p className="text-gray-600">{projectData.description}</p>
+        )}
+      </div>
       
       <div className="flex-1 flex gap-6 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
@@ -198,19 +343,19 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <div className="flex items-start gap-3">
                       {/* Иконка файла - компактная */}
                       <div className="flex-shrink-0 w-8 h-8 bg-blue-50 rounded flex items-center justify-center">
-                        <i className={`fas ${getFileIcon(fileItem.file.name)} text-blue-600 text-sm`}></i>
+                        <i className={`fas ${getFileIcon(fileItem.name)} text-blue-600 text-sm`}></i>
                       </div>
 
                       {/* Информация о файле - компактная */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate" title={fileItem.file.name}>
-                              {fileItem.file.name}
+                            <p className="text-sm font-medium text-gray-900 truncate" title={fileItem.name}>
+                              {fileItem.name}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <p className="text-xs text-gray-500">
-                                {formatFileSize(fileItem.file.size)}
+                                {formatFileSize(fileItem.size)}
                               </p>
                               {/* Статус */}
                               {fileItem.status === 'uploading' && (
