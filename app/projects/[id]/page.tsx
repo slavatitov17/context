@@ -41,6 +41,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         console.log('[ProjectPage] Начало загрузки проекта, ID:', params.id);
         
         // Загружаем проект (только необходимые поля для ускорения)
+        let projectData: any = null;
         const { data, error } = await supabase
           .from('projects')
           .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
