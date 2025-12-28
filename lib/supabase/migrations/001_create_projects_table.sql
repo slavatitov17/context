@@ -20,6 +20,12 @@ CREATE INDEX IF NOT EXISTS projects_created_at_idx ON projects(created_at DESC);
 -- Включение Row Level Security (RLS)
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 
+-- Удаление существующих политик (если есть) перед созданием новых
+DROP POLICY IF EXISTS "Users can view their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can create their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can update their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can delete their own projects" ON projects;
+
 -- Политика: пользователи могут видеть только свои проекты
 CREATE POLICY "Users can view their own projects"
   ON projects FOR SELECT
@@ -50,9 +56,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Удаление триггера если существует
+DROP TRIGGER IF EXISTS update_projects_updated_at ON projects;
+
 -- Триггер для автоматического обновления updated_at
 CREATE TRIGGER update_projects_updated_at
   BEFORE UPDATE ON projects
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
