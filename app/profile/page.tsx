@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -60,12 +62,13 @@ export default function ProfilePage() {
     alert('Профиль успешно сохранен');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userEmail');
-    sessionStorage.removeItem('isAuthenticated');
-    sessionStorage.removeItem('userEmail');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // Редирект произойдет автоматически через LayoutWrapper
+    } catch (error) {
+      console.error('Ошибка при выходе:', error);
+    }
   };
 
   return (
