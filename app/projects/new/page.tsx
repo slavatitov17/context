@@ -51,10 +51,20 @@ export default function NewProjectPage() {
         return;
       }
 
-      console.log('[NewProject] Проект создан, ID:', data.id);
+      console.log('[NewProject] Проект создан успешно:', {
+        id: data.id,
+        name: data.name,
+        userId: data.user_id,
+        currentUserId: user.id
+      });
+      
+      // Ждем немного, чтобы проект точно сохранился в БД
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('[NewProject] Редирект на страницу проекта:', `/projects/${data.id}`);
       
       // Перенаправляем на страницу проекта для загрузки файлов
-      router.replace(`/projects/${data.id}`);
+      window.location.href = `/projects/${data.id}`;
     } catch (error) {
       console.error('Ошибка при создании проекта:', error);
       alert('Не удалось создать проект. Попробуйте еще раз.');
