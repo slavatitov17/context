@@ -51,8 +51,10 @@ export default function NewProjectPage() {
         return;
       }
 
-      // Перенаправляем на страницу проекта
-      router.push(`/projects/${data.id}`);
+      console.log('[NewProject] Проект создан, ID:', data.id);
+      
+      // Перенаправляем на страницу проекта для загрузки файлов
+      router.replace(`/projects/${data.id}`);
     } catch (error) {
       console.error('Ошибка при создании проекта:', error);
       alert('Не удалось создать проект. Попробуйте еще раз.');

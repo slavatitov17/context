@@ -213,26 +213,28 @@ export default function ProjectsPage() {
                         </button>
                         
                         {openMenuId === project.id && (
-                          <div className="absolute right-full top-0 mr-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px] py-1 transition-all duration-200">
+                          <div className="absolute right-full top-0 mr-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 transition-all duration-200 flex items-center gap-1">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEdit(project.id);
                               }}
-                              className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 hover:translate-x-1"
+                              className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
+                              title="Редактировать"
                             >
-                              <i className="fas fa-edit text-gray-500"></i>
-                              <span>Редактировать</span>
+                              <i className="fas fa-edit text-gray-500 text-sm"></i>
+                              <span className="text-sm">Редактировать</span>
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDelete(project.id);
                               }}
-                              className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 hover:translate-x-1"
+                              className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
+                              title="Удалить"
                             >
-                              <i className="fas fa-trash text-red-600"></i>
-                              <span>Удалить</span>
+                              <i className="fas fa-trash text-red-600 text-sm"></i>
+                              <span className="text-sm">Удалить</span>
                             </button>
                           </div>
                         )}

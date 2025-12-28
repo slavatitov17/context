@@ -38,31 +38,65 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         }
         setUser(currentUser);
 
-        // Загружаем проект
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', params.id)
-          .single();
+        // Загружаем проект с повторными попытками (на случай если проект только что создан)
+        let projectData = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts && !projectData) {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', params.id)
+            .single();
 
-        if (error || !data) {
-          console.error('Ошибка при загрузке проекта:', error);
-          router.push('/projects');
+          if (error) {
+            console.error(`[ProjectPage] Ошибка при загрузке проекта (попытка ${attempts + 1}):`, error);
+            if (attempts < maxAttempts - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              attempts++;
+              continue;
+            } else {
+              console.error('[ProjectPage] Проект не найден после всех попыток');
+              router.replace('/projects');
+              return;
+            }
+          }
+
+          if (data) {
+            projectData = data;
+            break;
+          }
+          
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+
+        if (!projectData) {
+          console.error('[ProjectPage] Проект не найден');
+          router.replace('/projects');
           return;
         }
 
         // Проверяем, что проект принадлежит пользователю
-        if (data.user_id !== currentUser.id) {
-          console.error('Проект не принадлежит пользователю');
-          router.push('/projects');
+        if (projectData.user_id !== currentUser.id) {
+          console.error('[ProjectPage] Проект не принадлежит пользователю', {
+            projectUserId: projectData.user_id,
+            currentUserId: currentUser.id
+          });
+          router.replace('/projects');
           return;
         }
 
-        setProjectData(data);
+        console.log('[ProjectPage] Проект успешно загружен:', projectData.name);
+
+        setProjectData(projectData);
 
         // Загружаем файлы
-        if (data.files && Array.isArray(data.files) && data.files.length > 0) {
-          setUploadedFiles(data.files.map((file: any) => ({
+        if (projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
+          setUploadedFiles(projectData.files.map((file: any) => ({
             id: file.id || `file-${Date.now()}`,
             name: file.name || 'Неизвестный файл',
             size: file.size || 0,
@@ -72,8 +106,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         }
 
         // Загружаем сообщения
-        if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-          setMessages(data.messages.map((msg: any) => ({
+        if (projectData.messages && Array.isArray(projectData.messages) && projectData.messages.length > 0) {
+          setMessages(projectData.messages.map((msg: any) => ({
             text: msg.text || '',
             isUser: msg.isUser || false,
             timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
