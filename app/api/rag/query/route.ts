@@ -97,64 +97,9 @@ export async function POST(request: NextRequest) {
 
     let bestMatches: Array<{ text: string; score: number; source: string }> = [];
 
+    // Сначала пробуем простой поиск (более надежный)
+    // Векторный поиск может не работать из-за ограничений Vercel
     try {
-      // Пробуем использовать векторный поиск через embeddings
-      console.log('Начинаем векторный поиск...');
-      const embeddingModel = await getEmbeddingModel();
-      console.log('Модель embeddings загружена');
-      
-      // Создаем embedding для вопроса
-      console.log('Создаем embedding для вопроса...');
-      const questionEmbedding = await embeddingModel(question, {
-        pooling: 'mean',
-        normalize: true,
-      });
-      const questionVector = Array.from(questionEmbedding.data) as number[];
-      console.log(`Embedding вопроса создан, размерность: ${questionVector.length}`);
-
-      // Ищем релевантные фрагменты в каждом документе
-      let processedChunks = 0;
-      for (const doc of validDocuments) {
-        const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
-          ? doc.chunks
-          : splitTextIntoChunks(doc.text || '', 500);
-        
-        console.log(`Обрабатываем документ ${doc.fileName}, чанков: ${chunks.length}`);
-        
-        for (const chunk of chunks) {
-          if (!chunk || typeof chunk !== 'string' || chunk.trim().length === 0) continue;
-          
-          try {
-            // Создаем embedding для чанка
-            const chunkEmbedding = await embeddingModel(chunk, {
-              pooling: 'mean',
-              normalize: true,
-            });
-            const chunkVector = Array.from(chunkEmbedding.data) as number[];
-            
-            // Вычисляем косинусное сходство
-            const similarity = cosineSimilarity(questionVector, chunkVector);
-            
-            if (similarity > 0.3) { // Порог релевантности
-              bestMatches.push({
-                text: chunk,
-                score: similarity * 100, // Преобразуем в проценты
-                source: doc.fileName || 'Неизвестный файл',
-              });
-            }
-            processedChunks++;
-          } catch (chunkError: any) {
-            console.warn('Ошибка при обработке чанка:', chunkError?.message || chunkError);
-            // Продолжаем обработку других чанков
-          }
-        }
-      }
-      console.log(`Обработано чанков: ${processedChunks}, найдено совпадений: ${bestMatches.length}`);
-    } catch (error: any) {
-      console.warn('Ошибка при векторном поиске, используем простой поиск:', error?.message || error);
-      console.error('Детали ошибки векторного поиска:', error);
-      
-      // Fallback на простой поиск по ключевым словам
       if (!question) {
         throw new Error('Вопрос не определен');
       }
@@ -164,7 +109,7 @@ export async function POST(request: NextRequest) {
       const questionWords = questionLower
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter((w: string) => w.length > 2); // Уменьшил минимальную длину слова
+        .filter((w: string) => w.length > 2);
       const questionPhrases = extractPhrases(questionLower);
       console.log(`Ключевые слова: ${questionWords.join(', ')}, фраз: ${questionPhrases.length}`);
 
@@ -199,30 +144,110 @@ export async function POST(request: NextRequest) {
           }
         });
       });
+      
+      console.log(`Простой поиск: найдено совпадений: ${bestMatches.length}`);
+    } catch (simpleSearchError: any) {
+      console.error('Ошибка при простом поиске:', simpleSearchError);
+    }
+
+    // Пробуем векторный поиск как дополнительный метод (опционально)
+    try {
+      console.log('Пробуем векторный поиск...');
+      const embeddingModel = await getEmbeddingModel();
+      console.log('Модель embeddings загружена');
+      
+      const questionEmbedding = await embeddingModel(question, {
+        pooling: 'mean',
+        normalize: true,
+      });
+      const questionVector = Array.from(questionEmbedding.data) as number[];
+      console.log(`Embedding вопроса создан, размерность: ${questionVector.length}`);
+
+      let processedChunks = 0;
+      for (const doc of validDocuments) {
+        const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
+          ? doc.chunks
+          : splitTextIntoChunks(doc.text || '', 500);
+        
+        for (const chunk of chunks) {
+          if (!chunk || typeof chunk !== 'string' || chunk.trim().length === 0) continue;
+          
+          try {
+            const chunkEmbedding = await embeddingModel(chunk, {
+              pooling: 'mean',
+              normalize: true,
+            });
+            const chunkVector = Array.from(chunkEmbedding.data) as number[];
+            const similarity = cosineSimilarity(questionVector, chunkVector);
+            
+            if (similarity > 0.3) {
+              bestMatches.push({
+                text: chunk,
+                score: similarity * 100,
+                source: doc.fileName || 'Неизвестный файл',
+              });
+            }
+            processedChunks++;
+          } catch (chunkError: any) {
+            // Игнорируем ошибки отдельных чанков
+          }
+        }
+      }
+      console.log(`Векторный поиск: обработано чанков: ${processedChunks}, найдено совпадений: ${bestMatches.length}`);
+    } catch (error: any) {
+      console.warn('Векторный поиск недоступен, используем результаты простого поиска:', error?.message || error);
     }
 
     // Сортируем по релевантности и берем топ-3
     bestMatches.sort((a, b) => b.score - a.score);
     const topMatches = bestMatches.slice(0, 3);
 
-    // Если не найдено релевантных фрагментов
-    const threshold = bestMatches.length > 0 && bestMatches[0].score > 50 ? 30 : 1; // Уменьшил порог
+    // Если не найдено релевантных фрагментов, ищем по всему тексту документов
+    const threshold = bestMatches.length > 0 && bestMatches[0].score > 50 ? 30 : 1;
     if (topMatches.length === 0 || topMatches[0].score < threshold) {
-      // Пробуем вернуть хотя бы первые фрагменты из документов
+      console.log('Не найдено точных совпадений, ищем по всему тексту документов');
+      
+      // Ищем упоминания ключевых слов из вопроса во всех документах
+      if (question) {
+        const questionLower = question.toLowerCase();
+        const searchTerms = questionLower
+          .replace(/[^\w\s]/g, ' ')
+          .split(/\s+/)
+          .filter((w: string) => w.length > 3);
+        
+        for (const doc of validDocuments) {
+          const docText = doc.text || '';
+          const docLower = docText.toLowerCase();
+          
+          // Ищем предложения, содержащие ключевые слова
+          const sentences = docText.split(/[.!?]\s+/);
+          const relevantSentences = sentences.filter((sentence: string) => {
+            const sentenceLower = sentence.toLowerCase();
+            return searchTerms.some(term => sentenceLower.includes(term));
+          });
+          
+          if (relevantSentences.length > 0) {
+            const answerText = relevantSentences.slice(0, 3).join('. ');
+            return NextResponse.json({
+              success: true,
+              answer: answerText + (relevantSentences.length > 3 ? '...' : ''),
+              found: true,
+              sources: [doc.fileName || 'Неизвестный файл'],
+            });
+          }
+        }
+      }
+      
+      // Если ничего не найдено, возвращаем начало первого документа
       if (validDocuments.length > 0 && validDocuments[0].text) {
         const firstDoc = validDocuments[0];
-        const firstChunks = firstDoc.chunks && Array.isArray(firstDoc.chunks) && firstDoc.chunks.length > 0
-          ? firstDoc.chunks
-          : splitTextIntoChunks(firstDoc.text, 500);
-        
-        if (firstChunks.length > 0) {
-          return NextResponse.json({
-            success: true,
-            answer: `На основе загруженных документов: ${firstChunks[0].substring(0, 500)}${firstChunks[0].length > 500 ? '...' : ''}\n\nК сожалению, не удалось найти точный ответ на ваш вопрос. Попробуйте переформулировать вопрос или убедитесь, что документы содержат релевантную информацию.`,
-            found: true,
-            sources: [firstDoc.fileName || 'Неизвестный файл'],
-          });
-        }
+        const preview = firstDoc.text.substring(0, 300);
+        return NextResponse.json({
+          success: true,
+          answer: `На основе документа "${firstDoc.fileName}": ${preview}${firstDoc.text.length > 300 ? '...' : ''}\n\nК сожалению, не удалось найти точный ответ на ваш вопрос в загруженных документах. Попробуйте переформулировать вопрос или убедитесь, что документы содержат релевантную информацию.`,
+          found: true,
+          sources: [firstDoc.fileName || 'Неизвестный файл'],
+        });
       }
       
       return NextResponse.json({
