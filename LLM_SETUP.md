@@ -17,42 +17,24 @@
 
 ## Как это работает
 
-1. **Автоматическая загрузка**: При первом запросе система автоматически загрузит выбранную модель
+1. **Автоматическая загрузка**: При первом запросе система автоматически загрузит модель Mistral 7B
 2. **Кэширование**: Модель кэшируется в памяти после первой загрузки
 3. **Fallback**: Если модель не загрузилась, используется простая генерация на основе контекста
 
 ## Настройка модели
 
-Модель настраивается в файле `app/api/rag/query/route.ts`:
+Модель настроена в файле `app/api/rag/query/route.ts`:
 
 ```typescript
-// Текущая модель: Gemma 2B
-textGenerationModel = await pipeline(
-  'text-generation',
-  'Xenova/gemma-2-2b-it',
-  { quantized: true }
-);
-```
-
-### Изменение модели
-
-Чтобы использовать другую модель, измените строку в функции `getTextGenerationModel()`:
-
-```typescript
-// Для Qwen 2.5
-textGenerationModel = await pipeline(
-  'text-generation',
-  'Xenova/Qwen2.5-1.5B-Instruct',
-  { quantized: true }
-);
-
-// Для Mistral 7B (требует больше памяти)
+// Используется Mistral 7B Instruct
 textGenerationModel = await pipeline(
   'text-generation',
   'Xenova/Mistral-7B-Instruct-v0.2',
   { quantized: true }
 );
 ```
+
+Модель загружается автоматически при первом запросе и кэшируется в памяти.
 
 ## Требования
 
@@ -76,5 +58,3 @@ textGenerationModel = await pipeline(
 - Данные не передаются третьим сторонам
 - Соответствует требованиям 152-ФЗ
 - Работает полностью офлайн после первой загрузки
-
-
