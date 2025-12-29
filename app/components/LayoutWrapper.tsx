@@ -3,8 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/config';
-import type { User } from '@supabase/supabase-js';
+import { auth, type User } from '@/lib/storage';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,11 +15,11 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     // Проверяем текущего пользователя
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        setUserEmail(user.email || '');
+    const checkUser = () => {
+      const currentUser = auth.getCurrentUser();
+      if (currentUser && auth.hasSession()) {
+        setUser(currentUser);
+        setUserEmail(currentUser.email || '');
         setIsAuthenticated(true);
       } else {
         setUser(null);
@@ -34,30 +33,20 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
     checkUser();
 
-    // Слушаем изменения состояния аутентификации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        setUserEmail(session.user.email || '');
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setUserEmail('');
-        setIsAuthenticated(false);
-        if (!isAuthPage) {
-          router.push('/login');
-        }
-      }
-    });
+    // Проверяем изменения каждую секунду (простая замена onAuthStateChange)
+    const interval = setInterval(checkUser, 1000);
 
     return () => {
-      subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, [isAuthPage, router]);
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await auth.signOut();
+      setUser(null);
+      setUserEmail('');
+      setIsAuthenticated(false);
       router.push('/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);

@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/config';
+import { auth, projects as projectsStorage } from '@/lib/storage';
+import { useParams } from 'next/navigation';
 
-export default function EditProjectPage({ params }: { params: { id: string } }) {
+export default function EditProjectPage() {
+  const params = useParams();
+  const projectId = params?.id as string;
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
   const [members, setMembers] = useState('');
@@ -14,36 +17,28 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
   const router = useRouter();
 
   useEffect(() => {
-    const loadProject = async () => {
+    if (!projectId) return;
+
+    const loadProject = () => {
       try {
         setLoading(true);
         
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const currentUser = auth.getCurrentUser();
         if (!currentUser) {
           router.push('/login');
           return;
         }
         setUser(currentUser);
 
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', params.id)
-          .single();
-
-        if (error || !data) {
+        const project = projectsStorage.getById(projectId, currentUser.id);
+        if (!project) {
           router.push('/projects');
           return;
         }
 
-        if (data.user_id !== currentUser.id) {
-          router.push('/projects');
-          return;
-        }
-
-        setProjectName(data.name || '');
-        setDescription(data.description || '');
-        setMembers(data.members || '');
+        setProjectName(project.name || '');
+        setDescription(project.description || '');
+        setMembers(project.members || '');
       } catch (error) {
         console.error('Ошибка при загрузке проекта:', error);
         router.push('/projects');
@@ -53,27 +48,24 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
     };
 
     loadProject();
-  }, [params.id, router]);
+  }, [projectId, router]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!projectName.trim() || !user) return;
 
     try {
       setSaving(true);
-      const { error } = await supabase
-        .from('projects')
-        .update({
-          name: projectName.trim(),
-          description: description.trim(),
-          members: members.trim(),
-        })
-        .eq('id', params.id);
+      const updated = projectsStorage.update(projectId, user.id, {
+        name: projectName.trim(),
+        description: description.trim(),
+        members: members.trim(),
+      });
 
-      if (error) {
-        throw error;
+      if (updated) {
+        router.push(`/projects/${projectId}`);
+      } else {
+        throw new Error('Не удалось обновить проект');
       }
-
-      router.push(`/projects/${params.id}`);
     } catch (error) {
       console.error('Ошибка при сохранении проекта:', error);
       alert('Не удалось сохранить изменения. Попробуйте еще раз.');

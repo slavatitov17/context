@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/config';
+import { auth, projects as projectsStorage } from '@/lib/storage';
 
 export default function NewProjectPage() {
   const [projectName, setProjectName] = useState('');
@@ -13,10 +13,10 @@ export default function NewProjectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
+    const checkUser = () => {
+      const currentUser = auth.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
       } else {
         router.push('/login');
       }
@@ -25,37 +25,22 @@ export default function NewProjectPage() {
     checkUser();
   }, [router]);
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!projectName.trim() || !user) return;
 
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          name: projectName.trim(),
-          description: description.trim(),
-          members: members.trim(),
-          user_id: user.id,
-          files: [],
-          messages: [],
-        })
-        .select()
-        .single();
+      const newProject = projectsStorage.create({
+        name: projectName.trim(),
+        description: description.trim(),
+        members: members.trim(),
+        user_id: user.id,
+        files: [],
+        messages: [],
+      });
 
-      if (error) {
-        console.error('Ошибка при создании проекта:', error);
-        alert('Не удалось создать проект. Попробуйте еще раз.');
-        setLoading(false);
-        return;
-      }
-
-      console.log('[NewProject] Проект создан, ID:', data.id);
-      
-      // Перенаправляем на страницу проекта для загрузки файлов
-      // Используем window.location для гарантированного редиректа
-      window.location.href = `/projects/${data.id}`;
+      router.push(`/projects/${newProject.id}`);
     } catch (error) {
       console.error('Ошибка при создании проекта:', error);
       alert('Не удалось создать проект. Попробуйте еще раз.');

@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/config';
-import type { Project } from '@/lib/supabase/config';
+import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -16,34 +15,26 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     // Проверяем текущего пользователя
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        await loadProjects(user.id);
+    const checkUser = () => {
+      const currentUser = auth.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        loadProjects(currentUser.id);
       } else {
         setLoading(false);
+        router.push('/login');
       }
     };
 
     checkUser();
 
-    // Слушаем изменения аутентификации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        await loadProjects(session.user.id);
-      } else {
-        setUser(null);
-        setProjects([]);
-        setLoading(false);
-      }
-    });
+    // Проверяем изменения каждую секунду
+    const interval = setInterval(checkUser, 1000);
 
     return () => {
-      subscription.unsubscribe();
+      clearInterval(interval);
     };
-  }, []);
+  }, [router]);
 
   // Закрытие меню при клике вне его
   useEffect(() => {
@@ -57,23 +48,13 @@ export default function ProjectsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadProjects = async (userId: string) => {
+  const loadProjects = (userId: string) => {
     try {
       setLoading(true);
-      // Загружаем проекты
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) {
-        console.error('Ошибка при загрузке проектов:', error);
-        return;
-      }
-
-      setProjects(data || []);
+      const userProjects = projectsStorage.getAll(userId);
+      // Сортируем по дате создания (новые первые)
+      userProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setProjects(userProjects);
     } catch (error) {
       console.error('Ошибка при загрузке проектов:', error);
     } finally {
@@ -81,25 +62,21 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleDelete = async (projectId: string) => {
+  const handleDelete = (projectId: string) => {
+    if (!user) return;
+    
     if (!confirm('Вы уверены, что хотите удалить этот проект?')) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId);
-
-      if (error) {
-        console.error('Ошибка при удалении проекта:', error);
+      const success = projectsStorage.delete(projectId, user.id);
+      if (success) {
+        setProjects(projects.filter(p => p.id !== projectId));
+        setOpenMenuId(null);
+      } else {
         alert('Не удалось удалить проект. Попробуйте еще раз.');
-        return;
       }
-
-      setProjects(projects.filter(p => p.id !== projectId));
-      setOpenMenuId(null);
     } catch (error) {
       console.error('Ошибка при удалении проекта:', error);
       alert('Не удалось удалить проект. Попробуйте еще раз.');

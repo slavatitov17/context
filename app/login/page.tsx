@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/config';
+import { auth } from '@/lib/storage';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -29,51 +29,21 @@ export default function LoginPage() {
     const trimmedEmail = email.trim();
 
     try {
-      console.log('[Login] Начало входа:', trimmedEmail);
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password: password,
-      });
-
-      console.log('[Login] Ответ Supabase:', { 
-        user: data?.user?.id, 
-        session: !!data?.session,
-        error: authError 
-      });
+      const { user, error: authError } = await auth.signIn(trimmedEmail, password);
 
       if (authError) {
-        console.error('[Login] Ошибка входа:', authError);
         throw authError;
       }
 
-      if (data.user && data.session) {
-        console.log('[Login] Успешный вход, редирект на /projects');
+      if (user) {
         router.push('/projects');
         router.refresh();
       } else {
-        console.error('[Login] Нет пользователя или сессии');
-        setError('Не удалось войти. Проверьте данные и попробуйте еще раз');
+        setError('Не удалось войти. Попробуйте еще раз');
         setLoading(false);
       }
     } catch (err: any) {
-      console.error('[Login] Исключение при входе:', err);
-      console.error('[Login] Детали ошибки:', {
-        message: err.message,
-        status: err.status,
-        code: err.code,
-        name: err.name
-      });
-      
-      // Обработка различных ошибок Supabase
-      if (err.message?.includes('Invalid login credentials') || err.code === 'invalid_credentials' || err.status === 400) {
-        setError('Неверный email или пароль. Проверьте данные и попробуйте еще раз');
-      } else if (err.message?.includes('Email not confirmed') || err.code === 'email_not_confirmed') {
-        setError('Email не подтвержден. Проверьте почту и подтвердите регистрацию');
-      } else if (err.message?.includes('Email rate limit exceeded') || err.code === 'too_many_requests') {
-        setError('Слишком много попыток входа. Попробуйте позже');
-      } else {
-        setError(`Произошла ошибка при входе: ${err.message || 'Неизвестная ошибка'}. Попробуйте еще раз`);
-      }
+      setError('Произошла ошибка при входе. Попробуйте еще раз');
       setLoading(false);
     }
   };

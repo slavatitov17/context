@@ -2,8 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/config';
-import type { Project } from '@/lib/supabase/config';
+import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 
 interface UploadedFile {
   id: string;
@@ -26,12 +25,11 @@ export default function ProjectDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Загрузка проекта из Supabase
+  // Загрузка проекта
   useEffect(() => {
-    const loadProject = async () => {
+    const loadProject = () => {
       // Проверяем наличие ID
       if (!projectId) {
-        console.error('[ProjectPage] ID проекта не найден в params');
         router.replace('/projects');
         return;
       }
@@ -40,63 +38,17 @@ export default function ProjectDetailPage() {
         setLoading(true);
         
         // Проверяем пользователя
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const currentUser = auth.getCurrentUser();
         if (!currentUser) {
           router.push('/login');
           return;
         }
         setUser(currentUser);
 
-        console.log('[ProjectPage] Начало загрузки проекта, ID:', projectId);
+        // Загружаем проект
+        const projectData = projectsStorage.getById(projectId, currentUser.id);
         
-        // Загружаем проект (только необходимые поля для ускорения)
-        let projectData: any = null;
-        const { data, error } = await supabase
-          .from('projects')
-          .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
-          .eq('id', projectId)
-          .single();
-
-        if (error) {
-          console.error('[ProjectPage] Ошибка при загрузке проекта:', {
-            message: error.message,
-            code: error.code,
-            details: error.details
-          });
-          
-          // Если проект не найден, пробуем еще раз через короткую задержку (только для новых проектов)
-          if (error.code === 'PGRST116') {
-            console.log('[ProjectPage] Проект не найден, повтор через 300ms...');
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            const { data: retryData, error: retryError } = await supabase
-              .from('projects')
-              .select('id, name, description, members, user_id, files, messages, created_at, updated_at')
-              .eq('id', projectId)
-              .single();
-            
-            if (retryError || !retryData) {
-              console.error('[ProjectPage] Проект не найден после повтора');
-              router.replace('/projects');
-              return;
-            }
-            
-            projectData = retryData;
-          } else {
-            router.replace('/projects');
-            return;
-          }
-        } else if (data) {
-          projectData = data;
-        } else {
-          console.error('[ProjectPage] Проект не найден');
-          router.replace('/projects');
-          return;
-        }
-
-        // Проверяем, что проект принадлежит пользователю
-        if (projectData.user_id !== currentUser.id) {
-          console.error('[ProjectPage] Проект не принадлежит пользователю');
+        if (!projectData) {
           router.replace('/projects');
           return;
         }
@@ -134,18 +86,11 @@ export default function ProjectDetailPage() {
   }, [projectId, router]);
 
   // Автоматическое сохранение изменений
-  const saveProject = useCallback(async (updates: Partial<Project>) => {
+  const saveProject = useCallback((updates: Partial<Project>) => {
     if (!user || !projectData) return;
 
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update(updates)
-        .eq('id', projectId);
-
-      if (error) {
-        console.error('Ошибка при сохранении проекта:', error);
-      }
+      projectsStorage.update(projectId, user.id, updates);
     } catch (error) {
       console.error('Ошибка при сохранении проекта:', error);
     }

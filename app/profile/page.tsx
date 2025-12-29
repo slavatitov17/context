@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/config';
+import { auth } from '@/lib/storage';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -15,9 +15,9 @@ export default function ProfilePage() {
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    // Загружаем данные пользователя из Supabase
-    const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    // Загружаем данные пользователя
+    const loadUser = () => {
+      const user = auth.getCurrentUser();
       if (user) {
         setEmail(user.email || '');
       }
@@ -69,7 +69,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await auth.signOut();
       router.push('/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);

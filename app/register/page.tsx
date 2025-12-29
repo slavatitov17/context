@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/config';
+import { auth } from '@/lib/storage';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -51,49 +51,21 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      console.log('[Register] Начало регистрации:', trimmedEmail);
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password: password,
-      });
-
-      console.log('[Register] Ответ Supabase:', { data, error: authError });
+      const { user, error: authError } = await auth.signUp(trimmedEmail, password);
 
       if (authError) {
-        console.error('[Register] Ошибка регистрации:', authError);
         throw authError;
       }
 
-      // В Supabase может быть включен email confirmation
-      // Если пользователь создан, но email не подтвержден, все равно редиректим
-      if (data.user) {
-        console.log('[Register] Пользователь создан, редирект на /projects');
+      if (user) {
         router.push('/projects');
         router.refresh();
       } else {
-        console.error('[Register] Пользователь не создан');
         setError('Не удалось создать пользователя. Попробуйте еще раз');
         setLoading(false);
       }
     } catch (err: any) {
-      console.error('[Register] Исключение при регистрации:', err);
-      console.error('[Register] Детали ошибки:', {
-        message: err.message,
-        status: err.status,
-        code: err.code,
-        name: err.name
-      });
-      
-      // Обработка различных ошибок Supabase
-      if (err.message?.includes('User already registered') || err.message?.includes('already registered') || err.code === '23505') {
-        setError('Пользователь с таким email уже зарегистрирован. Войдите в систему или используйте другой email');
-      } else if (err.message?.includes('Invalid email') || err.code === 'invalid_email') {
-        setError('Некорректный email адрес. Проверьте правильность ввода');
-      } else if (err.message?.includes('Password') || err.code === 'weak_password') {
-        setError('Пароль слишком слабый. Используйте более надежный пароль (минимум 6 символов)');
-      } else {
-        setError(`Произошла ошибка при регистрации: ${err.message || 'Неизвестная ошибка'}. Попробуйте еще раз`);
-      }
+      setError('Произошла ошибка при регистрации. Попробуйте еще раз');
       setLoading(false);
     }
   };
