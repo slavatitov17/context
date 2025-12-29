@@ -405,7 +405,7 @@ export default function ProjectDetailPage() {
             /* Чат с сообщениями */
             <div className="flex-1 flex flex-col min-h-0">
               {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-3 overflow-y-auto min-h-0">
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto min-h-0">
                 <div className="space-y-4">
                   {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
@@ -422,22 +422,62 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* Поле ввода */}
-              <div className="flex space-x-3 flex-shrink-0">
-                <input
-                  type="text"
+              <div className="relative flex-shrink-0 bg-white rounded-lg border-2 border-gray-300 shadow-md focus-within:border-blue-500 focus-within:shadow-lg transition-all">
+                {/* Кнопки слева внизу */}
+                <div className="absolute left-3 bottom-3 flex gap-2 z-10">
+                  <button
+                    type="button"
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="DeepThink"
+                  >
+                    <i className="fas fa-brain text-sm"></i>
+                  </button>
+                  <button
+                    type="button"
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Search"
+                  >
+                    <i className="fas fa-globe text-sm"></i>
+                  </button>
+                </div>
+
+                {/* Textarea */}
+                <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                   placeholder="Спрашивайте по источникам..."
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pl-20 pr-20 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm leading-relaxed"
+                  style={{
+                    minHeight: '6.5rem',
+                    maxHeight: '6.5rem',
+                    lineHeight: '1.5',
+                  }}
                 />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!message.trim()}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center"
-                >
-                  <i className="fas fa-paper-plane"></i>
-                </button>
+
+                {/* Кнопки справа */}
+                <div className="absolute right-3 bottom-3 flex items-center gap-2 z-10">
+                  <button
+                    type="button"
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Прикрепить файл"
+                  >
+                    <i className="fas fa-paperclip text-sm"></i>
+                  </button>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!message.trim()}
+                    className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
+                    title="Отправить"
+                  >
+                    <i className="fas fa-arrow-up text-xs"></i>
+                  </button>
+                </div>
               </div>
             </div>
           )}
