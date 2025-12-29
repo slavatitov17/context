@@ -32,7 +32,9 @@ export default function LoginPage() {
       const { user, error: authError } = await auth.signIn(trimmedEmail, password);
 
       if (authError) {
-        throw authError;
+        setError(authError.message || 'Ошибка при входе. Проверьте email и пароль');
+        setLoading(false);
+        return;
       }
 
       if (user) {
@@ -43,7 +45,7 @@ export default function LoginPage() {
         setLoading(false);
       }
     } catch (err: any) {
-      setError('Произошла ошибка при входе. Попробуйте еще раз');
+      setError(err.message || 'Произошла ошибка при входе. Попробуйте еще раз');
       setLoading(false);
     }
   };

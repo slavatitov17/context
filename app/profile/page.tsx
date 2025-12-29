@@ -20,41 +20,60 @@ export default function ProfilePage() {
       const user = auth.getCurrentUser();
       if (user) {
         setEmail(user.email || '');
+        
+        // Загружаем сохраненные данные профиля для этого пользователя
+        const savedProfile = localStorage.getItem(`userProfile_${user.id}`);
+        if (savedProfile) {
+          try {
+            const profile = JSON.parse(savedProfile);
+            setFirstName(profile.firstName || '');
+            setMiddleName(profile.middleName || '');
+            setLastName(profile.lastName || '');
+            setPhone(profile.phone || '');
+            setBirthDate(profile.birthDate || '');
+          } catch {
+            // Игнорируем ошибки парсинга
+          }
+        }
+      } else {
+        router.push('/login');
       }
     };
     
     loadUser();
-    
-    // Загружаем сохраненные данные профиля (если есть)
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      const profile = JSON.parse(savedProfile);
-      setFirstName(profile.firstName || '');
-      setMiddleName(profile.middleName || '');
-      setLastName(profile.lastName || '');
-      setPhone(profile.phone || '');
-      setBirthDate(profile.birthDate || '');
-    }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     // Проверяем, есть ли изменения
-    const savedProfile = localStorage.getItem('userProfile');
+    const user = auth.getCurrentUser();
+    if (!user) return;
+    
+    const savedProfile = localStorage.getItem(`userProfile_${user.id}`);
     if (savedProfile) {
-      const profile = JSON.parse(savedProfile);
-      setHasChanges(
-        firstName !== (profile.firstName || '') ||
-        middleName !== (profile.middleName || '') ||
-        lastName !== (profile.lastName || '') ||
-        phone !== (profile.phone || '') ||
-        birthDate !== (profile.birthDate || '')
-      );
+      try {
+        const profile = JSON.parse(savedProfile);
+        setHasChanges(
+          firstName !== (profile.firstName || '') ||
+          middleName !== (profile.middleName || '') ||
+          lastName !== (profile.lastName || '') ||
+          phone !== (profile.phone || '') ||
+          birthDate !== (profile.birthDate || '')
+        );
+      } catch {
+        setHasChanges(true);
+      }
     } else {
       setHasChanges(firstName !== '' || middleName !== '' || lastName !== '' || phone !== '' || birthDate !== '');
     }
   }, [firstName, middleName, lastName, phone, birthDate]);
 
   const handleSave = () => {
+    const user = auth.getCurrentUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
     const profile = {
       firstName,
       middleName,
@@ -62,7 +81,8 @@ export default function ProfilePage() {
       phone,
       birthDate,
     };
-    localStorage.setItem('userProfile', JSON.stringify(profile));
+    // Сохраняем профиль привязанным к конкретному пользователю
+    localStorage.setItem(`userProfile_${user.id}`, JSON.stringify(profile));
     setHasChanges(false);
     alert('Профиль успешно сохранен');
   };

@@ -33,11 +33,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
     checkUser();
 
-    // Проверяем изменения каждую секунду (простая замена onAuthStateChange)
-    const interval = setInterval(checkUser, 1000);
+    // Слушаем изменения в localStorage (для синхронизации между вкладками)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'context_user' || e.key === 'context_session') {
+        checkUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [isAuthPage, router]);
 

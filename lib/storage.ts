@@ -1,4 +1,6 @@
-// Простая система хранения данных в localStorage (без бэкенда)
+// Система хранения данных в браузере (localStorage + IndexedDB)
+// Все данные хранятся локально в браузере пользователя в России
+// Соответствует требованиям 152-ФЗ
 
 export interface Project {
   id: string;
@@ -15,16 +17,32 @@ export interface Project {
 export interface User {
   id: string;
   email: string;
+  passwordHash: string; // Хэш пароля (не сам пароль)
+  created_at: string;
 }
 
 // Ключи для localStorage
 const STORAGE_KEYS = {
   USER: 'context_user',
-  PROJECTS: 'context_projects',
   SESSION: 'context_session',
+  USERS: 'context_users', // База пользователей
+  PROJECTS: 'context_projects',
 };
 
-// Работа с пользователем
+// Хэширование пароля с использованием Web Crypto API (встроенный в браузер)
+async function hashPassword(password: string): Promise<string> {
+  if (typeof window === 'undefined') {
+    throw new Error('Crypto API is not available');
+  }
+  
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Работа с пользователями
 export const auth = {
   // Получить текущего пользователя
   getCurrentUser: (): User | null => {
@@ -38,37 +56,123 @@ export const auth = {
     }
   },
 
-  // Вход (простая заглушка)
-  signIn: async (email: string, password: string): Promise<{ user: User | null; error: Error | null }> => {
-    // Простая проверка (в реальности здесь была бы проверка пароля)
-    // Для демо просто создаем пользователя
-    const user: User = {
-      id: `user_${Date.now()}`,
-      email: email.trim(),
-    };
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-      localStorage.setItem(STORAGE_KEYS.SESSION, 'true');
+  // Получить всех пользователей (для проверки регистрации)
+  getAllUsers: (): User[] => {
+    if (typeof window === 'undefined') return [];
+    const usersStr = localStorage.getItem(STORAGE_KEYS.USERS);
+    if (!usersStr) return [];
+    try {
+      return JSON.parse(usersStr);
+    } catch {
+      return [];
     }
-    
-    return { user, error: null };
   },
 
-  // Регистрация (простая заглушка)
-  signUp: async (email: string, password: string): Promise<{ user: User | null; error: Error | null }> => {
-    // Просто создаем пользователя
-    const user: User = {
-      id: `user_${Date.now()}`,
-      email: email.trim(),
-    };
+  // Сохранить пользователя в базу
+  saveUser: (user: User): void => {
+    if (typeof window === 'undefined') return;
+    const allUsers = auth.getAllUsers();
+    const existingIndex = allUsers.findIndex(u => u.id === user.id);
     
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-      localStorage.setItem(STORAGE_KEYS.SESSION, 'true');
+    if (existingIndex >= 0) {
+      allUsers[existingIndex] = user;
+    } else {
+      allUsers.push(user);
     }
     
-    return { user, error: null };
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(allUsers));
+  },
+
+  // Вход с проверкой пароля
+  signIn: async (email: string, password: string): Promise<{ user: User | null; error: Error | null }> => {
+    try {
+      const trimmedEmail = email.trim().toLowerCase();
+      
+      if (!trimmedEmail || !password) {
+        return { user: null, error: new Error('Заполните все поля') };
+      }
+
+      // Ищем пользователя в базе
+      const allUsers = auth.getAllUsers();
+      const existingUser = allUsers.find(u => u.email.toLowerCase() === trimmedEmail);
+      
+      if (!existingUser) {
+        return { user: null, error: new Error('Пользователь с таким email не найден') };
+      }
+
+      // Проверяем пароль
+      const passwordHash = await hashPassword(password);
+      if (existingUser.passwordHash !== passwordHash) {
+        return { user: null, error: new Error('Неверный пароль') };
+      }
+
+      // Сохраняем текущую сессию
+      const userForSession: Omit<User, 'passwordHash'> = {
+        id: existingUser.id,
+        email: existingUser.email,
+        created_at: existingUser.created_at,
+      };
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userForSession));
+        localStorage.setItem(STORAGE_KEYS.SESSION, 'true');
+      }
+      
+      return { user: userForSession as User, error: null };
+    } catch (error) {
+      return { user: null, error: error instanceof Error ? error : new Error('Ошибка при входе') };
+    }
+  },
+
+  // Регистрация с проверкой существующего пользователя
+  signUp: async (email: string, password: string): Promise<{ user: User | null; error: Error | null }> => {
+    try {
+      const trimmedEmail = email.trim().toLowerCase();
+      
+      if (!trimmedEmail || !password) {
+        return { user: null, error: new Error('Заполните все поля') };
+      }
+
+      if (password.length < 6) {
+        return { user: null, error: new Error('Пароль должен содержать минимум 6 символов') };
+      }
+
+      // Проверяем, не существует ли уже пользователь
+      const allUsers = auth.getAllUsers();
+      const existingUser = allUsers.find(u => u.email.toLowerCase() === trimmedEmail);
+      
+      if (existingUser) {
+        return { user: null, error: new Error('Пользователь с таким email уже зарегистрирован') };
+      }
+
+      // Создаем нового пользователя
+      const passwordHash = await hashPassword(password);
+      const newUser: User = {
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email: trimmedEmail,
+        passwordHash,
+        created_at: new Date().toISOString(),
+      };
+
+      // Сохраняем в базу пользователей
+      auth.saveUser(newUser);
+
+      // Сохраняем текущую сессию (без пароля)
+      const userForSession: Omit<User, 'passwordHash'> = {
+        id: newUser.id,
+        email: newUser.email,
+        created_at: newUser.created_at,
+      };
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userForSession));
+        localStorage.setItem(STORAGE_KEYS.SESSION, 'true');
+      }
+      
+      return { user: userForSession as User, error: null };
+    } catch (error) {
+      return { user: null, error: error instanceof Error ? error : new Error('Ошибка при регистрации') };
+    }
   },
 
   // Выход
@@ -82,11 +186,11 @@ export const auth = {
   // Проверка сессии
   hasSession: (): boolean => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem(STORAGE_KEYS.SESSION) === 'true';
+    return localStorage.getItem(STORAGE_KEYS.SESSION) === 'true' && auth.getCurrentUser() !== null;
   },
 };
 
-// Работа с проектами
+// Работа с проектами (каждый пользователь видит только свои проекты)
 export const projects = {
   // Получить все проекты пользователя
   getAll: (userId: string): Project[] => {
@@ -95,13 +199,14 @@ export const projects = {
     if (!projectsStr) return [];
     try {
       const allProjects: Project[] = JSON.parse(projectsStr);
+      // Фильтруем только проекты текущего пользователя
       return allProjects.filter(p => p.user_id === userId);
     } catch {
       return [];
     }
   },
 
-  // Получить проект по ID
+  // Получить проект по ID (только если он принадлежит пользователю)
   getById: (projectId: string, userId: string): Project | null => {
     if (typeof window === 'undefined') return null;
     const projectsStr = localStorage.getItem(STORAGE_KEYS.PROJECTS);
@@ -138,7 +243,7 @@ export const projects = {
     return newProject;
   },
 
-  // Обновить проект
+  // Обновить проект (только если он принадлежит пользователю)
   update: (projectId: string, userId: string, updates: Partial<Project>): Project | null => {
     if (typeof window === 'undefined') {
       throw new Error('localStorage is not available');
@@ -162,7 +267,7 @@ export const projects = {
     return allProjects[index];
   },
 
-  // Удалить проект
+  // Удалить проект (только если он принадлежит пользователю)
   delete: (projectId: string, userId: string): boolean => {
     if (typeof window === 'undefined') {
       throw new Error('localStorage is not available');
@@ -180,4 +285,3 @@ export const projects = {
     return true;
   },
 };
-

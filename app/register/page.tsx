@@ -54,7 +54,9 @@ export default function RegisterPage() {
       const { user, error: authError } = await auth.signUp(trimmedEmail, password);
 
       if (authError) {
-        throw authError;
+        setError(authError.message || 'Ошибка при регистрации');
+        setLoading(false);
+        return;
       }
 
       if (user) {
@@ -65,7 +67,7 @@ export default function RegisterPage() {
         setLoading(false);
       }
     } catch (err: any) {
-      setError('Произошла ошибка при регистрации. Попробуйте еще раз');
+      setError(err.message || 'Произошла ошибка при регистрации. Попробуйте еще раз');
       setLoading(false);
     }
   };
