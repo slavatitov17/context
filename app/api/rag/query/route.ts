@@ -60,7 +60,7 @@ function cosineSimilarity(vec1: number[], vec2: number[]): number {
 }
 
 // RAG-система для поиска ответов в документах
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   let question: string | undefined;
   let documents: any[] | undefined;
   

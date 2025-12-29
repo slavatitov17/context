@@ -4,30 +4,36 @@ import mammoth from 'mammoth';
 // Динамический импорт pdf-parse для Node.js
 async function getPdfParse() {
   try {
-    // Пробуем разные способы импорта для совместимости
+    // Используем dynamic import для ESM
     const pdfParseModule = await import('pdf-parse');
-    
-    // pdf-parse может экспортироваться по-разному
     const moduleAny = pdfParseModule as any;
     
+    // pdf-parse экспортируется как default в ESM
+    if (moduleAny.default && typeof moduleAny.default === 'function') {
+      return moduleAny.default;
+    }
+    
+    // Или как именованный экспорт
     if (typeof moduleAny === 'function') {
       return moduleAny;
-    } else if (moduleAny.default) {
-      return moduleAny.default;
-    } else if (moduleAny.pdfParse) {
+    }
+    
+    // Или как свойство
+    if (moduleAny.pdfParse && typeof moduleAny.pdfParse === 'function') {
       return moduleAny.pdfParse;
     }
     
-    // Fallback: используем как есть
+    // Последняя попытка - используем как есть
     return moduleAny;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка при импорте pdf-parse:', error);
-    throw new Error('Не удалось загрузить библиотеку для обработки PDF');
+    console.error('Детали ошибки:', error?.message, error?.stack);
+    throw new Error(`Не удалось загрузить библиотеку для обработки PDF: ${error?.message || 'Неизвестная ошибка'}`);
   }
 }
 
 // Обработка документов и извлечение текста
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -58,12 +64,8 @@ export async function POST(request: NextRequest) {
         // Вызываем функцию с правильными параметрами
         let pdfData;
         if (typeof pdfParse === 'function') {
-          pdfData = await pdfParse(buffer, {
-            // Опции для pdf-parse
-            max: 0, // Обрабатываем все страницы
-          });
-        } else if (pdfParse && typeof pdfParse === 'object' && 'default' in pdfParse) {
-          pdfData = await pdfParse.default(buffer);
+          // Вызываем функцию напрямую
+          pdfData = await pdfParse(buffer);
         } else {
           throw new Error('pdf-parse не является функцией');
         }
