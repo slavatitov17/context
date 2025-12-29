@@ -1,4 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { pipeline, env } from '@xenova/transformers';
+
+// Отключаем удаленные модели (используем локальные)
+env.allowLocalModels = true;
+env.allowRemoteModels = false;
+
+// Кэш для моделей
+let embeddingModel: any = null;
+let textGenerationModel: any = null;
+
+// Инициализация модели для embeddings
+async function getEmbeddingModel() {
+  if (!embeddingModel) {
+    embeddingModel = await pipeline(
+      'feature-extraction',
+      'Xenova/multilingual-MiniLM-L12-v2',
+      { quantized: true }
+    );
+  }
+  return embeddingModel;
+}
+
+// Инициализация модели для генерации текста
+// Используем Gemma 2B (Google) - не от Meta, совместима с Россией
+async function getTextGenerationModel() {
+  if (!textGenerationModel) {
+    try {
+      // Пробуем загрузить Gemma 2B (легковесная модель от Google)
+      textGenerationModel = await pipeline(
+        'text-generation',
+        'Xenova/gemma-2-2b-it',
+        { quantized: true }
+      );
+    } catch (error) {
+      console.warn('Не удалось загрузить Gemma, используем простую генерацию:', error);
+      textGenerationModel = null;
+    }
+  }
+  return textGenerationModel;
+}
+
+// Вычисление косинусного сходства
+function cosineSimilarity(vec1: number[], vec2: number[]): number {
+  if (vec1.length !== vec2.length) return 0;
+  
+  let dotProduct = 0;
+  let norm1 = 0;
+  let norm2 = 0;
+  
+  for (let i = 0; i < vec1.length; i++) {
+    dotProduct += vec1[i] * vec2[i];
+    norm1 += vec1[i] * vec1[i];
+    norm2 += vec2[i] * vec2[i];
+  }
+  
+  return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+}
 
 // RAG-система для поиска ответов в документах
 export async function POST(request: NextRequest) {
@@ -12,52 +69,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Простой поиск по ключевым словам вопроса в документах
-    const questionWords = question.toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter((w: string) => w.length > 3);
-
     let bestMatches: Array<{ text: string; score: number; source: string }> = [];
 
-    // Ищем релевантные фрагменты в каждом документе
-    documents.forEach((doc: { text: string; chunks?: string[]; fileName: string }) => {
-      const chunks = doc.chunks || splitTextIntoChunks(doc.text || '', 500);
+    try {
+      // Пробуем использовать векторный поиск через embeddings
+      const embeddingModel = await getEmbeddingModel();
       
-      chunks.forEach(chunk => {
-        const chunkLower = chunk.toLowerCase();
-        let score = 0;
-        
-        // Подсчитываем совпадения ключевых слов
-        questionWords.forEach((word: string) => {
-          const matches = (chunkLower.match(new RegExp(`\\b${word}\\b`, 'g')) || []).length;
-          score += matches * 2; // Каждое точное совпадение слова
-        });
+      // Создаем embedding для вопроса
+      const questionEmbedding = await embeddingModel(question, {
+        pooling: 'mean',
+        normalize: true,
+      });
+      const questionVector = Array.from(questionEmbedding.data) as number[];
 
-        // Бонус за совпадение фраз
-        const questionPhrases = extractPhrases(question.toLowerCase());
-        questionPhrases.forEach((phrase: string) => {
-          if (chunkLower.includes(phrase)) {
-            score += phrase.split(/\s+/).length * 3; // Бонус за фразы
+      // Ищем релевантные фрагменты в каждом документе
+      for (const doc of documents) {
+        const chunks = doc.chunks || splitTextIntoChunks(doc.text || '', 500);
+        
+        for (const chunk of chunks) {
+          // Создаем embedding для чанка
+          const chunkEmbedding = await embeddingModel(chunk, {
+            pooling: 'mean',
+            normalize: true,
+          });
+          const chunkVector = Array.from(chunkEmbedding.data) as number[];
+          
+          // Вычисляем косинусное сходство
+          const similarity = cosineSimilarity(questionVector, chunkVector);
+          
+          if (similarity > 0.3) { // Порог релевантности
+            bestMatches.push({
+              text: chunk,
+              score: similarity * 100, // Преобразуем в проценты
+              source: doc.fileName,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Ошибка при векторном поиске, используем простой поиск:', error);
+      
+      // Fallback на простой поиск по ключевым словам
+      const questionWords = question.toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w: string) => w.length > 3);
+
+      documents.forEach((doc: { text: string; chunks?: string[]; fileName: string }) => {
+        const chunks = doc.chunks || splitTextIntoChunks(doc.text || '', 500);
+        
+        chunks.forEach(chunk => {
+          const chunkLower = chunk.toLowerCase();
+          let score = 0;
+          
+          questionWords.forEach((word: string) => {
+            const matches = (chunkLower.match(new RegExp(`\\b${word}\\b`, 'g')) || []).length;
+            score += matches * 2;
+          });
+
+          const questionPhrases = extractPhrases(question.toLowerCase());
+          questionPhrases.forEach((phrase: string) => {
+            if (chunkLower.includes(phrase)) {
+              score += phrase.split(/\s+/).length * 3;
+            }
+          });
+
+          if (score > 0) {
+            bestMatches.push({
+              text: chunk,
+              score,
+              source: doc.fileName,
+            });
           }
         });
-
-        if (score > 0) {
-          bestMatches.push({
-            text: chunk,
-            score,
-            source: doc.fileName,
-          });
-        }
       });
-    });
+    }
 
     // Сортируем по релевантности и берем топ-3
     bestMatches.sort((a, b) => b.score - a.score);
     const topMatches = bestMatches.slice(0, 3);
 
     // Если не найдено релевантных фрагментов
-    if (topMatches.length === 0 || topMatches[0].score < 2) {
+    const threshold = bestMatches.length > 0 && bestMatches[0].score > 50 ? 30 : 2;
+    if (topMatches.length === 0 || topMatches[0].score < threshold) {
       return NextResponse.json({
         success: true,
         answer: 'В загруженных источниках не найдено информации, которая могла бы ответить на ваш вопрос. Пожалуйста, убедитесь, что документы содержат релевантную информацию, или переформулируйте вопрос.',
@@ -70,8 +164,36 @@ export async function POST(request: NextRequest) {
     const context = topMatches.map(m => m.text).join('\n\n');
     const sources = Array.from(new Set(topMatches.map(m => m.source)));
 
-    // Простая генерация ответа (можно заменить на вызов LLM)
-    const answer = generateAnswerFromContext(question, context, topMatches);
+    // Генерация ответа с использованием LLM (если доступна) или простой генерации
+    let answer: string;
+    try {
+      const textGenModel = await getTextGenerationModel();
+      if (textGenModel) {
+        // Используем LLM для генерации ответа
+        const prompt = `На основе следующего контекста из документов ответь на вопрос пользователя. Если в контексте нет информации для ответа, скажи об этом.
+
+Контекст:
+${context}
+
+Вопрос: ${question}
+
+Ответ:`;
+        
+        const result = await textGenModel(prompt, {
+          max_new_tokens: 200,
+          temperature: 0.7,
+          do_sample: true,
+        });
+        
+        answer = result[0].generated_text.split('Ответ:')[1]?.trim() || result[0].generated_text;
+      } else {
+        // Fallback на простую генерацию
+        answer = generateAnswerFromContext(question, context, topMatches);
+      }
+    } catch (error) {
+      console.warn('Ошибка при генерации ответа через LLM, используем простую генерацию:', error);
+      answer = generateAnswerFromContext(question, context, topMatches);
+    }
 
     return NextResponse.json({
       success: true,

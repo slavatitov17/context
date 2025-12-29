@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 
+// Динамический импорт PDF.js для Node.js
+let pdfjsLib: any;
+
+async function getPdfJs() {
+  if (!pdfjsLib) {
+    // Используем legacy build для Node.js
+    pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  }
+  return pdfjsLib;
+}
+
 // Обработка документов и извлечение текста
 export async function POST(request: NextRequest) {
   try {
@@ -20,12 +32,27 @@ export async function POST(request: NextRequest) {
 
     // Извлечение текста в зависимости от типа файла
     if (fileName.endsWith('.pdf')) {
-      // PDF пока не поддерживается (требует дополнительной настройки)
-      // Можно добавить позже с использованием pdfjs-dist или другой библиотеки
-      return NextResponse.json(
-        { error: 'Формат PDF временно не поддерживается. Используйте DOCX, TXT, RTF или ODT.' },
-        { status: 400 }
-      );
+      // Используем PDF.js для извлечения текста
+      const pdfjs = await getPdfJs();
+      const loadingTask = pdfjs.getDocument({
+        data: buffer,
+        verbosity: 0,
+      });
+      
+      const pdf = await loadingTask.promise;
+      const textParts: string[] = [];
+      
+      // Извлекаем текст со всех страниц
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        textParts.push(pageText);
+      }
+      
+      text = textParts.join('\n\n');
     } else if (fileName.endsWith('.docx')) {
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;

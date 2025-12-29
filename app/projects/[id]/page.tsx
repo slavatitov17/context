@@ -403,7 +403,7 @@ export default function ProjectDetailPage() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".docx,.txt,.odt,.rtf"
+            accept=".pdf,.docx,.txt,.odt,.rtf"
             onChange={handleFileInputChange}
             className="hidden"
           />
