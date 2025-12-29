@@ -8,8 +8,14 @@ interface UploadedFile {
   id: string;
   name: string;
   size: number;
-  status: 'uploading' | 'success' | 'error';
+  status: 'uploading' | 'processing' | 'success' | 'error';
   progress: number;
+}
+
+interface ProcessedDocument {
+  fileName: string;
+  text: string;
+  chunks: string[];
 }
 
 export default function ProjectDetailPage() {
@@ -17,10 +23,13 @@ export default function ProjectDetailPage() {
   const projectId = params?.id as string;
   const [projectData, setProjectData] = useState<Project | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [processedDocuments, setProcessedDocuments] = useState<ProcessedDocument[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp?: Date }>>([]);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isAnswering, setIsAnswering] = useState(false);
   const [user, setUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -66,6 +75,11 @@ export default function ProjectDetailPage() {
           })));
         }
 
+        // Загружаем обработанные документы
+        if (projectData.processedDocuments && Array.isArray(projectData.processedDocuments)) {
+          setProcessedDocuments(projectData.processedDocuments);
+        }
+
         // Загружаем сообщения
         if (projectData.messages && Array.isArray(projectData.messages) && projectData.messages.length > 0) {
           setMessages(projectData.messages.map((msg: any) => ({
@@ -96,7 +110,7 @@ export default function ProjectDetailPage() {
     }
   }, [user, projectData, projectId]);
 
-  // Сохранение файлов
+  // Сохранение файлов и обработанных документов
   useEffect(() => {
     if (uploadedFiles.length > 0 && !loading && projectData) {
       const timer = setTimeout(() => {
@@ -105,11 +119,14 @@ export default function ProjectDetailPage() {
           name: file.name,
           size: file.size,
         }));
-        saveProject({ files: filesData as any });
+        saveProject({ 
+          files: filesData as any,
+          processedDocuments: processedDocuments as any,
+        });
       }, 1000); // Debounce на 1 секунду
       return () => clearTimeout(timer);
     }
-  }, [uploadedFiles, loading, projectData, saveProject]);
+  }, [uploadedFiles, processedDocuments, loading, projectData, saveProject]);
 
   // Сохранение сообщений
   useEffect(() => {
@@ -126,9 +143,10 @@ export default function ProjectDetailPage() {
     }
   }, [messages, loading, projectData, saveProject]);
 
-  const handleFileSelect = useCallback((files: FileList | null) => {
+  const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
+    setIsProcessing(true);
     const newFiles: UploadedFile[] = Array.from(files).map((file, index) => ({
       id: `${Date.now()}-${index}`,
       name: file.name,
@@ -139,34 +157,88 @@ export default function ProjectDetailPage() {
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // Имитация загрузки файлов
-    newFiles.forEach((fileItem) => {
-      const interval = setInterval(() => {
-        setUploadedFiles(prev => prev.map(f => {
-          if (f.id === fileItem.id) {
-            const newProgress = Math.min(f.progress + 10, 100);
-            if (newProgress === 100) {
-              clearInterval(interval);
-              return { ...f, progress: 100, status: 'success' as const };
-            }
-            return { ...f, progress: newProgress };
-          }
-          return f;
-        }));
-      }, 100);
-    });
+    // Обрабатываем каждый файл
+    const processedDocs: ProcessedDocument[] = [];
+    
+    for (const fileItem of newFiles) {
+      try {
+        // Обновляем статус на обработку
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, status: 'processing' as const, progress: 50 } : f
+        ));
 
-    // Если это первые файлы, показываем сообщение
-    if (uploadedFiles.length === 0) {
-      setTimeout(() => {
+        // Отправляем файл на обработку
+        const formData = new FormData();
+        const file = Array.from(files).find(f => f.name === fileItem.name);
+        if (!file) continue;
+        
+        formData.append('file', file);
+        
+        const response = await fetch('/api/documents/process', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка при обработке файла');
+        }
+
+        const data = await response.json();
+        
+        processedDocs.push({
+          fileName: fileItem.name,
+          text: data.text,
+          chunks: data.chunks,
+        });
+
+        // Обновляем статус на успех
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
+        ));
+      } catch (error) {
+        console.error('Ошибка при обработке файла:', error);
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, status: 'error' as const } : f
+        ));
+      }
+    }
+
+    // Сохраняем обработанные документы
+    setProcessedDocuments(prev => [...prev, ...processedDocs]);
+
+    // Генерируем краткое описание документов
+    if (processedDocs.length > 0) {
+      try {
+        const allDocs = [...processedDocuments, ...processedDocs];
+        const summarizeResponse = await fetch('/api/documents/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documents: allDocs }),
+        });
+
+        if (summarizeResponse.ok) {
+          const summaryData = await summarizeResponse.json();
+          
+          // Добавляем сообщение с описанием документов
+          setMessages(prev => [...prev, {
+            text: summaryData.generalSummary,
+            isUser: false,
+            timestamp: new Date(),
+          }]);
+        }
+      } catch (error) {
+        console.error('Ошибка при создании описания:', error);
+        // Fallback сообщение
         setMessages(prev => [...prev, {
-          text: "Документы проанализированы. Теперь можно задавать вопросы по их содержимому.",
+          text: `Загружено ${processedDocs.length} документов. Система готова отвечать на вопросы по их содержимому.`,
           isUser: false,
           timestamp: new Date(),
         }]);
-      }, 2000);
+      }
     }
-  }, [uploadedFiles.length]);
+
+    setIsProcessing(false);
+  }, [processedDocuments]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -199,7 +271,11 @@ export default function ProjectDetailPage() {
   };
 
   const handleRemoveFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    const fileToRemove = uploadedFiles.find(f => f.id === fileId);
+    if (fileToRemove) {
+      setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+      setProcessedDocuments(prev => prev.filter(d => d.fileName !== fileToRemove.name));
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -226,24 +302,58 @@ export default function ProjectDetailPage() {
     return iconMap[ext || ''] || 'fa-file';
   };
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
+  const handleSendMessage = async () => {
+    if (message.trim() && !isAnswering && processedDocuments.length > 0) {
+      const question = message.trim();
       const newMessage = {
-        text: message,
+        text: question,
         isUser: true,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, newMessage]);
       setMessage('');
+      setIsAnswering(true);
 
-      // Имитация ответа системы
-      setTimeout(() => {
+      try {
+        // Отправляем запрос в RAG-систему
+        const response = await fetch('/api/rag/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question,
+            documents: processedDocuments,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка при поиске ответа');
+        }
+
+        const data = await response.json();
+        
+        // Добавляем ответ системы
         setMessages(prev => [...prev, {
-          text: "На основе загруженных документов доступна следующая информация...",
+          text: data.answer,
           isUser: false,
           timestamp: new Date(),
         }]);
-      }, 1000);
+      } catch (error) {
+        console.error('Ошибка при поиске ответа:', error);
+        setMessages(prev => [...prev, {
+          text: 'Произошла ошибка при обработке вашего вопроса. Пожалуйста, попробуйте еще раз.',
+          isUser: false,
+          timestamp: new Date(),
+        }]);
+      } finally {
+        setIsAnswering(false);
+      }
+    } else if (processedDocuments.length === 0) {
+      // Если документы не загружены
+      setMessages(prev => [...prev, {
+        text: 'Пожалуйста, сначала загрузите документы для анализа.',
+        isUser: false,
+        timestamp: new Date(),
+      }]);
     }
   };
 
@@ -293,7 +403,7 @@ export default function ProjectDetailPage() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.txt,.odt,.rtf,.csv,.xls,.xlsx"
+            accept=".docx,.txt,.odt,.rtf"
             onChange={handleFileInputChange}
             className="hidden"
           />
@@ -350,6 +460,12 @@ export default function ProjectDetailPage() {
                                 <div className="flex items-center gap-1">
                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                                   <span className="text-xs text-blue-600">{fileItem.progress}%</span>
+                                </div>
+                              )}
+                              {fileItem.status === 'processing' && (
+                                <div className="flex items-center gap-1">
+                                  <i className="fas fa-spinner fa-spin text-blue-500 text-xs"></i>
+                                  <span className="text-xs text-blue-600">Обработка...</span>
                                 </div>
                               )}
                               {fileItem.status === 'success' && (
@@ -442,7 +558,8 @@ export default function ProjectDetailPage() {
                     }
                   }}
                   placeholder="Задайте вопрос по источникам..."
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm text-gray-900 placeholder:text-gray-500 leading-relaxed"
+                  disabled={isAnswering || isProcessing}
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
@@ -454,11 +571,15 @@ export default function ProjectDetailPage() {
                 <div className="absolute right-3 bottom-3 z-10">
                   <button
                     onClick={handleSendMessage}
-                    disabled={!message.trim()}
+                    disabled={!message.trim() || isAnswering || isProcessing}
                     className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
                     title="Отправить"
                   >
-                    <i className="fas fa-paper-plane text-xs"></i>
+                    {isAnswering ? (
+                      <i className="fas fa-spinner fa-spin text-xs"></i>
+                    ) : (
+                      <i className="fas fa-paper-plane text-xs"></i>
+                    )}
                   </button>
                 </div>
               </div>

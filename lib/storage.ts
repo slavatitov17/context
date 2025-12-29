@@ -2,6 +2,12 @@
 // Все данные хранятся локально в браузере пользователя в России
 // Соответствует требованиям 152-ФЗ
 
+export interface ProcessedDocument {
+  fileName: string;
+  text: string;
+  chunks: string[];
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -10,6 +16,7 @@ export interface Project {
   user_id: string;
   files?: any[];
   messages?: any[];
+  processedDocuments?: ProcessedDocument[];
   created_at: string;
   updated_at: string;
 }
