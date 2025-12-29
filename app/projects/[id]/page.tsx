@@ -434,7 +434,7 @@ export default function ProjectDetailPage() {
                     }
                   }}
                   placeholder="Спрашивайте по источникам..."
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-14 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm leading-relaxed"
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm leading-relaxed"
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
