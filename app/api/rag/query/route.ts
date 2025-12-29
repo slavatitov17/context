@@ -22,18 +22,20 @@ async function getEmbeddingModel() {
 }
 
 // Инициализация модели для генерации текста
-// Используем Gemma 2B (Google) - не от Meta, совместима с Россией
+// Используем Mistral 7B (Mistral AI) - французская компания, работает быстро в России
 async function getTextGenerationModel() {
   if (!textGenerationModel) {
     try {
-      // Пробуем загрузить Gemma 2B (легковесная модель от Google)
+      // Загружаем Mistral 7B Instruct
+      console.log('Загрузка модели Mistral 7B Instruct...');
       textGenerationModel = await pipeline(
         'text-generation',
-        'Xenova/gemma-2-2b-it',
+        'Xenova/Mistral-7B-Instruct-v0.2',
         { quantized: true }
       );
-    } catch (error) {
-      console.warn('Не удалось загрузить Gemma, используем простую генерацию:', error);
+      console.log('Модель Mistral 7B успешно загружена');
+    } catch (error: any) {
+      console.warn('Не удалось загрузить Mistral, используем простую генерацию:', error?.message || error);
       textGenerationModel = null;
     }
   }
@@ -272,28 +274,49 @@ export async function POST(request: NextRequest) {
       const textGenModel = await getTextGenerationModel();
       if (textGenModel) {
         // Используем LLM для генерации ответа
-        const prompt = `На основе следующего контекста из документов ответь на вопрос пользователя. Если в контексте нет информации для ответа, скажи об этом.
+        // Mistral использует формат инструкций
+        const prompt = `<s>[INST] На основе следующего контекста из документов ответь на вопрос пользователя. Если в контексте нет информации для ответа, скажи об этом честно.
 
 Контекст:
 ${context}
 
-Вопрос: ${question}
-
-Ответ:`;
+Вопрос: ${question} [/INST]`;
         
+        console.log('Генерируем ответ с помощью LLM...');
         const result = await textGenModel(prompt, {
-          max_new_tokens: 200,
+          max_new_tokens: 300,
           temperature: 0.7,
           do_sample: true,
+          top_p: 0.9,
         });
         
-        answer = result[0].generated_text.split('Ответ:')[1]?.trim() || result[0].generated_text;
+        // Извлекаем ответ из результата Mistral
+        let generatedText = result[0]?.generated_text || '';
+        
+        // Очищаем ответ от промпта (Mistral формат)
+        if (generatedText.includes('[/INST]')) {
+          answer = generatedText.split('[/INST]')[1]?.trim() || generatedText;
+        } else {
+          // Берем последнюю часть (новый сгенерированный текст)
+          const promptLength = prompt.length;
+          answer = generatedText.substring(promptLength).trim();
+        }
+        
+        // Очищаем от лишних символов
+        answer = answer.replace(/^[\s\n]+|[\s\n]+$/g, '');
+        
+        if (!answer || answer.length < 10) {
+          throw new Error('LLM вернул пустой или слишком короткий ответ');
+        }
+        
+        console.log(`LLM сгенерировал ответ длиной ${answer.length} символов`);
       } else {
         // Fallback на простую генерацию
+        console.log('Используем простую генерацию (LLM недоступна)');
         answer = generateAnswerFromContext(question, context, topMatches);
       }
-    } catch (error) {
-      console.warn('Ошибка при генерации ответа через LLM, используем простую генерацию:', error);
+    } catch (error: any) {
+      console.warn('Ошибка при генерации ответа через LLM, используем простую генерацию:', error?.message || error);
       answer = generateAnswerFromContext(question, context, topMatches);
     }
 
