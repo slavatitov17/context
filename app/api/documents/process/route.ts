@@ -3,9 +3,27 @@ import mammoth from 'mammoth';
 
 // Динамический импорт pdf-parse для Node.js
 async function getPdfParse() {
-  const pdfParseModule = await import('pdf-parse');
-  // pdf-parse экспортирует функцию напрямую
-  return pdfParseModule as any;
+  try {
+    // Пробуем разные способы импорта для совместимости
+    const pdfParseModule = await import('pdf-parse');
+    
+    // pdf-parse может экспортироваться по-разному
+    const moduleAny = pdfParseModule as any;
+    
+    if (typeof moduleAny === 'function') {
+      return moduleAny;
+    } else if (moduleAny.default) {
+      return moduleAny.default;
+    } else if (moduleAny.pdfParse) {
+      return moduleAny.pdfParse;
+    }
+    
+    // Fallback: используем как есть
+    return moduleAny;
+  } catch (error) {
+    console.error('Ошибка при импорте pdf-parse:', error);
+    throw new Error('Не удалось загрузить библиотеку для обработки PDF');
+  }
 }
 
 // Обработка документов и извлечение текста
@@ -29,8 +47,31 @@ export async function POST(request: NextRequest) {
     if (fileName.endsWith('.pdf')) {
       try {
         // Используем pdf-parse для извлечения текста (работает в Node.js)
+        // Устанавливаем переменные окружения для pdfjs-dist (используется внутри pdf-parse)
+        if (typeof process !== 'undefined') {
+          // Отключаем использование canvas в pdfjs-dist
+          process.env.CANVAS_PREBUILT = 'false';
+        }
+        
         const pdfParse = await getPdfParse();
-        const pdfData = await (pdfParse as any)(buffer);
+        
+        // Вызываем функцию с правильными параметрами
+        let pdfData;
+        if (typeof pdfParse === 'function') {
+          pdfData = await pdfParse(buffer, {
+            // Опции для pdf-parse
+            max: 0, // Обрабатываем все страницы
+          });
+        } else if (pdfParse && typeof pdfParse === 'object' && 'default' in pdfParse) {
+          pdfData = await pdfParse.default(buffer);
+        } else {
+          throw new Error('pdf-parse не является функцией');
+        }
+        
+        if (!pdfData || !pdfData.text) {
+          throw new Error('Не удалось извлечь текст из PDF');
+        }
+        
         text = pdfData.text;
         
         if (!text || text.trim().length === 0) {
@@ -38,10 +79,13 @@ export async function POST(request: NextRequest) {
         }
       } catch (pdfError: any) {
         console.error('Ошибка при обработке PDF:', pdfError);
+        console.error('Stack trace:', pdfError?.stack);
         const errorMessage = pdfError.message || 'Неизвестная ошибка';
         
         // Более информативные сообщения об ошибках
-        if (errorMessage.includes('password') || errorMessage.includes('encrypted')) {
+        if (errorMessage.includes('DOMMatrix') || errorMessage.includes('DOM')) {
+          throw new Error('Ошибка совместимости с PDF библиотекой. Пожалуйста, попробуйте конвертировать PDF в Word или другой формат.');
+        } else if (errorMessage.includes('password') || errorMessage.includes('encrypted')) {
           throw new Error('PDF файл защищен паролем. Пожалуйста, загрузите незащищенный файл.');
         } else if (errorMessage.includes('corrupt') || errorMessage.includes('invalid')) {
           throw new Error('PDF файл поврежден или имеет неверный формат.');
