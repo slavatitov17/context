@@ -32,27 +32,48 @@ export async function POST(request: NextRequest) {
 
     // Извлечение текста в зависимости от типа файла
     if (fileName.endsWith('.pdf')) {
-      // Используем PDF.js для извлечения текста
-      const pdfjs = await getPdfJs();
-      const loadingTask = pdfjs.getDocument({
-        data: buffer,
-        verbosity: 0,
-      });
-      
-      const pdf = await loadingTask.promise;
-      const textParts: string[] = [];
-      
-      // Извлекаем текст со всех страниц
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        textParts.push(pageText);
+      try {
+        // Используем PDF.js для извлечения текста
+        const pdfjs = await getPdfJs();
+        const loadingTask = pdfjs.getDocument({
+          data: buffer,
+          verbosity: 0,
+          useSystemFonts: true,
+        });
+        
+        const pdf = await loadingTask.promise;
+        const textParts: string[] = [];
+        
+        // Ограничиваем количество страниц для обработки (максимум 50)
+        const maxPages = Math.min(pdf.numPages, 50);
+        
+        // Извлекаем текст со всех страниц
+        for (let i = 1; i <= maxPages; i++) {
+          try {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+              .map((item: any) => item.str || '')
+              .filter((str: string) => str.trim().length > 0)
+              .join(' ');
+            if (pageText.trim()) {
+              textParts.push(pageText);
+            }
+          } catch (pageError) {
+            console.warn(`Ошибка при обработке страницы ${i}:`, pageError);
+            // Продолжаем обработку других страниц
+          }
+        }
+        
+        text = textParts.join('\n\n');
+        
+        if (!text || text.trim().length === 0) {
+          throw new Error('Не удалось извлечь текст из PDF. Возможно, файл содержит только изображения.');
+        }
+      } catch (pdfError: any) {
+        console.error('Ошибка при обработке PDF:', pdfError);
+        throw new Error(`Ошибка при обработке PDF файла: ${pdfError.message || 'Неизвестная ошибка'}`);
       }
-      
-      text = textParts.join('\n\n');
     } else if (fileName.endsWith('.docx')) {
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;
@@ -82,10 +103,14 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
       fileSize: file.size,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка при обработке документа:', error);
+    const errorMessage = error?.message || 'Ошибка при обработке документа';
     return NextResponse.json(
-      { error: 'Ошибка при обработке документа' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }

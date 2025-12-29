@@ -62,11 +62,32 @@ export async function POST(request: NextRequest) {
   try {
     const { question, documents } = await request.json();
 
-    if (!question || !documents || !Array.isArray(documents)) {
+    if (!question || !question.trim()) {
       return NextResponse.json(
-        { error: 'Вопрос и документы обязательны' },
+        { error: 'Вопрос обязателен' },
         { status: 400 }
       );
+    }
+
+    if (!documents || !Array.isArray(documents) || documents.length === 0) {
+      return NextResponse.json(
+        { error: 'Документы обязательны и должны быть массивом' },
+        { status: 400 }
+      );
+    }
+
+    // Фильтруем документы с валидным текстом
+    const validDocuments = documents.filter((doc: any) => 
+      doc && doc.text && typeof doc.text === 'string' && doc.text.trim().length > 0
+    );
+
+    if (validDocuments.length === 0) {
+      return NextResponse.json({
+        success: true,
+        answer: 'В загруженных документах нет текстового содержимого для анализа. Пожалуйста, загрузите документы с текстом.',
+        found: false,
+        sources: [],
+      });
     }
 
     let bestMatches: Array<{ text: string; score: number; source: string }> = [];
@@ -83,26 +104,35 @@ export async function POST(request: NextRequest) {
       const questionVector = Array.from(questionEmbedding.data) as number[];
 
       // Ищем релевантные фрагменты в каждом документе
-      for (const doc of documents) {
-        const chunks = doc.chunks || splitTextIntoChunks(doc.text || '', 500);
+      for (const doc of validDocuments) {
+        const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
+          ? doc.chunks
+          : splitTextIntoChunks(doc.text || '', 500);
         
         for (const chunk of chunks) {
-          // Создаем embedding для чанка
-          const chunkEmbedding = await embeddingModel(chunk, {
-            pooling: 'mean',
-            normalize: true,
-          });
-          const chunkVector = Array.from(chunkEmbedding.data) as number[];
+          if (!chunk || typeof chunk !== 'string' || chunk.trim().length === 0) continue;
           
-          // Вычисляем косинусное сходство
-          const similarity = cosineSimilarity(questionVector, chunkVector);
-          
-          if (similarity > 0.3) { // Порог релевантности
-            bestMatches.push({
-              text: chunk,
-              score: similarity * 100, // Преобразуем в проценты
-              source: doc.fileName,
+          try {
+            // Создаем embedding для чанка
+            const chunkEmbedding = await embeddingModel(chunk, {
+              pooling: 'mean',
+              normalize: true,
             });
+            const chunkVector = Array.from(chunkEmbedding.data) as number[];
+            
+            // Вычисляем косинусное сходство
+            const similarity = cosineSimilarity(questionVector, chunkVector);
+            
+            if (similarity > 0.3) { // Порог релевантности
+              bestMatches.push({
+                text: chunk,
+                score: similarity * 100, // Преобразуем в проценты
+                source: doc.fileName || 'Неизвестный файл',
+              });
+            }
+          } catch (chunkError) {
+            console.warn('Ошибка при обработке чанка:', chunkError);
+            // Продолжаем обработку других чанков
           }
         }
       }
@@ -113,12 +143,16 @@ export async function POST(request: NextRequest) {
       const questionWords = question.toLowerCase()
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter((w: string) => w.length > 3);
+        .filter((w: string) => w.length > 2); // Уменьшил минимальную длину слова
 
-      documents.forEach((doc: { text: string; chunks?: string[]; fileName: string }) => {
-        const chunks = doc.chunks || splitTextIntoChunks(doc.text || '', 500);
+      validDocuments.forEach((doc: { text: string; chunks?: string[]; fileName: string }) => {
+        const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
+          ? doc.chunks
+          : splitTextIntoChunks(doc.text || '', 500);
         
         chunks.forEach(chunk => {
+          if (!chunk || typeof chunk !== 'string') return;
+          
           const chunkLower = chunk.toLowerCase();
           let score = 0;
           
@@ -138,7 +172,7 @@ export async function POST(request: NextRequest) {
             bestMatches.push({
               text: chunk,
               score,
-              source: doc.fileName,
+              source: doc.fileName || 'Неизвестный файл',
             });
           }
         });
@@ -150,8 +184,25 @@ export async function POST(request: NextRequest) {
     const topMatches = bestMatches.slice(0, 3);
 
     // Если не найдено релевантных фрагментов
-    const threshold = bestMatches.length > 0 && bestMatches[0].score > 50 ? 30 : 2;
+    const threshold = bestMatches.length > 0 && bestMatches[0].score > 50 ? 30 : 1; // Уменьшил порог
     if (topMatches.length === 0 || topMatches[0].score < threshold) {
+      // Пробуем вернуть хотя бы первые фрагменты из документов
+      if (validDocuments.length > 0 && validDocuments[0].text) {
+        const firstDoc = validDocuments[0];
+        const firstChunks = firstDoc.chunks && Array.isArray(firstDoc.chunks) && firstDoc.chunks.length > 0
+          ? firstDoc.chunks
+          : splitTextIntoChunks(firstDoc.text, 500);
+        
+        if (firstChunks.length > 0) {
+          return NextResponse.json({
+            success: true,
+            answer: `На основе загруженных документов: ${firstChunks[0].substring(0, 500)}${firstChunks[0].length > 500 ? '...' : ''}\n\nК сожалению, не удалось найти точный ответ на ваш вопрос. Попробуйте переформулировать вопрос или убедитесь, что документы содержат релевантную информацию.`,
+            found: true,
+            sources: [firstDoc.fileName || 'Неизвестный файл'],
+          });
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         answer: 'В загруженных источниках не найдено информации, которая могла бы ответить на ваш вопрос. Пожалуйста, убедитесь, что документы содержат релевантную информацию, или переформулируйте вопрос.',
@@ -205,10 +256,21 @@ ${context}
         source: m.source,
       })),
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Ошибка при поиске ответа:', error);
+    const errorMessage = error?.message || 'Ошибка при поиске ответа';
+    console.error('Детали ошибки:', {
+      message: errorMessage,
+      stack: error?.stack,
+      question: question?.substring(0, 100),
+      documentsCount: documents?.length,
+    });
+    
     return NextResponse.json(
-      { error: 'Ошибка при поиске ответа' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }

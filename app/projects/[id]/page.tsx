@@ -180,10 +180,15 @@ export default function ProjectDetailPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Ошибка при обработке файла');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Ошибка при обработке файла');
         }
 
         const data = await response.json();
+        
+        if (!data.success || !data.text || data.text.trim().length === 0) {
+          throw new Error('Не удалось извлечь текст из файла. Возможно, файл поврежден или содержит только изображения.');
+        }
         
         processedDocs.push({
           fileName: fileItem.name,
@@ -195,11 +200,18 @@ export default function ProjectDetailPage() {
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
         ));
-      } catch (error) {
+      } catch (error: any) {
         console.error('Ошибка при обработке файла:', error);
+        const errorMessage = error?.message || 'Ошибка при обработке файла';
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'error' as const } : f
         ));
+        // Показываем сообщение об ошибке пользователю
+        setMessages(prev => [...prev, {
+          text: `Ошибка при обработке файла "${fileItem.name}": ${errorMessage}`,
+          isUser: false,
+          timestamp: new Date(),
+        }]);
       }
     }
 
@@ -315,6 +327,17 @@ export default function ProjectDetailPage() {
       setIsAnswering(true);
 
       try {
+        // Проверяем, что есть обработанные документы
+        if (!processedDocuments || processedDocuments.length === 0) {
+          setMessages(prev => [...prev, {
+            text: 'Нет загруженных документов для анализа. Пожалуйста, сначала загрузите документы.',
+            isUser: false,
+            timestamp: new Date(),
+          }]);
+          setIsAnswering(false);
+          return;
+        }
+
         // Отправляем запрос в RAG-систему
         const response = await fetch('/api/rag/query', {
           method: 'POST',
@@ -326,21 +349,27 @@ export default function ProjectDetailPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Ошибка при поиске ответа');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Ошибка при поиске ответа');
         }
 
         const data = await response.json();
         
+        if (!data.success) {
+          throw new Error(data.error || 'Не удалось получить ответ');
+        }
+        
         // Добавляем ответ системы
         setMessages(prev => [...prev, {
-          text: data.answer,
+          text: data.answer || 'Не удалось сгенерировать ответ. Попробуйте переформулировать вопрос.',
           isUser: false,
           timestamp: new Date(),
         }]);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Ошибка при поиске ответа:', error);
+        const errorMessage = error?.message || 'Произошла ошибка при обработке вашего вопроса';
         setMessages(prev => [...prev, {
-          text: 'Произошла ошибка при обработке вашего вопроса. Пожалуйста, попробуйте еще раз.',
+          text: `${errorMessage}. Пожалуйста, попробуйте еще раз или переформулируйте вопрос.`,
           isUser: false,
           timestamp: new Date(),
         }]);
