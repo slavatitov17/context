@@ -263,7 +263,7 @@ export default function ProjectDetailPage() {
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
+    <div className="flex flex-col h-full">
       <div className="mb-4 flex-shrink-0">
         <h1 className="text-2xl font-medium mb-2">{projectData.name}</h1>
         {projectData.description && (
@@ -271,9 +271,9 @@ export default function ProjectDetailPage() {
         )}
       </div>
       
-      <div className="flex-1 flex gap-4 min-h-0" style={{ maxHeight: 'calc(100vh - 2rem - 8rem)' }}>
+      <div className="flex-1 flex gap-4 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
-        <div className="w-64 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200" style={{ height: 'calc(100vh - 2rem - 8rem)' }}>
+        <div className="w-64 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-medium text-gray-900">
@@ -390,7 +390,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Правая колонка: Чат */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ height: 'calc(100vh - 2rem - 8rem)' }}>
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {!hasSuccessfulFiles ? (
             /* Пустое состояние чата */
             <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 min-h-0">
