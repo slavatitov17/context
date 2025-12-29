@@ -59,8 +59,13 @@ function cosineSimilarity(vec1: number[], vec2: number[]): number {
 
 // RAG-система для поиска ответов в документах
 export async function POST(request: NextRequest) {
+  let question: string | undefined;
+  let documents: any[] | undefined;
+  
   try {
-    const { question, documents } = await request.json();
+    const body = await request.json();
+    question = body.question;
+    documents = body.documents;
 
     if (!question || !question.trim()) {
       return NextResponse.json(
@@ -140,10 +145,16 @@ export async function POST(request: NextRequest) {
       console.warn('Ошибка при векторном поиске, используем простой поиск:', error);
       
       // Fallback на простой поиск по ключевым словам
-      const questionWords = question.toLowerCase()
+      if (!question) {
+        throw new Error('Вопрос не определен');
+      }
+      
+      const questionLower = question.toLowerCase();
+      const questionWords = questionLower
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
         .filter((w: string) => w.length > 2); // Уменьшил минимальную длину слова
+      const questionPhrases = extractPhrases(questionLower);
 
       validDocuments.forEach((doc: { text: string; chunks?: string[]; fileName: string }) => {
         const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
@@ -161,7 +172,6 @@ export async function POST(request: NextRequest) {
             score += matches * 2;
           });
 
-          const questionPhrases = extractPhrases(question.toLowerCase());
           questionPhrases.forEach((phrase: string) => {
             if (chunkLower.includes(phrase)) {
               score += phrase.split(/\s+/).length * 3;
@@ -216,6 +226,10 @@ export async function POST(request: NextRequest) {
     const sources = Array.from(new Set(topMatches.map(m => m.source)));
 
     // Генерация ответа с использованием LLM (если доступна) или простой генерации
+    if (!question) {
+      throw new Error('Вопрос не определен');
+    }
+    
     let answer: string;
     try {
       const textGenModel = await getTextGenerationModel();
@@ -262,8 +276,8 @@ ${context}
     console.error('Детали ошибки:', {
       message: errorMessage,
       stack: error?.stack,
-      question: question?.substring(0, 100),
-      documentsCount: documents?.length,
+      question: question ? question.substring(0, 100) : 'не определен',
+      documentsCount: documents ? documents.length : 0,
     });
     
     return NextResponse.json(
