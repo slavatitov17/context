@@ -273,7 +273,7 @@ export default function ProjectDetailPage() {
       
       <div className="flex-1 flex gap-6 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
-        <div className="w-80 flex-shrink-0 flex flex-col bg-white rounded-lg border border-gray-200">
+        <div className="w-64 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200" style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-medium text-gray-900">
@@ -390,10 +390,10 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Правая колонка: Чат */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0" style={{ height: 'calc(100vh - 2rem)' }}>
           {!hasSuccessfulFiles ? (
             /* Пустое состояние чата */
-            <div className="flex-1 flex items-center justify-center bg-white rounded-lg border border-gray-200">
+            <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
               <div className="text-center">
                 <i className="fas fa-comments text-6xl text-gray-300 mb-4"></i>
                 <p className="text-gray-500 text-lg">
@@ -405,7 +405,7 @@ export default function ProjectDetailPage() {
             /* Чат с сообщениями */
             <div className="flex-1 flex flex-col min-h-0">
               {/* История сообщений */}
-              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto">
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto">
                 <div className="space-y-4">
                   {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
