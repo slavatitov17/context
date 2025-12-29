@@ -423,24 +423,6 @@ export default function ProjectDetailPage() {
 
               {/* Поле ввода */}
               <div className="relative flex-shrink-0 bg-white rounded-lg border-2 border-gray-300 shadow-md focus-within:border-blue-500 focus-within:shadow-lg transition-all">
-                {/* Кнопки слева внизу */}
-                <div className="absolute left-3 bottom-3 flex gap-2 z-10">
-                  <button
-                    type="button"
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="DeepThink"
-                  >
-                    <i className="fas fa-brain text-sm"></i>
-                  </button>
-                  <button
-                    type="button"
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Search"
-                  >
-                    <i className="fas fa-globe text-sm"></i>
-                  </button>
-                </div>
-
                 {/* Textarea */}
                 <textarea
                   value={message}
@@ -452,7 +434,7 @@ export default function ProjectDetailPage() {
                     }
                   }}
                   placeholder="Спрашивайте по источникам..."
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pl-20 pr-20 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm leading-relaxed"
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-14 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm leading-relaxed"
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
@@ -460,22 +442,15 @@ export default function ProjectDetailPage() {
                   }}
                 />
 
-                {/* Кнопки справа */}
-                <div className="absolute right-3 bottom-3 flex items-center gap-2 z-10">
-                  <button
-                    type="button"
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Прикрепить файл"
-                  >
-                    <i className="fas fa-paperclip text-sm"></i>
-                  </button>
+                {/* Кнопка отправки */}
+                <div className="absolute right-3 bottom-3 z-10">
                   <button
                     onClick={handleSendMessage}
                     disabled={!message.trim()}
                     className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
                     title="Отправить"
                   >
-                    <i className="fas fa-arrow-up text-xs"></i>
+                    <i className="fas fa-paper-plane text-xs"></i>
                   </button>
                 </div>
               </div>
