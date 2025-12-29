@@ -169,7 +169,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       )}
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
-      <main className={`flex-1 p-8 overflow-auto bg-white text-gray-900 ${!isAuthPage ? 'ml-[calc(16rem+2rem)]' : ''}`}>
+      <main className={`flex-1 p-8 overflow-hidden bg-white text-gray-900 flex flex-col ${!isAuthPage ? 'ml-[calc(16rem+2rem)]' : ''}`}>
         {children}
       </main>
     </body>
