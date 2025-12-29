@@ -62,7 +62,7 @@ export default function EditProjectPage() {
       });
 
       if (updated) {
-        router.push(`/projects/${projectId}`);
+        router.push('/projects');
       } else {
         throw new Error('Не удалось обновить проект');
       }
@@ -74,7 +74,7 @@ export default function EditProjectPage() {
   };
 
   const handleCancel = () => {
-    router.push(`/projects/${params.id}`);
+    router.push('/projects');
   };
 
   if (loading) {

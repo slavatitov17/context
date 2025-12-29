@@ -103,7 +103,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
       {/* Боковое меню - показывается только если не страница авторизации */}
       {!isAuthPage && (
-        <aside className="fixed left-4 top-4 w-64 bg-[#F6F8FA] text-gray-800 p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
+        <aside className="fixed left-4 top-4 w-64 bg-white text-gray-800 p-6 rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="mb-10 flex items-center gap-3">
             {/* Логотип - диаграмма с узлами (уменьшен) */}
             <i className="fas fa-diagram-project text-2xl text-gray-900"></i>
