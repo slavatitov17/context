@@ -99,20 +99,27 @@ export async function POST(request: NextRequest) {
 
     try {
       // Пробуем использовать векторный поиск через embeddings
+      console.log('Начинаем векторный поиск...');
       const embeddingModel = await getEmbeddingModel();
+      console.log('Модель embeddings загружена');
       
       // Создаем embedding для вопроса
+      console.log('Создаем embedding для вопроса...');
       const questionEmbedding = await embeddingModel(question, {
         pooling: 'mean',
         normalize: true,
       });
       const questionVector = Array.from(questionEmbedding.data) as number[];
+      console.log(`Embedding вопроса создан, размерность: ${questionVector.length}`);
 
       // Ищем релевантные фрагменты в каждом документе
+      let processedChunks = 0;
       for (const doc of validDocuments) {
         const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
           ? doc.chunks
           : splitTextIntoChunks(doc.text || '', 500);
+        
+        console.log(`Обрабатываем документ ${doc.fileName}, чанков: ${chunks.length}`);
         
         for (const chunk of chunks) {
           if (!chunk || typeof chunk !== 'string' || chunk.trim().length === 0) continue;
@@ -135,26 +142,31 @@ export async function POST(request: NextRequest) {
                 source: doc.fileName || 'Неизвестный файл',
               });
             }
-          } catch (chunkError) {
-            console.warn('Ошибка при обработке чанка:', chunkError);
+            processedChunks++;
+          } catch (chunkError: any) {
+            console.warn('Ошибка при обработке чанка:', chunkError?.message || chunkError);
             // Продолжаем обработку других чанков
           }
         }
       }
-    } catch (error) {
-      console.warn('Ошибка при векторном поиске, используем простой поиск:', error);
+      console.log(`Обработано чанков: ${processedChunks}, найдено совпадений: ${bestMatches.length}`);
+    } catch (error: any) {
+      console.warn('Ошибка при векторном поиске, используем простой поиск:', error?.message || error);
+      console.error('Детали ошибки векторного поиска:', error);
       
       // Fallback на простой поиск по ключевым словам
       if (!question) {
         throw new Error('Вопрос не определен');
       }
       
+      console.log('Используем простой поиск по ключевым словам');
       const questionLower = question.toLowerCase();
       const questionWords = questionLower
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
         .filter((w: string) => w.length > 2); // Уменьшил минимальную длину слова
       const questionPhrases = extractPhrases(questionLower);
+      console.log(`Ключевые слова: ${questionWords.join(', ')}, фраз: ${questionPhrases.length}`);
 
       validDocuments.forEach((doc: { text: string; chunks?: string[]; fileName: string }) => {
         const chunks = doc.chunks && Array.isArray(doc.chunks) && doc.chunks.length > 0
