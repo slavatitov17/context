@@ -405,24 +405,32 @@ export default function ProjectDetailPage() {
             /* Чат с сообщениями */
             <div className="flex-1 flex flex-col min-h-0">
               {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto min-h-0">
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
                 <div className="space-y-4">
-                  {messages.map((msg, index) => (
-                    <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[75%] rounded-2xl p-4 ${
-                        msg.isUser
-                          ? 'bg-blue-600 text-white rounded-br-none'
-                          : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
-                      }`}>
-                        <p className="text-sm leading-relaxed">{msg.text}</p>
+                  {messages.map((msg, index) => {
+                    const timestamp = msg.timestamp || new Date();
+                    const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
+                        <div className="text-xs text-gray-500 mb-1 px-1">
+                          {dateStr} {timeStr}
+                        </div>
+                        <div className={`max-w-[75%] rounded-2xl p-4 ${
+                          msg.isUser
+                            ? 'bg-blue-600 text-white rounded-br-none'
+                            : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
+                        }`}>
+                          <p className={`text-sm break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Поле ввода */}
-              <div className="relative flex-shrink-0 bg-white rounded-lg border-2 border-gray-300 shadow-md focus-within:border-blue-500 focus-within:shadow-lg transition-all">
+              <div className="relative flex-shrink-0 bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all">
                 {/* Textarea */}
                 <textarea
                   value={message}
@@ -433,8 +441,8 @@ export default function ProjectDetailPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Спрашивайте по источникам..."
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm leading-relaxed"
+                  placeholder="Задайте вопрос по источникам..."
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm text-gray-900 placeholder:text-gray-500 leading-relaxed"
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
