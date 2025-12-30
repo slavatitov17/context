@@ -1,0 +1,111 @@
+import { NextRequest, NextResponse } from 'next/server';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
+
+// Поддерживаемые форматы файлов (только текстовые)
+const SUPPORTED_EXTENSIONS = ['.txt', '.md', '.markdown', '.pdf', '.docx', '.xlsx', '.xls', '.xlsm', '.csv'];
+
+async function extractTextFromFile(file: File): Promise<string> {
+  const fileName = file.name.toLowerCase();
+  const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    switch (extension) {
+      case '.txt':
+      case '.md':
+      case '.markdown':
+        return buffer.toString('utf-8');
+
+      case '.pdf':
+        const pdfData = await pdfParse(buffer);
+        return pdfData.text;
+
+      case '.docx':
+        const docxResult = await mammoth.extractRawText({ buffer });
+        return docxResult.value;
+
+      case '.doc':
+        throw new Error('Формат .doc не поддерживается. Пожалуйста, используйте .docx');
+
+      case '.xlsx':
+      case '.xls':
+      case '.xlsm':
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        let excelText = '';
+        workbook.SheetNames.forEach((sheetName) => {
+          const sheet = workbook.Sheets[sheetName];
+          excelText += `\n--- Лист: ${sheetName} ---\n`;
+          excelText += XLSX.utils.sheet_to_txt(sheet);
+        });
+        return excelText;
+
+      case '.csv':
+        const csvText = buffer.toString('utf-8');
+        const csvLines = csvText.split('\n').filter(line => line.trim());
+        return csvLines.join('\n');
+
+      default:
+        throw new Error(`Неподдерживаемый формат файла: ${extension}`);
+    }
+  } catch (error) {
+    throw new Error(`Ошибка при обработке файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json(
+        { error: 'Файл не предоставлен' },
+        { status: 400 }
+      );
+    }
+
+    // Проверяем формат файла
+    const fileName = file.name.toLowerCase();
+    const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+    if (!SUPPORTED_EXTENSIONS.includes(extension)) {
+      return NextResponse.json(
+        { error: `Неподдерживаемый формат файла: ${extension}. Поддерживаются: ${SUPPORTED_EXTENSIONS.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Извлекаем текст из файла
+    const text = await extractTextFromFile(file);
+
+    if (!text || text.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Не удалось извлечь текст из файла' },
+        { status: 400 }
+      );
+    }
+
+    // Разбиваем текст на чанки (для RAG)
+    const chunkSize = 1000; // символов
+    const chunks: string[] = [];
+    for (let i = 0; i < text.length; i += chunkSize) {
+      chunks.push(text.substring(i, i + chunkSize));
+    }
+
+    return NextResponse.json({
+      fileName: file.name,
+      text,
+      chunks,
+      chunkCount: chunks.length,
+    });
+  } catch (error) {
+    console.error('Ошибка при обработке документа:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Ошибка при обработке документа' },
+      { status: 500 }
+    );
+  }
+}
