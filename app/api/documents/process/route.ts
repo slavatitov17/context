@@ -1,34 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 
-// Динамический импорт pdf-parse для Node.js
-async function getPdfParse() {
+// Используем pdfjs-dist напрямую для лучшей совместимости с Vercel
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  // Сначала пробуем pdf-parse (более надежный для Node.js)
   try {
-    // Используем dynamic import для ESM
     const pdfParseModule = await import('pdf-parse');
-    const moduleAny = pdfParseModule as any;
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     
-    // pdf-parse экспортируется как default в ESM
-    if (moduleAny.default && typeof moduleAny.default === 'function') {
-      return moduleAny.default;
+    if (typeof pdfParse === 'function') {
+      // Устанавливаем переменные окружения для pdfjs-dist (используется внутри pdf-parse)
+      if (typeof process !== 'undefined') {
+        process.env.CANVAS_PREBUILT = 'false';
+      }
+      
+      const pdfData = await pdfParse(buffer);
+      if (pdfData?.text?.trim()) {
+        return pdfData.text;
+      }
+    }
+  } catch (pdfParseError: any) {
+    console.warn('pdf-parse не доступен, пробуем pdfjs-dist напрямую:', pdfParseError?.message || pdfParseError);
+  }
+  
+  // Fallback на pdfjs-dist напрямую
+  try {
+    // Пробуем разные пути импорта для совместимости
+    let pdfjs: any;
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjs = pdfjsLib;
+    } catch {
+      try {
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        pdfjs = pdfjsLib;
+      } catch {
+        const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
+        pdfjs = pdfjsLib;
+      }
     }
     
-    // Или как именованный экспорт
-    if (typeof moduleAny === 'function') {
-      return moduleAny;
+    // Настройка для Node.js окружения
+    if (typeof process !== 'undefined') {
+      process.env.CANVAS_PREBUILT = 'false';
     }
     
-    // Или как свойство
-    if (moduleAny.pdfParse && typeof moduleAny.pdfParse === 'function') {
-      return moduleAny.pdfParse;
+    // Загружаем PDF документ
+    const getDocument = pdfjs.getDocument || (pdfjs as any).default?.getDocument;
+    if (!getDocument) {
+      throw new Error('Не удалось найти getDocument в pdfjs-dist');
     }
     
-    // Последняя попытка - используем как есть
-    return moduleAny;
+    const loadingTask = getDocument({
+      data: new Uint8Array(buffer),
+      useSystemFonts: true,
+      verbosity: 0, // Отключаем лишние логи
+    });
+    
+    const pdfDocument = await loadingTask.promise;
+    const numPages = pdfDocument.numPages;
+    const textContent: string[] = [];
+    
+    // Извлекаем текст со всех страниц
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textData = await page.getTextContent();
+      
+      // Объединяем текстовые элементы страницы
+      const pageText = textData.items
+        .map((item: any) => item.str || '')
+        .join(' ');
+      
+      if (pageText.trim()) {
+        textContent.push(pageText);
+      }
+    }
+    
+    const fullText = textContent.join('\n\n').trim();
+    
+    if (!fullText || fullText.length === 0) {
+      throw new Error('Не удалось извлечь текст из PDF. Возможно, файл содержит только изображения.');
+    }
+    
+    return fullText;
   } catch (error: any) {
-    console.error('Ошибка при импорте pdf-parse:', error);
-    console.error('Детали ошибки:', error?.message, error?.stack);
-    throw new Error(`Не удалось загрузить библиотеку для обработки PDF: ${error?.message || 'Неизвестная ошибка'}`);
+    console.error('Ошибка при извлечении текста из PDF:', error);
+    
+    const errorMessage = error?.message || 'Неизвестная ошибка';
+    if (errorMessage.includes('password') || errorMessage.includes('encrypted')) {
+      throw new Error('PDF файл защищен паролем. Пожалуйста, загрузите незащищенный файл.');
+    } else if (errorMessage.includes('corrupt') || errorMessage.includes('invalid')) {
+      throw new Error('PDF файл поврежден или имеет неверный формат.');
+    } else {
+      throw new Error(`Ошибка при обработке PDF файла: ${errorMessage}`);
+    }
   }
 }
 
@@ -51,50 +116,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Извлечение текста в зависимости от типа файла
     if (fileName.endsWith('.pdf')) {
-      try {
-        // Используем pdf-parse для извлечения текста (работает в Node.js)
-        // Устанавливаем переменные окружения для pdfjs-dist (используется внутри pdf-parse)
-        if (typeof process !== 'undefined') {
-          // Отключаем использование canvas в pdfjs-dist
-          process.env.CANVAS_PREBUILT = 'false';
-        }
-        
-        const pdfParse = await getPdfParse();
-        
-        // Вызываем функцию с правильными параметрами
-        let pdfData;
-        if (typeof pdfParse === 'function') {
-          // Вызываем функцию напрямую
-          pdfData = await pdfParse(buffer);
-        } else {
-          throw new Error('pdf-parse не является функцией');
-        }
-        
-        if (!pdfData || !pdfData.text) {
-          throw new Error('Не удалось извлечь текст из PDF');
-        }
-        
-        text = pdfData.text;
-        
-        if (!text || text.trim().length === 0) {
-          throw new Error('Не удалось извлечь текст из PDF. Возможно, файл содержит только изображения или защищен паролем.');
-        }
-      } catch (pdfError: any) {
-        console.error('Ошибка при обработке PDF:', pdfError);
-        console.error('Stack trace:', pdfError?.stack);
-        const errorMessage = pdfError.message || 'Неизвестная ошибка';
-        
-        // Более информативные сообщения об ошибках
-        if (errorMessage.includes('DOMMatrix') || errorMessage.includes('DOM')) {
-          throw new Error('Ошибка совместимости с PDF библиотекой. Пожалуйста, попробуйте конвертировать PDF в Word или другой формат.');
-        } else if (errorMessage.includes('password') || errorMessage.includes('encrypted')) {
-          throw new Error('PDF файл защищен паролем. Пожалуйста, загрузите незащищенный файл.');
-        } else if (errorMessage.includes('corrupt') || errorMessage.includes('invalid')) {
-          throw new Error('PDF файл поврежден или имеет неверный формат.');
-        } else {
-          throw new Error(`Ошибка при обработке PDF файла: ${errorMessage}`);
-        }
-      }
+      text = await extractTextFromPDF(buffer);
     } else if (fileName.endsWith('.docx')) {
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;

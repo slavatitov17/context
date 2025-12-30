@@ -1,45 +1,127 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pipeline, env } from '@xenova/transformers';
 
-// Отключаем удаленные модели (используем локальные)
+// Отключаем удаленные модели (используем локальные только для embeddings)
 env.allowLocalModels = true;
 env.allowRemoteModels = false;
 
-// Кэш для моделей
+// Кэш для модели embeddings
 let embeddingModel: any = null;
-let textGenerationModel: any = null;
 
 // Инициализация модели для embeddings
 async function getEmbeddingModel() {
   if (!embeddingModel) {
-    embeddingModel = await pipeline(
-      'feature-extraction',
-      'Xenova/multilingual-MiniLM-L12-v2',
-      { quantized: true }
-    );
+    try {
+      embeddingModel = await pipeline(
+        'feature-extraction',
+        'Xenova/multilingual-MiniLM-L12-v2',
+        { quantized: true }
+      );
+    } catch (error: any) {
+      console.warn('Не удалось загрузить модель embeddings:', error?.message || error);
+      embeddingModel = null;
+    }
   }
   return embeddingModel;
 }
 
-// Инициализация модели для генерации текста
-// Используем Mistral 7B (Mistral AI) - французская компания, работает быстро в России
-async function getTextGenerationModel() {
-  if (!textGenerationModel) {
+// Генерация ответа через бесплатный API (Groq или Hugging Face)
+async function generateAnswerWithAPI(question: string, context: string): Promise<string | null> {
+  // Пробуем Groq API (если есть ключ)
+  const groqApiKey = process.env.GROQ_API_KEY;
+  if (groqApiKey) {
     try {
-      // Загружаем Mistral 7B Instruct
-      console.log('Загрузка модели Mistral 7B Instruct...');
-      textGenerationModel = await pipeline(
-        'text-generation',
-        'Xenova/Mistral-7B-Instruct-v0.2',
-        { quantized: true }
-      );
-      console.log('Модель Mistral 7B успешно загружена');
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant', // Быстрая и бесплатная модель
+          messages: [
+            {
+              role: 'system',
+              content: 'Ты помощник, который отвечает на вопросы на основе предоставленного контекста из документов. Отвечай на русском языке. Если в контексте нет информации для ответа, скажи об этом честно.'
+            },
+            {
+              role: 'user',
+              content: `Контекст из документов:\n\n${context}\n\nВопрос: ${question}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const answer = data.choices?.[0]?.message?.content?.trim();
+        if (answer && answer.length > 10) {
+          console.log('Ответ сгенерирован через Groq API');
+          return answer;
+        }
+      }
     } catch (error: any) {
-      console.warn('Не удалось загрузить Mistral, используем простую генерацию:', error?.message || error);
-      textGenerationModel = null;
+      console.warn('Ошибка при запросе к Groq API:', error?.message || error);
     }
   }
-  return textGenerationModel;
+
+  // Пробуем Hugging Face Inference API (бесплатный, не требует ключа для некоторых моделей)
+  try {
+    const hfApiKey = process.env.HUGGINGFACE_API_KEY || '';
+    const hfUrl = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
+    
+    const prompt = `<s>[INST] На основе следующего контекста из документов ответь на вопрос пользователя на русском языке. Если в контексте нет информации для ответа, скажи об этом честно.
+
+Контекст:
+${context}
+
+Вопрос: ${question} [/INST]`;
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (hfApiKey) {
+      headers['Authorization'] = `Bearer ${hfApiKey}`;
+    }
+
+    const response = await fetch(hfUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          max_new_tokens: 500,
+          temperature: 0.7,
+          return_full_text: false,
+        },
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data[0]?.generated_text) {
+        let answer = data[0].generated_text.trim();
+        // Очищаем ответ от промпта
+        if (answer.includes('[/INST]')) {
+          answer = answer.split('[/INST]')[1]?.trim() || answer;
+        }
+        if (answer && answer.length > 10) {
+          console.log('Ответ сгенерирован через Hugging Face API');
+          return answer;
+        }
+      } else if (data.error) {
+        // Модель может быть не загружена, игнорируем
+        console.warn('Hugging Face API вернул ошибку:', data.error);
+      }
+    }
+  } catch (error: any) {
+    console.warn('Ошибка при запросе к Hugging Face API:', error?.message || error);
+  }
+
+  return null;
 }
 
 // Вычисление косинусного сходства
@@ -264,59 +346,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const context = topMatches.map(m => m.text).join('\n\n');
     const sources = Array.from(new Set(topMatches.map(m => m.source)));
 
-    // Генерация ответа с использованием LLM (если доступна) или простой генерации
+    // Генерация ответа с использованием API или простой генерации
     if (!question) {
       throw new Error('Вопрос не определен');
     }
     
     let answer: string;
     try {
-      const textGenModel = await getTextGenerationModel();
-      if (textGenModel) {
-        // Используем LLM для генерации ответа
-        // Mistral использует формат инструкций
-        const prompt = `<s>[INST] На основе следующего контекста из документов ответь на вопрос пользователя. Если в контексте нет информации для ответа, скажи об этом честно.
-
-Контекст:
-${context}
-
-Вопрос: ${question} [/INST]`;
-        
-        console.log('Генерируем ответ с помощью LLM...');
-        const result = await textGenModel(prompt, {
-          max_new_tokens: 300,
-          temperature: 0.7,
-          do_sample: true,
-          top_p: 0.9,
-        });
-        
-        // Извлекаем ответ из результата Mistral
-        let generatedText = result[0]?.generated_text || '';
-        
-        // Очищаем ответ от промпта (Mistral формат)
-        if (generatedText.includes('[/INST]')) {
-          answer = generatedText.split('[/INST]')[1]?.trim() || generatedText;
-        } else {
-          // Берем последнюю часть (новый сгенерированный текст)
-          const promptLength = prompt.length;
-          answer = generatedText.substring(promptLength).trim();
-        }
-        
-        // Очищаем от лишних символов
-        answer = answer.replace(/^[\s\n]+|[\s\n]+$/g, '');
-        
-        if (!answer || answer.length < 10) {
-          throw new Error('LLM вернул пустой или слишком короткий ответ');
-        }
-        
-        console.log(`LLM сгенерировал ответ длиной ${answer.length} символов`);
+      // Пробуем использовать бесплатный API (Groq или Hugging Face)
+      console.log('Пробуем сгенерировать ответ через API...');
+      const apiAnswer = await generateAnswerWithAPI(question, context);
+      
+      if (apiAnswer) {
+        answer = apiAnswer;
+        console.log(`Ответ сгенерирован через API, длина: ${answer.length} символов`);
       } else {
         // Fallback на простую генерацию
-        console.log('Используем простую генерацию (LLM недоступна)');
+        console.log('API недоступен, используем простую генерацию');
         answer = generateAnswerFromContext(question, context, topMatches);
       }
     } catch (error: any) {
-      console.warn('Ошибка при генерации ответа через LLM, используем простую генерацию:', error?.message || error);
+      console.warn('Ошибка при генерации ответа через API, используем простую генерацию:', error?.message || error);
       answer = generateAnswerFromContext(question, context, topMatches);
     }
 
