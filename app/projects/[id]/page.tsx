@@ -143,25 +143,45 @@ export default function ProjectDetailPage() {
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // Имитируем загрузку файлов
+    // Анимация прогресс-бара для каждого файла
     for (const fileItem of newFiles) {
-      // Обновляем статус на успех
-      setTimeout(() => {
+      // Анимируем прогресс от 0 до 100% за 1 секунду
+      const duration = 1000; // 1 секунда
+      const steps = 20; // 20 шагов
+      const stepDuration = duration / steps;
+      let currentStep = 0;
+
+      const progressInterval = setInterval(() => {
+        currentStep++;
+        const progress = Math.min(Math.round((currentStep / steps) * 100), 100);
+        
         setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
+          f.id === fileItem.id ? { ...f, progress } : f
         ));
-      }, 500);
+
+        if (currentStep >= steps) {
+          clearInterval(progressInterval);
+          // Обновляем статус на успех после завершения анимации
+          setUploadedFiles(prev => prev.map(f => 
+            f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
+          ));
+        }
+      }, stepDuration);
     }
 
-    // Добавляем сообщение о загрузке документов
+    // Вычисляем общий размер файлов в КБ
+    const totalSizeBytes = newFiles.reduce((sum, file) => sum + file.size, 0);
+    const totalSizeKB = Math.round(totalSizeBytes / 1024);
+
+    // Добавляем сообщение о загрузке документов после завершения анимации
     setTimeout(() => {
       setMessages(prev => [...prev, {
-        text: `Загружено ${newFiles.length} документ${newFiles.length > 1 ? 'ов' : ''}.`,
+        text: `Загружено документов: ${newFiles.length} (${totalSizeKB} КБ)`,
         isUser: false,
         timestamp: new Date(),
       }]);
       setIsProcessing(false);
-    }, 1000);
+    }, 1200); // Немного больше времени для завершения анимации
   }, []);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
