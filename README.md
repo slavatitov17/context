@@ -48,9 +48,18 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+
+# Опционально: API ключи для улучшенной генерации ответов RAG
+# Groq API (рекомендуется - быстрый и бесплатный): https://console.groq.com/
+GROQ_API_KEY=your-groq-api-key
+
+# Hugging Face API (альтернатива): https://huggingface.co/settings/tokens
+HUGGINGFACE_API_KEY=your-huggingface-api-key
 ```
 
 Получите эти значения в [Firebase Console](https://console.firebase.google.com): Project Settings > Your apps > Web app
+
+**Примечание**: API ключи для RAG опциональны. Система будет работать и без них, используя простую генерацию ответов на основе контекста. Для лучшего качества ответов рекомендуется настроить Groq API (бесплатный tier доступен).
 
 ## Структура проекта
 
