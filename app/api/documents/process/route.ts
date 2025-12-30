@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-// @ts-ignore - pdf-parse has no default export in types
-import pdfParse from 'pdf-parse';
+// @ts-ignore - pdf2json не имеет типов
+import PDFParser from 'pdf2json';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
@@ -26,8 +26,42 @@ async function extractTextFromFile(file: File): Promise<string> {
         return buffer.toString('utf-8');
 
       case '.pdf':
-        const pdfData = await pdfParse(buffer);
-        return pdfData.text;
+        // Используем pdf2json для извлечения текста из PDF (работает в Node.js без браузерных API)
+        return new Promise((resolve, reject) => {
+          const pdfParser = new (PDFParser as any)(null, true);
+          
+          pdfParser.on('pdfParser_dataError', (errData: any) => {
+            reject(new Error(`Ошибка парсинга PDF: ${errData.parserError}`));
+          });
+          
+          pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+            try {
+              // Извлекаем текст из всех страниц
+              let fullText = '';
+              if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
+                pdfData.Pages.forEach((page: any) => {
+                  if (page.Texts && Array.isArray(page.Texts)) {
+                    page.Texts.forEach((textItem: any) => {
+                      if (textItem.R && Array.isArray(textItem.R)) {
+                        textItem.R.forEach((run: any) => {
+                          if (run.T) {
+                            // Декодируем URL-encoded текст
+                            fullText += decodeURIComponent(run.T) + ' ';
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+              resolve(fullText.trim());
+            } catch (error) {
+              reject(new Error(`Ошибка при извлечении текста: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`));
+            }
+          });
+          
+          pdfParser.parseBuffer(buffer);
+        });
 
       case '.docx':
         const docxResult = await mammoth.extractRawText({ buffer });
