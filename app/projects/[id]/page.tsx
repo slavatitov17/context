@@ -8,14 +8,8 @@ interface UploadedFile {
   id: string;
   name: string;
   size: number;
-  status: 'uploading' | 'processing' | 'success' | 'error';
+  status: 'uploading' | 'success' | 'error';
   progress: number;
-}
-
-interface ProcessedDocument {
-  fileName: string;
-  text: string;
-  chunks: string[];
 }
 
 export default function ProjectDetailPage() {
@@ -23,13 +17,11 @@ export default function ProjectDetailPage() {
   const projectId = params?.id as string;
   const [projectData, setProjectData] = useState<Project | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [processedDocuments, setProcessedDocuments] = useState<ProcessedDocument[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp?: Date }>>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isAnswering, setIsAnswering] = useState(false);
   const [user, setUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -75,11 +67,6 @@ export default function ProjectDetailPage() {
           })));
         }
 
-        // Загружаем обработанные документы
-        if (projectData.processedDocuments && Array.isArray(projectData.processedDocuments)) {
-          setProcessedDocuments(projectData.processedDocuments);
-        }
-
         // Загружаем сообщения
         if (projectData.messages && Array.isArray(projectData.messages) && projectData.messages.length > 0) {
           setMessages(projectData.messages.map((msg: any) => ({
@@ -110,7 +97,7 @@ export default function ProjectDetailPage() {
     }
   }, [user, projectData, projectId]);
 
-  // Сохранение файлов и обработанных документов
+  // Сохранение файлов
   useEffect(() => {
     if (uploadedFiles.length > 0 && !loading && projectData) {
       const timer = setTimeout(() => {
@@ -121,12 +108,11 @@ export default function ProjectDetailPage() {
         }));
         saveProject({ 
           files: filesData as any,
-          processedDocuments: processedDocuments as any,
         });
       }, 1000); // Debounce на 1 секунду
       return () => clearTimeout(timer);
     }
-  }, [uploadedFiles, processedDocuments, loading, projectData, saveProject]);
+  }, [uploadedFiles, loading, projectData, saveProject]);
 
   // Сохранение сообщений
   useEffect(() => {
@@ -157,100 +143,26 @@ export default function ProjectDetailPage() {
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // Обрабатываем каждый файл
-    const processedDocs: ProcessedDocument[] = [];
-    
+    // Имитируем загрузку файлов
     for (const fileItem of newFiles) {
-      try {
-        // Обновляем статус на обработку
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, status: 'processing' as const, progress: 50 } : f
-        ));
-
-        // Отправляем файл на обработку
-        const formData = new FormData();
-        const file = Array.from(files).find(f => f.name === fileItem.name);
-        if (!file) continue;
-        
-        formData.append('file', file);
-        
-        const response = await fetch('/api/documents/process', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Ошибка при обработке файла');
-        }
-
-        const data = await response.json();
-        
-        if (!data.success || !data.text || data.text.trim().length === 0) {
-          throw new Error('Не удалось извлечь текст из файла. Возможно, файл поврежден или содержит только изображения.');
-        }
-        
-        processedDocs.push({
-          fileName: fileItem.name,
-          text: data.text,
-          chunks: data.chunks,
-        });
-
-        // Обновляем статус на успех
+      // Обновляем статус на успех
+      setTimeout(() => {
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
         ));
-      } catch (error: any) {
-        console.error('Ошибка при обработке файла:', error);
-        const errorMessage = error?.message || 'Ошибка при обработке файла';
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, status: 'error' as const } : f
-        ));
-        // Показываем сообщение об ошибке пользователю
-        setMessages(prev => [...prev, {
-          text: `Ошибка при обработке файла "${fileItem.name}": ${errorMessage}`,
-          isUser: false,
-          timestamp: new Date(),
-        }]);
-      }
+      }, 500);
     }
 
-    // Сохраняем обработанные документы
-    setProcessedDocuments(prev => [...prev, ...processedDocs]);
-
-    // Генерируем краткое описание документов
-    if (processedDocs.length > 0) {
-      try {
-        const allDocs = [...processedDocuments, ...processedDocs];
-        const summarizeResponse = await fetch('/api/documents/summarize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ documents: allDocs }),
-        });
-
-        if (summarizeResponse.ok) {
-          const summaryData = await summarizeResponse.json();
-          
-          // Добавляем сообщение с описанием документов
-          setMessages(prev => [...prev, {
-            text: summaryData.generalSummary,
-            isUser: false,
-            timestamp: new Date(),
-          }]);
-        }
-      } catch (error) {
-        console.error('Ошибка при создании описания:', error);
-        // Fallback сообщение
-        setMessages(prev => [...prev, {
-          text: `Загружено ${processedDocs.length} документов. Система готова отвечать на вопросы по их содержимому.`,
-          isUser: false,
-          timestamp: new Date(),
-        }]);
-      }
-    }
-
-    setIsProcessing(false);
-  }, [processedDocuments]);
+    // Добавляем сообщение о загрузке документов
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        text: `Загружено ${newFiles.length} документ${newFiles.length > 1 ? 'ов' : ''}.`,
+        isUser: false,
+        timestamp: new Date(),
+      }]);
+      setIsProcessing(false);
+    }, 1000);
+  }, []);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -283,11 +195,7 @@ export default function ProjectDetailPage() {
   };
 
   const handleRemoveFile = (fileId: string) => {
-    const fileToRemove = uploadedFiles.find(f => f.id === fileId);
-    if (fileToRemove) {
-      setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-      setProcessedDocuments(prev => prev.filter(d => d.fileName !== fileToRemove.name));
-    }
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   const formatFileSize = (bytes: number) => {
@@ -301,21 +209,14 @@ export default function ProjectDetailPage() {
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     const iconMap: Record<string, string> = {
-      'pdf': 'fa-file-pdf',
-      'doc': 'fa-file-word',
-      'docx': 'fa-file-word',
       'txt': 'fa-file-alt',
-      'odt': 'fa-file-alt',
       'rtf': 'fa-file-alt',
-      'csv': 'fa-file-csv',
-      'xls': 'fa-file-excel',
-      'xlsx': 'fa-file-excel',
     };
     return iconMap[ext || ''] || 'fa-file';
   };
 
-  const handleSendMessage = async () => {
-    if (message.trim() && !isAnswering && processedDocuments.length > 0) {
+  const handleSendMessage = () => {
+    if (message.trim() && !isProcessing) {
       const question = message.trim();
       const newMessage = {
         text: question,
@@ -324,65 +225,15 @@ export default function ProjectDetailPage() {
       };
       setMessages(prev => [...prev, newMessage]);
       setMessage('');
-      setIsAnswering(true);
 
-      try {
-        // Проверяем, что есть обработанные документы
-        if (!processedDocuments || processedDocuments.length === 0) {
-          setMessages(prev => [...prev, {
-            text: 'Нет загруженных документов для анализа. Пожалуйста, сначала загрузите документы.',
-            isUser: false,
-            timestamp: new Date(),
-          }]);
-          setIsAnswering(false);
-          return;
-        }
-
-        // Отправляем запрос в RAG-систему
-        const response = await fetch('/api/rag/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            question,
-            documents: processedDocuments,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Ошибка при поиске ответа');
-        }
-
-        const data = await response.json();
-        
-        if (!data.success) {
-          throw new Error(data.error || 'Не удалось получить ответ');
-        }
-        
-        // Добавляем ответ системы
+      // Простой ответ
+      setTimeout(() => {
         setMessages(prev => [...prev, {
-          text: data.answer || 'Не удалось сгенерировать ответ. Попробуйте переформулировать вопрос.',
+          text: 'Документы загружены. Функционал обработки временно недоступен.',
           isUser: false,
           timestamp: new Date(),
         }]);
-      } catch (error: any) {
-        console.error('Ошибка при поиске ответа:', error);
-        const errorMessage = error?.message || 'Произошла ошибка при обработке вашего вопроса';
-        setMessages(prev => [...prev, {
-          text: `${errorMessage}. Пожалуйста, попробуйте еще раз или переформулируйте вопрос.`,
-          isUser: false,
-          timestamp: new Date(),
-        }]);
-      } finally {
-        setIsAnswering(false);
-      }
-    } else if (processedDocuments.length === 0) {
-      // Если документы не загружены
-      setMessages(prev => [...prev, {
-        text: 'Пожалуйста, сначала загрузите документы для анализа.',
-        isUser: false,
-        timestamp: new Date(),
-      }]);
+      }, 500);
     }
   };
 
@@ -432,7 +283,7 @@ export default function ProjectDetailPage() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.docx,.txt,.odt,.rtf"
+            accept=".txt"
             onChange={handleFileInputChange}
             className="hidden"
           />
@@ -491,12 +342,6 @@ export default function ProjectDetailPage() {
                                   <span className="text-xs text-blue-600">{fileItem.progress}%</span>
                                 </div>
                               )}
-                              {fileItem.status === 'processing' && (
-                                <div className="flex items-center gap-1">
-                                  <i className="fas fa-spinner fa-spin text-blue-500 text-xs"></i>
-                                  <span className="text-xs text-blue-600">Обработка...</span>
-                                </div>
-                              )}
                               {fileItem.status === 'success' && (
                                 <i className="fas fa-check-circle text-green-500 text-xs"></i>
                               )}
@@ -542,7 +387,7 @@ export default function ProjectDetailPage() {
               <div className="text-center">
                 <i className="fas fa-comments text-6xl text-gray-300 mb-4"></i>
                 <p className="text-gray-500 text-lg">
-                  Загрузите файлы, чтобы начать задавать вопросы
+                  Загрузите файлы, чтобы начать работу
                 </p>
               </div>
             </div>
@@ -586,8 +431,8 @@ export default function ProjectDetailPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Задайте вопрос по источникам..."
-                  disabled={isAnswering || isProcessing}
+                  placeholder="Введите сообщение..."
+                  disabled={isProcessing}
                   className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
                     minHeight: '6.5rem',
@@ -600,15 +445,11 @@ export default function ProjectDetailPage() {
                 <div className="absolute right-3 bottom-3 z-10">
                   <button
                     onClick={handleSendMessage}
-                    disabled={!message.trim() || isAnswering || isProcessing}
+                    disabled={!message.trim() || isProcessing}
                     className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
                     title="Отправить"
                   >
-                    {isAnswering ? (
-                      <i className="fas fa-spinner fa-spin text-xs"></i>
-                    ) : (
-                      <i className="fas fa-paper-plane text-xs"></i>
-                    )}
+                    <i className="fas fa-paper-plane text-xs"></i>
                   </button>
                 </div>
               </div>
