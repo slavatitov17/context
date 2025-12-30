@@ -1,78 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 
-// Используем pdfjs-dist напрямую для лучшей совместимости с Vercel
+// Используем pdfjs-dist напрямую для Node.js окружения
+// Настройка для работы в серверном окружении без DOM
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  // Сначала пробуем pdf-parse (более надежный для Node.js)
   try {
-    const pdfParseModule = await import('pdf-parse');
-    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-    
-    if (typeof pdfParse === 'function') {
-      // Устанавливаем переменные окружения для pdfjs-dist (используется внутри pdf-parse)
-      if (typeof process !== 'undefined') {
-        process.env.CANVAS_PREBUILT = 'false';
-      }
-      
-      const pdfData = await pdfParse(buffer);
-      if (pdfData?.text?.trim()) {
-        return pdfData.text;
-      }
-    }
-  } catch (pdfParseError: any) {
-    console.warn('pdf-parse не доступен, пробуем pdfjs-dist напрямую:', pdfParseError?.message || pdfParseError);
-  }
-  
-  // Fallback на pdfjs-dist напрямую
-  try {
-    // Пробуем разные пути импорта для совместимости
-    let pdfjs: any;
-    try {
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjs = pdfjsLib;
-    } catch {
-      try {
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-        pdfjs = pdfjsLib;
-      } catch {
-        const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
-        pdfjs = pdfjsLib;
-      }
-    }
-    
-    // Настройка для Node.js окружения
+    // Настройка окружения перед импортом
     if (typeof process !== 'undefined') {
+      // Отключаем canvas и DOM зависимости
       process.env.CANVAS_PREBUILT = 'false';
+      // Мокируем отсутствие DOM
+      if (!(global as any).window) {
+        (global as any).window = {} as any;
+      }
+      if (!(global as any).document) {
+        (global as any).document = {} as any;
+      }
     }
     
-    // Загружаем PDF документ
-    const getDocument = pdfjs.getDocument || (pdfjs as any).default?.getDocument;
+    // Импортируем pdfjs-dist
+    // Пробуем разные варианты импорта
+    let pdfjs: any;
+    let getDocument: any;
+    
+    try {
+      // Вариант 1: стандартный импорт
+      const pdfjsModule = await import('pdfjs-dist');
+      pdfjs = pdfjsModule;
+      getDocument = (pdfjsModule as any).getDocument || (pdfjsModule as any).default?.getDocument;
+    } catch (e1) {
+      try {
+        // Вариант 2: legacy build
+        const pdfjsModule = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        pdfjs = pdfjsModule;
+        getDocument = (pdfjsModule as any).getDocument || (pdfjsModule as any).default?.getDocument;
+      } catch (e2) {
+        // Вариант 3: build версия
+        const pdfjsModule = await import('pdfjs-dist/build/pdf.mjs');
+        pdfjs = pdfjsModule;
+        getDocument = (pdfjsModule as any).getDocument || (pdfjsModule as any).default?.getDocument;
+      }
+    }
+    
     if (!getDocument) {
-      throw new Error('Не удалось найти getDocument в pdfjs-dist');
+      throw new Error('Не удалось загрузить pdfjs-dist');
     }
     
+    // Загружаем PDF документ с минимальными зависимостями
     const loadingTask = getDocument({
-      data: new Uint8Array(buffer),
+      data: buffer,
       useSystemFonts: true,
-      verbosity: 0, // Отключаем лишние логи
+      verbosity: 0,
+      // Минимизируем зависимости
+      disableFontFace: false,
+      disableAutoFetch: false,
+      disableStream: false,
+      // Отключаем worker для Node.js
+      useWorkerFetch: false,
+      isEvalSupported: false,
     });
     
     const pdfDocument = await loadingTask.promise;
     const numPages = pdfDocument.numPages;
+    
+    if (numPages === 0) {
+      throw new Error('PDF файл не содержит страниц');
+    }
+    
     const textContent: string[] = [];
     
     // Извлекаем текст со всех страниц
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      const page = await pdfDocument.getPage(pageNum);
-      const textData = await page.getTextContent();
-      
-      // Объединяем текстовые элементы страницы
-      const pageText = textData.items
-        .map((item: any) => item.str || '')
-        .join(' ');
-      
-      if (pageText.trim()) {
-        textContent.push(pageText);
+      try {
+        const page = await pdfDocument.getPage(pageNum);
+        const textData = await page.getTextContent();
+        
+        // Извлекаем текст из items
+        if (textData && textData.items && Array.isArray(textData.items)) {
+          const pageText = textData.items
+            .map((item: any) => {
+              // Поддерживаем разные форматы данных
+              if (typeof item === 'string') return item;
+              if (item && typeof item === 'object') {
+                return item.str || item.text || '';
+              }
+              return '';
+            })
+            .filter((text: string) => text && text.trim().length > 0)
+            .join(' ');
+          
+          if (pageText.trim()) {
+            textContent.push(pageText);
+          }
+        }
+      } catch (pageError: any) {
+        console.warn(`Ошибка при обработке страницы ${pageNum}:`, pageError?.message || pageError);
+        // Продолжаем обработку других страниц
       }
     }
     
@@ -86,11 +109,17 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   } catch (error: any) {
     console.error('Ошибка при извлечении текста из PDF:', error);
     
-    const errorMessage = error?.message || 'Неизвестная ошибка';
-    if (errorMessage.includes('password') || errorMessage.includes('encrypted')) {
+    const errorMessage = error?.message || String(error) || 'Неизвестная ошибка';
+    const errorString = String(errorMessage).toLowerCase();
+    
+    // Более информативные сообщения об ошибках
+    if (errorString.includes('password') || errorString.includes('encrypted')) {
       throw new Error('PDF файл защищен паролем. Пожалуйста, загрузите незащищенный файл.');
-    } else if (errorMessage.includes('corrupt') || errorMessage.includes('invalid')) {
+    } else if (errorString.includes('corrupt') || errorString.includes('invalid') || errorString.includes('invalid pdf')) {
       throw new Error('PDF файл поврежден или имеет неверный формат.');
+    } else if (errorString.includes('dommatrix') || errorString.includes('dom') || errorString.includes('window is not defined') || errorString.includes('document is not defined')) {
+      // Это ошибка совместимости - используем более простой подход
+      throw new Error('Ошибка совместимости с PDF библиотекой. Попробуйте конвертировать PDF в Word или другой формат.');
     } else {
       throw new Error(`Ошибка при обработке PDF файла: ${errorMessage}`);
     }
