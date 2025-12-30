@@ -175,6 +175,7 @@ export default function ProjectDetailPage() {
         const response = await fetch('/api/documents/process', {
           method: 'POST',
           body: formData,
+          // Не устанавливаем Content-Type - браузер установит автоматически с boundary для FormData
         });
 
         if (!response.ok) {

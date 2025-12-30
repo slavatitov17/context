@@ -63,8 +63,14 @@ async function extractTextFromFile(file: File): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
+    // Логируем для отладки
+    console.log('POST /api/documents/process called');
+    console.log('Content-Type:', request.headers.get('content-type'));
+    
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    
+    console.log('File received:', file ? file.name : 'null');
 
     if (!file) {
       return NextResponse.json(
