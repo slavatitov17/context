@@ -143,46 +143,96 @@ export default function ProjectDetailPage() {
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // Анимация прогресс-бара для каждого файла
-    for (const fileItem of newFiles) {
-      // Анимируем прогресс от 0 до 100% за 1 секунду
-      const duration = 1000; // 1 секунда
-      const steps = 20; // 20 шагов
-      const stepDuration = duration / steps;
-      let currentStep = 0;
-
-      const progressInterval = setInterval(() => {
-        currentStep++;
-        const progress = Math.min(Math.round((currentStep / steps) * 100), 100);
-        
+    // Обрабатываем каждый файл через API
+    const processedDocuments: any[] = [];
+    
+    for (let i = 0; i < newFiles.length; i++) {
+      const fileItem = newFiles[i];
+      const file = Array.from(files)[i];
+      
+      // Проверяем формат файла
+      const fileName = file.name.toLowerCase();
+      const extension = fileName.substring(fileName.lastIndexOf('.'));
+      const supportedExtensions = ['.txt', '.md', '.markdown', '.pdf', '.docx', '.xlsx', '.xls', '.xlsm', '.csv'];
+      
+      if (!supportedExtensions.includes(extension)) {
         setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, progress } : f
+          f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
+        ));
+        continue;
+      }
+
+      try {
+        // Обновляем прогресс
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, progress: 30 } : f
         ));
 
-        if (currentStep >= steps) {
-          clearInterval(progressInterval);
-          // Обновляем статус на успех после завершения анимации
-          setUploadedFiles(prev => prev.map(f => 
-            f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
-          ));
+        // Отправляем файл на обработку
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/documents/process', {
+          method: 'POST',
+          body: formData,
+          // Не устанавливаем Content-Type - браузер установит автоматически с boundary для FormData
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка обработки файла: ${response.statusText}`);
         }
-      }, stepDuration);
+
+        const data = await response.json();
+        
+        // Обновляем прогресс
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, progress: 100, status: 'success' as const } : f
+        ));
+
+        // Сохраняем обработанный документ
+        processedDocuments.push({
+          fileName: data.fileName,
+          text: data.text,
+          chunks: data.chunks,
+        });
+      } catch (error) {
+        console.error(`Ошибка при обработке файла ${file.name}:`, error);
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
+        ));
+      }
+    }
+
+    // Сохраняем обработанные документы в проект
+    if (processedDocuments.length > 0 && projectData) {
+      const currentProcessed = projectData.processedDocuments || [];
+      const updatedProcessed = [...currentProcessed, ...processedDocuments];
+      
+      // Сохраняем в проект
+      saveProject({ 
+        processedDocuments: updatedProcessed 
+      });
+      
+      // Обновляем локальное состояние projectData, чтобы документы были доступны сразу
+      setProjectData(prev => prev ? {
+        ...prev,
+        processedDocuments: updatedProcessed
+      } : null);
     }
 
     // Вычисляем общий размер файлов в КБ
     const totalSizeBytes = newFiles.reduce((sum, file) => sum + file.size, 0);
     const totalSizeKB = Math.round(totalSizeBytes / 1024);
 
-    // Добавляем сообщение о загрузке документов после завершения анимации
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        text: `Загружено документов: ${newFiles.length} (${totalSizeKB} КБ)`,
-        isUser: false,
-        timestamp: new Date(),
-      }]);
-      setIsProcessing(false);
-    }, 1200); // Немного больше времени для завершения анимации
-  }, []);
+    // Добавляем сообщение о загрузке документов
+    setMessages(prev => [...prev, {
+      text: `Загружено и обработано документов: ${processedDocuments.length} из ${newFiles.length} (${totalSizeKB} КБ)`,
+      isUser: false,
+      timestamp: new Date(),
+    }]);
+    
+    setIsProcessing(false);
+  }, [projectData, saveProject]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -231,18 +281,10 @@ export default function ProjectDetailPage() {
     const iconMap: Record<string, string> = {
       'txt': 'fa-file-alt',
       'csv': 'fa-file-csv',
-      'xml': 'fa-file-code',
-      'doc': 'fa-file-word',
-      'docx': 'fa-file-word',
-      'rtf': 'fa-file-alt',
-      'odt': 'fa-file-alt',
       'md': 'fa-file-alt',
       'markdown': 'fa-file-alt',
-      'fb2': 'fa-file-alt',
-      'epub': 'fa-file-alt',
-      'mobi': 'fa-file-alt',
       'pdf': 'fa-file-pdf',
-      'pptx': 'fa-file-powerpoint',
+      'docx': 'fa-file-word',
       'xlsx': 'fa-file-excel',
       'xls': 'fa-file-excel',
       'xlsm': 'fa-file-excel',
@@ -250,7 +292,7 @@ export default function ProjectDetailPage() {
     return iconMap[ext || ''] || 'fa-file';
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (message.trim() && !isProcessing) {
       const question = message.trim();
       const newMessage = {
@@ -260,15 +302,55 @@ export default function ProjectDetailPage() {
       };
       setMessages(prev => [...prev, newMessage]);
       setMessage('');
+      setIsProcessing(true);
 
-      // Простой ответ
-      setTimeout(() => {
+      try {
+        // Получаем обработанные документы из проекта
+        const processedDocs = projectData?.processedDocuments || [];
+        
+        if (processedDocs.length === 0) {
+          setMessages(prev => [...prev, {
+            text: 'Пожалуйста, сначала загрузите документы для анализа.',
+            isUser: false,
+            timestamp: new Date(),
+          }]);
+          setIsProcessing(false);
+          return;
+        }
+
+        // Отправляем запрос в RAG API
+        const response = await fetch('/api/rag/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: question,
+            documents: processedDocs,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка при обработке запроса: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
         setMessages(prev => [...prev, {
-          text: 'Документы загружены. Функционал обработки временно недоступен.',
+          text: data.answer || 'Не удалось получить ответ.',
           isUser: false,
           timestamp: new Date(),
         }]);
-      }, 500);
+      } catch (error) {
+        console.error('Ошибка при отправке сообщения:', error);
+        setMessages(prev => [...prev, {
+          text: `Ошибка при обработке запроса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+          isUser: false,
+          timestamp: new Date(),
+        }]);
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -318,7 +400,7 @@ export default function ProjectDetailPage() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".txt,.csv,.xml,.doc,.docx,.rtf,.odt,.md,.markdown,.fb2,.epub,.mobi,.pdf,.pptx,.xlsx,.xls,.xlsm"
+            accept=".txt,.csv,.md,.markdown,.pdf,.docx,.xlsx,.xls,.xlsm"
             onChange={handleFileInputChange}
             className="hidden"
           />
