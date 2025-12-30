@@ -4,6 +4,11 @@ import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
+// Конфигурация для работы с большими файлами
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // 60 секунд для обработки больших файлов
+
 // Поддерживаемые форматы файлов (только текстовые)
 const SUPPORTED_EXTENSIONS = ['.txt', '.md', '.markdown', '.pdf', '.docx', '.xlsx', '.xls', '.xlsm', '.csv'];
 
@@ -59,7 +64,7 @@ async function extractTextFromFile(file: File): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json(
