@@ -206,9 +206,18 @@ export default function ProjectDetailPage() {
     // Сохраняем обработанные документы в проект
     if (processedDocuments.length > 0 && projectData) {
       const currentProcessed = projectData.processedDocuments || [];
+      const updatedProcessed = [...currentProcessed, ...processedDocuments];
+      
+      // Сохраняем в проект
       saveProject({ 
-        processedDocuments: [...currentProcessed, ...processedDocuments] 
+        processedDocuments: updatedProcessed 
       });
+      
+      // Обновляем локальное состояние projectData, чтобы документы были доступны сразу
+      setProjectData(prev => prev ? {
+        ...prev,
+        processedDocuments: updatedProcessed
+      } : null);
     }
 
     // Вычисляем общий размер файлов в КБ

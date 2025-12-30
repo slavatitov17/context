@@ -45,8 +45,15 @@ async function extractTextFromFile(file: File): Promise<string> {
                       if (textItem.R && Array.isArray(textItem.R)) {
                         textItem.R.forEach((run: any) => {
                           if (run.T) {
-                            // Декодируем URL-encoded текст
-                            fullText += decodeURIComponent(run.T) + ' ';
+                            // Декодируем URL-encoded текст с обработкой ошибок
+                            try {
+                              // Пробуем декодировать, если не получается - используем исходный текст
+                              const decoded = decodeURIComponent(run.T);
+                              fullText += decoded + ' ';
+                            } catch (e) {
+                              // Если декодирование не удалось, используем исходный текст
+                              fullText += run.T + ' ';
+                            }
                           }
                         });
                       }
