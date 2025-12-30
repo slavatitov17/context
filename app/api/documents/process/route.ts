@@ -31,11 +31,13 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
     } catch (e1) {
       try {
         // Вариант 2: legacy build
+        // @ts-expect-error - pdfjs-dist/legacy может не иметь типов
         const pdfjsModule = await import('pdfjs-dist/legacy/build/pdf.mjs');
         pdfjs = pdfjsModule;
         getDocument = (pdfjsModule as any).getDocument || (pdfjsModule as any).default?.getDocument;
       } catch (e2) {
         // Вариант 3: build версия
+        // @ts-expect-error - pdfjs-dist/build может не иметь типов
         const pdfjsModule = await import('pdfjs-dist/build/pdf.mjs');
         pdfjs = pdfjsModule;
         getDocument = (pdfjsModule as any).getDocument || (pdfjsModule as any).default?.getDocument;
