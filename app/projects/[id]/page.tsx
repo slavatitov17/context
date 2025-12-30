@@ -210,7 +210,22 @@ export default function ProjectDetailPage() {
     const ext = fileName.split('.').pop()?.toLowerCase();
     const iconMap: Record<string, string> = {
       'txt': 'fa-file-alt',
+      'csv': 'fa-file-csv',
+      'xml': 'fa-file-code',
+      'doc': 'fa-file-word',
+      'docx': 'fa-file-word',
       'rtf': 'fa-file-alt',
+      'odt': 'fa-file-alt',
+      'md': 'fa-file-alt',
+      'markdown': 'fa-file-alt',
+      'fb2': 'fa-file-alt',
+      'epub': 'fa-file-alt',
+      'mobi': 'fa-file-alt',
+      'pdf': 'fa-file-pdf',
+      'pptx': 'fa-file-powerpoint',
+      'xlsx': 'fa-file-excel',
+      'xls': 'fa-file-excel',
+      'xlsm': 'fa-file-excel',
     };
     return iconMap[ext || ''] || 'fa-file';
   };
@@ -283,7 +298,7 @@ export default function ProjectDetailPage() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".txt"
+            accept=".txt,.csv,.xml,.doc,.docx,.rtf,.odt,.md,.markdown,.fb2,.epub,.mobi,.pdf,.pptx,.xlsx,.xls,.xlsm"
             onChange={handleFileInputChange}
             className="hidden"
           />
