@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import MistralClient from '@mistralai/mistralai';
+import { Mistral } from '@mistralai/mistralai';
 
 // Инициализация Mistral AI клиента
-function getMistralClient(): MistralClient | null {
+function getMistralClient(): Mistral | null {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) {
     return null;
   }
-  return new MistralClient(apiKey);
+  return new Mistral({ apiKey });
 }
 
 // Простая функция поиска релевантных чанков
@@ -106,9 +106,9 @@ ${context}
 
     try {
       // Вызываем модель Mixtral через Mistral AI API
-      // Пробуем использовать доступные модели Mixtral
+      // Используем доступные модели: pixtral-12b-2409, mistral-large-latest, или mixtral-8x22b-2409
       const chatResponse = await client.chat.complete({
-        model: 'mistral-large-latest', // Используем последнюю версию Mistral Large (поддерживает Mixtral)
+        model: 'pixtral-12b-2409', // Используем Pixtral (поддерживает Mixtral архитектуру), можно заменить на 'mistral-large-latest'
         messages: [
           {
             role: 'system',
