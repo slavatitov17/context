@@ -384,7 +384,7 @@ export default function ProjectDetailPage() {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-medium text-gray-900">
-                Источники {hasFiles && `(${uploadedFiles.length})`}
+                Документы {hasFiles && `(${uploadedFiles.length})`}
               </h2>
             </div>
             <button
@@ -392,7 +392,7 @@ export default function ProjectDetailPage() {
               className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
             >
               <i className="fas fa-plus"></i>
-              Добавить источники
+              Добавить документы
             </button>
           </div>
 
@@ -420,10 +420,8 @@ export default function ProjectDetailPage() {
                 <div className="mb-4">
                   <i className="fas fa-cloud-upload-alt text-4xl text-gray-400"></i>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">
-                  Перетащите файлы сюда
-                </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-base font-medium text-gray-500">
+                  Перетащите файлы сюда<br />
                   или нажмите кнопку выше
                 </p>
               </div>
@@ -503,8 +501,8 @@ export default function ProjectDetailPage() {
             <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 min-h-0">
               <div className="text-center">
                 <i className="fas fa-comments text-6xl text-gray-300 mb-4"></i>
-                <p className="text-gray-500 text-lg">
-                  Загрузите файлы, чтобы начать работу
+                <p className="text-gray-500 text-base font-medium">
+                  Загрузите документы, чтобы начать работу с ними
                 </p>
               </div>
             </div>
