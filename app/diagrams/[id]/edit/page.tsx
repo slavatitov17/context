@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, projects as projectsStorage } from '@/lib/storage';
+import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 import { useParams } from 'next/navigation';
 
-export default function EditProjectPage() {
+export default function EditDiagramPage() {
   const params = useParams();
-  const projectId = params?.id as string;
-  const [projectName, setProjectName] = useState('');
+  const diagramId = params?.id as string;
+  const [diagramName, setDiagramName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,9 +16,9 @@ export default function EditProjectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!diagramId) return;
 
-    const loadProject = () => {
+    const loadDiagram = () => {
       try {
         setLoading(true);
         
@@ -29,49 +29,49 @@ export default function EditProjectPage() {
         }
         setUser(currentUser);
 
-        const project = projectsStorage.getById(projectId, currentUser.id);
-        if (!project) {
-          router.push('/projects');
+        const diagram = diagramsStorage.getById(diagramId, currentUser.id);
+        if (!diagram) {
+          router.push('/diagrams');
           return;
         }
 
-        setProjectName(project.name || '');
-        setDescription(project.description || '');
+        setDiagramName(diagram.name || '');
+        setDescription(diagram.description || '');
       } catch (error) {
-        console.error('Ошибка при загрузке проекта:', error);
-        router.push('/projects');
+        console.error('Ошибка при загрузке диаграммы:', error);
+        router.push('/diagrams');
       } finally {
         setLoading(false);
       }
     };
 
-    loadProject();
-  }, [projectId, router]);
+    loadDiagram();
+  }, [diagramId, router]);
 
   const handleSave = () => {
-    if (!projectName.trim() || !user) return;
+    if (!diagramName.trim() || !user) return;
 
     try {
       setSaving(true);
-      const updated = projectsStorage.update(projectId, user.id, {
-        name: projectName.trim(),
+      const updated = diagramsStorage.update(diagramId, user.id, {
+        name: diagramName.trim(),
         description: description.trim(),
       });
 
       if (updated) {
-        router.push('/projects');
+        router.push('/diagrams');
       } else {
-        throw new Error('Не удалось обновить проект');
+        throw new Error('Не удалось обновить диаграмму');
       }
     } catch (error) {
-      console.error('Ошибка при сохранении проекта:', error);
+      console.error('Ошибка при сохранении диаграммы:', error);
       alert('Не удалось сохранить изменения. Попробуйте еще раз.');
       setSaving(false);
     }
   };
 
   const handleCancel = () => {
-    router.push('/projects');
+    router.push('/diagrams');
   };
 
   if (loading) {
@@ -84,19 +84,19 @@ export default function EditProjectPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-3xl font-medium mb-2">Редактирование проекта</h1>
-      <p className="text-gray-600 mb-8 text-base">Измените информацию о проекте</p>
+      <h1 className="text-3xl font-medium mb-2">Редактирование диаграммы</h1>
+      <p className="text-gray-600 mb-8 text-base">Измените информацию о диаграмме</p>
 
       <div className="space-y-6">
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
-            Название проекта *
+            Название диаграммы *
           </label>
           <input
             type="text"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            placeholder="Введите название проекта..."
+            value={diagramName}
+            onChange={(e) => setDiagramName(e.target.value)}
+            placeholder="Введите название диаграммы..."
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={saving}
           />
@@ -104,12 +104,12 @@ export default function EditProjectPage() {
 
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
-            Краткое описание проекта
+            Краткое описание диаграммы
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Опишите цель проекта..."
+            placeholder="Опишите цель диаграммы..."
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={saving}
@@ -126,7 +126,7 @@ export default function EditProjectPage() {
           </button>
           <button
             onClick={handleSave}
-            disabled={!projectName.trim() || saving}
+            disabled={!diagramName.trim() || saving}
             className="flex-1 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
             {saving ? 'Сохранение...' : 'Сохранить'}
@@ -140,3 +140,4 @@ export default function EditProjectPage() {
     </div>
   );
 }
+

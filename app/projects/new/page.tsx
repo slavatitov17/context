@@ -7,7 +7,6 @@ import { auth, projects as projectsStorage } from '@/lib/storage';
 export default function NewProjectPage() {
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
-  const [members, setMembers] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
@@ -34,7 +33,6 @@ export default function NewProjectPage() {
       const newProject = projectsStorage.create({
         name: projectName.trim(),
         description: description.trim(),
-        members: members.trim(),
         user_id: user.id,
         files: [],
         messages: [],
@@ -90,22 +88,6 @@ export default function NewProjectPage() {
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={loading}
           />
-        </div>
-
-        {/* Участники проекта */}
-        <div>
-          <label className="block text-lg font-medium text-gray-900 mb-3">
-            Участники проекта
-          </label>
-          <input
-            type="text"
-            value={members}
-            onChange={(e) => setMembers(e.target.value)}
-            placeholder="Введите имена участников через запятую..."
-            className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={loading}
-          />
-          <p className="text-gray-500 mt-2 text-base">Например: Иван Иванов, Петр Петров</p>
         </div>
 
         {/* Кнопка создания */}

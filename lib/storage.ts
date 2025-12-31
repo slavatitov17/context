@@ -28,12 +28,22 @@ export interface User {
   created_at: string;
 }
 
+export interface Diagram {
+  id: string;
+  name: string;
+  description: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Ключи для localStorage
 const STORAGE_KEYS = {
   USER: 'context_user',
   SESSION: 'context_session',
   USERS: 'context_users', // База пользователей
   PROJECTS: 'context_projects',
+  DIAGRAMS: 'context_diagrams',
 };
 
 // Хэширование пароля с использованием Web Crypto API (встроенный в браузер)
@@ -289,6 +299,100 @@ export const projects = {
     if (filtered.length === allProjects.length) return false;
 
     localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filtered));
+    return true;
+  },
+};
+
+// Работа с диаграммами (каждый пользователь видит только свои диаграммы)
+export const diagrams = {
+  // Получить все диаграммы пользователя
+  getAll: (userId: string): Diagram[] => {
+    if (typeof window === 'undefined') return [];
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.DIAGRAMS);
+    if (!diagramsStr) return [];
+    try {
+      const allDiagrams: Diagram[] = JSON.parse(diagramsStr);
+      // Фильтруем только диаграммы текущего пользователя
+      return allDiagrams.filter(d => d.user_id === userId);
+    } catch {
+      return [];
+    }
+  },
+
+  // Получить диаграмму по ID (только если она принадлежит пользователю)
+  getById: (diagramId: string, userId: string): Diagram | null => {
+    if (typeof window === 'undefined') return null;
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.DIAGRAMS);
+    if (!diagramsStr) return null;
+    try {
+      const allDiagrams: Diagram[] = JSON.parse(diagramsStr);
+      const diagram = allDiagrams.find(d => d.id === diagramId && d.user_id === userId);
+      return diagram || null;
+    } catch {
+      return null;
+    }
+  },
+
+  // Создать диаграмму
+  create: (diagram: Omit<Diagram, 'id' | 'created_at' | 'updated_at'>): Diagram => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const newDiagram: Diagram = {
+      ...diagram,
+      id: `diagram_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.DIAGRAMS);
+    const allDiagrams: Diagram[] = diagramsStr ? JSON.parse(diagramsStr) : [];
+    allDiagrams.push(newDiagram);
+    localStorage.setItem(STORAGE_KEYS.DIAGRAMS, JSON.stringify(allDiagrams));
+
+    return newDiagram;
+  },
+
+  // Обновить диаграмму (только если она принадлежит пользователю)
+  update: (diagramId: string, userId: string, updates: Partial<Diagram>): Diagram | null => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.DIAGRAMS);
+    if (!diagramsStr) return null;
+
+    const allDiagrams: Diagram[] = JSON.parse(diagramsStr);
+    const index = allDiagrams.findIndex(d => d.id === diagramId && d.user_id === userId);
+    
+    if (index === -1) return null;
+
+    allDiagrams[index] = {
+      ...allDiagrams[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.DIAGRAMS, JSON.stringify(allDiagrams));
+    return allDiagrams[index];
+  },
+
+  // Удалить диаграмму (только если она принадлежит пользователю)
+  delete: (diagramId: string, userId: string): boolean => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.DIAGRAMS);
+    if (!diagramsStr) return false;
+
+    const allDiagrams: Diagram[] = JSON.parse(diagramsStr);
+    const filtered = allDiagrams.filter(d => !(d.id === diagramId && d.user_id === userId));
+    
+    if (filtered.length === allDiagrams.length) return false;
+
+    localStorage.setItem(STORAGE_KEYS.DIAGRAMS, JSON.stringify(filtered));
     return true;
   },
 };
