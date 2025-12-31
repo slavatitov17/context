@@ -123,3 +123,4 @@
 - Документация Vercel: https://vercel.com/docs
 - Mistral AI Console: https://console.mistral.ai/
 
+
