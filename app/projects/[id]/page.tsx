@@ -380,7 +380,7 @@ export default function ProjectDetailPage() {
       
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
-        <div className="w-64 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+        <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-medium text-gray-900">
@@ -389,7 +389,7 @@ export default function ProjectDetailPage() {
             </div>
             <button
               onClick={handleButtonClick}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
             >
               <i className="fas fa-plus"></i>
               Добавить источники
@@ -445,25 +445,25 @@ export default function ProjectDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate" title={fileItem.name}>
+                            <p className="text-base font-medium text-gray-900 truncate" title={fileItem.name}>
                               {fileItem.name}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-gray-500">
+                              <p className="text-sm text-gray-500">
                                 {formatFileSize(fileItem.size)}
                               </p>
                               {/* Статус */}
                               {fileItem.status === 'uploading' && (
                                 <div className="flex items-center gap-1">
                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                  <span className="text-xs text-blue-600">{fileItem.progress}%</span>
+                                  <span className="text-sm text-blue-600">{fileItem.progress}%</span>
                                 </div>
                               )}
                               {fileItem.status === 'success' && (
-                                <i className="fas fa-check-circle text-green-500 text-xs"></i>
+                                <i className="fas fa-check-circle text-green-500 text-sm"></i>
                               )}
                               {fileItem.status === 'error' && (
-                                <i className="fas fa-exclamation-circle text-red-500 text-xs"></i>
+                                <i className="fas fa-exclamation-circle text-red-500 text-sm"></i>
                               )}
                             </div>
                           </div>
@@ -520,7 +520,7 @@ export default function ProjectDetailPage() {
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     return (
                       <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
-                        <div className="text-xs text-gray-500 mb-1 px-1">
+                        <div className="text-base text-gray-500 mb-1 px-1">
                           {dateStr} {timeStr}
                         </div>
                         <div className={`max-w-[75%] rounded-2xl p-4 ${
@@ -528,7 +528,7 @@ export default function ProjectDetailPage() {
                             ? 'bg-blue-600 text-white rounded-br-none'
                             : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
                         }`}>
-                          <p className={`text-sm break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
+                          <p className={`text-base break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
                         </div>
                       </div>
                     );
@@ -550,7 +550,7 @@ export default function ProjectDetailPage() {
                   }}
                   placeholder="Введите сообщение..."
                   disabled={isProcessing}
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
