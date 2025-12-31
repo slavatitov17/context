@@ -79,22 +79,39 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       <p className="text-gray-600 mb-8 text-base">Выберите способ создания диаграммы</p>
       {!selectedOption ? (
         /* Выбор источника данных */
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-4xl w-full">
-            <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Блок 1: Выбрать из проектов */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-medium text-gray-900 mb-2">Выбрать из моих проектов</h2>
+                <p className="text-gray-500 text-base">
+                  Использовать данные из существующего проекта
+                </p>
+              </div>
               <button
                 onClick={() => handleOptionSelect('projects')}
-                className="bg-blue-600 text-white p-8 rounded-lg text-center hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                <div className="font-medium text-lg mb-2">Выбрать из моих проектов</div>
-                <div className="text-sm opacity-90">Использовать данные из существующего проекта</div>
+                Выбрать проект
               </button>
+            </div>
+          </div>
+
+          {/* Блок 2: Создать с нуля */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-medium text-gray-900 mb-2">Создать с нуля</h2>
+                <p className="text-gray-500 text-base">
+                  Опишите предметную область вручную
+                </p>
+              </div>
               <button
                 onClick={() => handleOptionSelect('scratch')}
-                className="bg-blue-600 text-white p-8 rounded-lg text-center hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                <div className="font-medium text-lg mb-2">Создать с нуля</div>
-                <div className="text-sm opacity-90">Опишите предметную область вручную</div>
+                Ввести данные
               </button>
             </div>
           </div>
