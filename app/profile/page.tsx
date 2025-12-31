@@ -171,18 +171,18 @@ export default function ProfilePage() {
           {/* Кнопки сохранения и выхода */}
           <div className="mt-12 flex items-center gap-4">
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
-            >
-              <i className="fas fa-sign-out-alt"></i>
-              Выйти из аккаунта
-            </button>
-            <button
               onClick={handleSave}
               disabled={!hasChanges}
               className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
             >
               Сохранить изменения
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
+            >
+              <i className="fas fa-sign-out-alt"></i>
+              Выйти из аккаунта
             </button>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Телефон */}
-            <div>
+            <div className="mb-6 pb-6 border-b border-gray-200">
               <label className="block text-lg font-medium text-gray-900 mb-3">
                 Телефон
               </label>

@@ -35,16 +35,7 @@ export default function AboutPage() {
               Context (рус. Контекст)
             </h2>
             <p className="text-gray-500 text-base">
-              Загрузка и анализ файлов, ответы на вопросы по их содержимому, автоматическое создание диаграмм с помощью{' '}
-              <a
-                href="https://mermaid.js.org/intro/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                Mermaid
-              </a>
-              . Используя Context, вы соглашаетесь с{' '}
+              Ответы на вопросы по загруженным документам, автоматическое создание диаграмм. Используя Context, вы соглашаетесь с{' '}
               <Link
                 href="/privacy"
                 className="text-blue-600 hover:underline"
