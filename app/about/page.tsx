@@ -93,10 +93,10 @@ export default function AboutPage() {
               <div className="flex justify-end mt-2">
                 <button
                   type="button"
-                  className="text-gray-500 hover:text-gray-700 text-sm flex items-center hover:text-blue-600 transition-colors"
+                  className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
                   onClick={() => alert('Функция прикрепления файла (заглушка)')}
                 >
-                  <i className="fas fa-paperclip mr-2"></i>
+                  <i className="fas fa-paperclip mr-2 text-lg"></i>
                   Прикрепить файл
                 </button>
               </div>

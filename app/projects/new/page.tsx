@@ -115,7 +115,7 @@ export default function NewProjectPage() {
             disabled={!projectName.trim() || loading}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-1 text-base font-medium"
           >
-            {loading ? 'Создание...' : 'Загрузить файлы'}
+            {loading ? 'Создание...' : 'Перейти к загрузке документов'}
           </button>
         </div>
 

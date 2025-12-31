@@ -129,6 +129,31 @@ export default function ProjectDetailPage() {
     }
   }, [messages, loading, projectData, saveProject]);
 
+  // Функция для анимации прогресс-бара
+  const animateProgress = useCallback((fileId: string, startProgress: number, targetProgress: number, onComplete?: () => void) => {
+    let currentProgress = startProgress;
+    const interval = setInterval(() => {
+      currentProgress += 2; // Увеличиваем на 2% за раз для плавной анимации
+      
+      if (currentProgress >= targetProgress) {
+        currentProgress = targetProgress;
+        clearInterval(interval);
+        if (onComplete) {
+          onComplete();
+        }
+      }
+      
+      setUploadedFiles(prev => prev.map(f => {
+        if (f.id === fileId) {
+          return { ...f, progress: currentProgress };
+        }
+        return f;
+      }));
+    }, 50); // Обновляем каждые 50мс для плавной анимации
+    
+    return interval;
+  }, []);
+
   const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -145,6 +170,7 @@ export default function ProjectDetailPage() {
 
     // Обрабатываем каждый файл через API
     const processedDocuments: any[] = [];
+    const progressIntervals = new Map<string, NodeJS.Timeout>();
     
     for (let i = 0; i < newFiles.length; i++) {
       const fileItem = newFiles[i];
@@ -156,18 +182,18 @@ export default function ProjectDetailPage() {
       const supportedExtensions = ['.txt', '.md', '.markdown', '.pdf', '.docx', '.xlsx', '.xls', '.xlsm', '.csv'];
       
       if (!supportedExtensions.includes(extension)) {
+        // Для неподдерживаемых файлов сразу показываем ошибку
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
         ));
         continue;
       }
 
-      try {
-        // Обновляем прогресс
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, progress: 30 } : f
-        ));
+      // Запускаем анимацию прогресса от 0 до 90% (будет продолжаться во время загрузки)
+      const interval = animateProgress(fileItem.id, 0, 90);
+      progressIntervals.set(fileItem.id, interval);
 
+      try {
         // Отправляем файл на обработку
         const formData = new FormData();
         formData.append('file', file);
@@ -184,10 +210,29 @@ export default function ProjectDetailPage() {
 
         const data = await response.json();
         
-        // Обновляем прогресс
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, progress: 100, status: 'success' as const } : f
-        ));
+        // Останавливаем предыдущую анимацию
+        const currentInterval = progressIntervals.get(fileItem.id);
+        if (currentInterval) {
+          clearInterval(currentInterval);
+          progressIntervals.delete(fileItem.id);
+        }
+        
+        // Получаем текущий прогресс из состояния через функциональное обновление
+        setUploadedFiles(prevFiles => {
+          const currentFile = prevFiles.find(f => f.id === fileItem.id);
+          const currentProgress = currentFile?.progress || 90;
+          
+          // Запускаем анимацию от текущего значения до 100%
+          const newInterval = animateProgress(fileItem.id, currentProgress, 100, () => {
+            // После достижения 100% показываем галочку
+            setUploadedFiles(prev => prev.map(f => 
+              f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
+            ));
+          });
+          progressIntervals.set(fileItem.id, newInterval);
+          
+          return prevFiles;
+        });
 
         // Сохраняем обработанный документ
         processedDocuments.push({
@@ -197,6 +242,12 @@ export default function ProjectDetailPage() {
         });
       } catch (error) {
         console.error(`Ошибка при обработке файла ${file.name}:`, error);
+        // Останавливаем анимацию и показываем ошибку
+        const currentInterval = progressIntervals.get(fileItem.id);
+        if (currentInterval) {
+          clearInterval(currentInterval);
+          progressIntervals.delete(fileItem.id);
+        }
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
         ));
@@ -380,20 +431,12 @@ export default function ProjectDetailPage() {
       
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
-        <div className="w-64 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+        <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+          {/* Заголовок с бордером */}
           <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-medium text-gray-900">
-                Источники {hasFiles && `(${uploadedFiles.length})`}
-              </h2>
-            </div>
-            <button
-              onClick={handleButtonClick}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              <i className="fas fa-plus"></i>
-              Добавить источники
-            </button>
+            <h2 className="text-lg font-medium text-gray-900">
+              Документы {hasFiles && `(${uploadedFiles.length})`}
+            </h2>
           </div>
 
           <input
@@ -418,13 +461,11 @@ export default function ProjectDetailPage() {
               /* Пустое состояние */
               <div className="flex flex-col items-center justify-center h-full text-center py-8">
                 <div className="mb-4">
-                  <i className="fas fa-cloud-upload-alt text-4xl text-gray-400"></i>
+                  <i className="fas fa-download text-4xl text-gray-400"></i>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">
-                  Перетащите файлы сюда
-                </p>
-                <p className="text-xs text-gray-400">
-                  или нажмите кнопку выше
+                <p className="text-base text-gray-500">
+                  Перетащите файлы сюда<br />
+                  или нажмите кнопку ниже
                 </p>
               </div>
             ) : (
@@ -445,25 +486,25 @@ export default function ProjectDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate" title={fileItem.name}>
+                            <p className="text-base font-medium text-gray-900 truncate" title={fileItem.name}>
                               {fileItem.name}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-gray-500">
+                              <p className="text-sm text-gray-500">
                                 {formatFileSize(fileItem.size)}
                               </p>
                               {/* Статус */}
                               {fileItem.status === 'uploading' && (
                                 <div className="flex items-center gap-1">
                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                  <span className="text-xs text-blue-600">{fileItem.progress}%</span>
+                                  <span className="text-sm text-blue-600">{fileItem.progress}%</span>
                                 </div>
                               )}
                               {fileItem.status === 'success' && (
-                                <i className="fas fa-check-circle text-green-500 text-xs"></i>
+                                <i className="fas fa-check-circle text-green-500 text-sm"></i>
                               )}
                               {fileItem.status === 'error' && (
-                                <i className="fas fa-exclamation-circle text-red-500 text-xs"></i>
+                                <i className="fas fa-exclamation-circle text-red-500 text-sm"></i>
                               )}
                             </div>
                           </div>
@@ -494,6 +535,17 @@ export default function ProjectDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Бордер и кнопка внизу */}
+          <div className="p-4 border-t border-gray-200">
+            <button
+              onClick={handleButtonClick}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
+            >
+              <i className="fas fa-plus"></i>
+              Добавить документы
+            </button>
+          </div>
         </div>
 
         {/* Правая колонка: Чат */}
@@ -502,9 +554,9 @@ export default function ProjectDetailPage() {
             /* Пустое состояние чата */
             <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 min-h-0">
               <div className="text-center">
-                <i className="fas fa-comments text-6xl text-gray-300 mb-4"></i>
-                <p className="text-gray-500 text-lg">
-                  Загрузите файлы, чтобы начать работу
+                <i className="fas fa-comments text-6xl text-gray-400 mb-4"></i>
+                <p className="text-gray-500 text-base">
+                  Загрузите документы, чтобы начать работу с ними
                 </p>
               </div>
             </div>
@@ -520,7 +572,7 @@ export default function ProjectDetailPage() {
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     return (
                       <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
-                        <div className="text-xs text-gray-500 mb-1 px-1">
+                        <div className="text-base text-gray-500 mb-1 px-1">
                           {dateStr} {timeStr}
                         </div>
                         <div className={`max-w-[75%] rounded-2xl p-4 ${
@@ -528,7 +580,7 @@ export default function ProjectDetailPage() {
                             ? 'bg-blue-600 text-white rounded-br-none'
                             : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
                         }`}>
-                          <p className={`text-sm break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
+                          <p className={`text-base break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
                         </div>
                       </div>
                     );
@@ -550,7 +602,7 @@ export default function ProjectDetailPage() {
                   }}
                   placeholder="Введите сообщение..."
                   disabled={isProcessing}
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-sm text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
