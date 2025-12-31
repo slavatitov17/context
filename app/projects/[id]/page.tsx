@@ -129,6 +129,31 @@ export default function ProjectDetailPage() {
     }
   }, [messages, loading, projectData, saveProject]);
 
+  // Функция для анимации прогресс-бара
+  const animateProgress = useCallback((fileId: string, startProgress: number, targetProgress: number, onComplete?: () => void) => {
+    let currentProgress = startProgress;
+    const interval = setInterval(() => {
+      currentProgress += 2; // Увеличиваем на 2% за раз для плавной анимации
+      
+      if (currentProgress >= targetProgress) {
+        currentProgress = targetProgress;
+        clearInterval(interval);
+        if (onComplete) {
+          onComplete();
+        }
+      }
+      
+      setUploadedFiles(prev => prev.map(f => {
+        if (f.id === fileId) {
+          return { ...f, progress: currentProgress };
+        }
+        return f;
+      }));
+    }, 50); // Обновляем каждые 50мс для плавной анимации
+    
+    return interval;
+  }, []);
+
   const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -145,6 +170,7 @@ export default function ProjectDetailPage() {
 
     // Обрабатываем каждый файл через API
     const processedDocuments: any[] = [];
+    const progressIntervals = new Map<string, NodeJS.Timeout>();
     
     for (let i = 0; i < newFiles.length; i++) {
       const fileItem = newFiles[i];
@@ -156,18 +182,18 @@ export default function ProjectDetailPage() {
       const supportedExtensions = ['.txt', '.md', '.markdown', '.pdf', '.docx', '.xlsx', '.xls', '.xlsm', '.csv'];
       
       if (!supportedExtensions.includes(extension)) {
+        // Для неподдерживаемых файлов сразу показываем ошибку
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
         ));
         continue;
       }
 
-      try {
-        // Обновляем прогресс
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, progress: 30 } : f
-        ));
+      // Запускаем анимацию прогресса от 0 до 90% (будет продолжаться во время загрузки)
+      const interval = animateProgress(fileItem.id, 0, 90);
+      progressIntervals.set(fileItem.id, interval);
 
+      try {
         // Отправляем файл на обработку
         const formData = new FormData();
         formData.append('file', file);
@@ -184,10 +210,29 @@ export default function ProjectDetailPage() {
 
         const data = await response.json();
         
-        // Обновляем прогресс
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileItem.id ? { ...f, progress: 100, status: 'success' as const } : f
-        ));
+        // Останавливаем предыдущую анимацию
+        const currentInterval = progressIntervals.get(fileItem.id);
+        if (currentInterval) {
+          clearInterval(currentInterval);
+          progressIntervals.delete(fileItem.id);
+        }
+        
+        // Получаем текущий прогресс из состояния через функциональное обновление
+        setUploadedFiles(prevFiles => {
+          const currentFile = prevFiles.find(f => f.id === fileItem.id);
+          const currentProgress = currentFile?.progress || 90;
+          
+          // Запускаем анимацию от текущего значения до 100%
+          const newInterval = animateProgress(fileItem.id, currentProgress, 100, () => {
+            // После достижения 100% показываем галочку
+            setUploadedFiles(prev => prev.map(f => 
+              f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
+            ));
+          });
+          progressIntervals.set(fileItem.id, newInterval);
+          
+          return prevFiles;
+        });
 
         // Сохраняем обработанный документ
         processedDocuments.push({
@@ -197,6 +242,12 @@ export default function ProjectDetailPage() {
         });
       } catch (error) {
         console.error(`Ошибка при обработке файла ${file.name}:`, error);
+        // Останавливаем анимацию и показываем ошибку
+        const currentInterval = progressIntervals.get(fileItem.id);
+        if (currentInterval) {
+          clearInterval(currentInterval);
+          progressIntervals.delete(fileItem.id);
+        }
         setUploadedFiles(prev => prev.map(f => 
           f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
         ));
