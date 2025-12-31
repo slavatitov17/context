@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+import { useParams } from 'next/navigation';
+import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram } from '@/lib/storage';
 
 interface UploadedFile {
   id: string;
@@ -13,6 +14,9 @@ interface UploadedFile {
 }
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
+  const routeParams = useParams();
+  const diagramId = routeParams?.id as string;
+  const [diagramData, setDiagramData] = useState<Diagram | null>(null);
   const [selectedOption, setSelectedOption] = useState<'projects' | 'scratch' | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedProjectData, setSelectedProjectData] = useState<Project | null>(null);
@@ -26,13 +30,112 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Загрузка диаграммы
+  useEffect(() => {
+    const loadDiagram = () => {
+      if (!diagramId) return;
+
+      try {
+        setLoading(true);
+        
+        const currentUser = auth.getCurrentUser();
+        if (!currentUser) {
+          setLoading(false);
+          return;
+        }
+
+        // Загружаем диаграмму
+        const diagram = diagramsStorage.getById(diagramId, currentUser.id);
+        
+        if (!diagram) {
+          setLoading(false);
+          return;
+        }
+
+        setDiagramData(diagram);
+
+        // Загружаем проекты
+        loadProjects(currentUser.id);
+
+        // Восстанавливаем состояние диаграммы
+        if (diagram.selectedOption) {
+          setSelectedOption(diagram.selectedOption);
+        }
+        
+        if (diagram.selectedProject) {
+          setSelectedProject(diagram.selectedProject);
+          
+          // Загружаем данные проекта
+          const projectData = projectsStorage.getById(diagram.selectedProject, currentUser.id);
+          if (projectData) {
+            setSelectedProjectData(projectData);
+            
+            // Загружаем файлы из проекта
+            if (projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
+              setUploadedFiles(projectData.files.map((file: any) => ({
+                id: file.id || `file-${Date.now()}`,
+                name: file.name || 'Неизвестный файл',
+                size: file.size || 0,
+                status: 'success' as const,
+                progress: 100,
+              })));
+            }
+          }
+        }
+
+        // Загружаем файлы диаграммы (если есть)
+        if (diagram.files && Array.isArray(diagram.files) && diagram.files.length > 0) {
+          setUploadedFiles(prev => {
+            const existingIds = new Set(prev.map(f => f.id));
+            const newFiles = diagram.files!.map((file: any) => ({
+              id: file.id || `file-${Date.now()}`,
+              name: file.name || 'Неизвестный файл',
+              size: file.size || 0,
+              status: 'success' as const,
+              progress: 100,
+            })).filter(f => !existingIds.has(f.id));
+            return [...prev, ...newFiles];
+          });
+        }
+
+        // Загружаем сообщения
+        if (diagram.messages && Array.isArray(diagram.messages) && diagram.messages.length > 0) {
+          setMessages(diagram.messages.map((msg: any) => ({
+            text: msg.text || '',
+            isUser: msg.isUser || false,
+            type: msg.type,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+          })));
+        } else if (diagram.selectedOption === 'scratch') {
+          // Если создание с нуля и нет сообщений, показываем приветственное
+          setMessages([{
+            text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить. Также можете загрузить документы, связанные с предметной областью",
+            isUser: false,
+            timestamp: new Date()
+          }]);
+        } else if (diagram.selectedProject) {
+          // Если выбран проект и нет сообщений, показываем приветственное
+          setMessages([{
+            text: "Документы проанализированы. Диаграмму какого объекта требуется построить?",
+            isUser: false,
+            timestamp: new Date()
+          }]);
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке диаграммы:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDiagram();
+  }, [diagramId]);
+
   useEffect(() => {
     const checkUser = () => {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
         loadProjects(currentUser.id);
-      } else {
-        setLoading(false);
       }
     };
 
@@ -70,8 +173,64 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     C --> F[Элемент 2.1]
     C --> G[Элемент 2.2]`;
 
+  // Автоматическое сохранение изменений
+  const saveDiagram = useCallback((updates: Partial<Diagram>) => {
+    if (!diagramId || !diagramData) return;
+
+    const currentUser = auth.getCurrentUser();
+    if (!currentUser) return;
+
+    try {
+      const updated = diagramsStorage.update(diagramId, currentUser.id, updates);
+      if (updated) {
+        setDiagramData(updated);
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении диаграммы:', error);
+    }
+  }, [diagramId, diagramData]);
+
+  // Сохранение файлов
+  useEffect(() => {
+    if (uploadedFiles.length > 0 && !loading && diagramData) {
+      const timer = setTimeout(() => {
+        const filesData = uploadedFiles.map(file => ({
+          id: file.id,
+          name: file.name,
+          size: file.size,
+        }));
+        saveDiagram({ 
+          files: filesData as any,
+        });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [uploadedFiles, loading, diagramData, saveDiagram]);
+
+  // Сохранение сообщений
+  useEffect(() => {
+    if (messages.length > 0 && !loading && diagramData) {
+      const timer = setTimeout(() => {
+        const messagesData = messages.map(msg => ({
+          text: msg.text,
+          isUser: msg.isUser,
+          type: msg.type,
+          timestamp: msg.timestamp || new Date(),
+        }));
+        saveDiagram({ messages: messagesData as any });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, loading, diagramData, saveDiagram]);
+
   const handleOptionSelect = (option: 'projects' | 'scratch') => {
     setSelectedOption(option);
+    
+    const currentUser = auth.getCurrentUser();
+    if (currentUser && diagramId) {
+      saveDiagram({ selectedOption: option });
+    }
+    
     if (option === 'scratch') {
       // Для создания с нуля сразу переходим к чату
       setMessages([{
@@ -86,8 +245,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const handleProjectSelect = (projectId: string) => {
     setSelectedProject(projectId);
     
-    // Загружаем данные проекта
     const currentUser = auth.getCurrentUser();
+    if (currentUser && diagramId) {
+      saveDiagram({ selectedProject: projectId });
+    }
+    
+    // Загружаем данные проекта
     if (currentUser) {
       const projectData = projectsStorage.getById(projectId, currentUser.id);
       if (projectData) {
@@ -263,6 +426,22 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       }
     }
 
+    // Сохраняем файлы в диаграмму
+    if (newFiles.length > 0 && diagramId) {
+      const currentFiles = uploadedFiles.filter(f => f.status === 'success');
+      const allFiles = [...currentFiles, ...newFiles.filter(f => f.status === 'success')];
+      const filesData = allFiles.map(file => ({
+        id: file.id,
+        name: file.name,
+        size: file.size,
+      }));
+      
+      const currentUser = auth.getCurrentUser();
+      if (currentUser) {
+        saveDiagram({ files: filesData as any });
+      }
+    }
+
     // Вычисляем общий размер файлов в КБ
     const totalSizeBytes = newFiles.reduce((sum, file) => sum + file.size, 0);
     const totalSizeKB = Math.round(totalSizeBytes / 1024);
@@ -277,7 +456,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
     
     setIsProcessing(false);
-  }, [animateProgress]);
+  }, [animateProgress, diagramId, uploadedFiles, saveDiagram]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
@@ -353,10 +532,26 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (!diagramData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Диаграмма не найдена</div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-3xl font-medium mb-2">Создание диаграммы</h1>
-      <p className="text-gray-600 mb-8 text-base">Выберите способ создания диаграммы</p>
+      <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
+      <p className="text-gray-600 mb-8 text-base">{diagramData.description || 'Выберите способ создания диаграммы'}</p>
       {!selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">

@@ -33,6 +33,10 @@ export interface Diagram {
   name: string;
   description: string;
   user_id: string;
+  selectedOption?: 'projects' | 'scratch' | null;
+  selectedProject?: string | null;
+  files?: any[];
+  messages?: any[];
   created_at: string;
   updated_at: string;
 }
