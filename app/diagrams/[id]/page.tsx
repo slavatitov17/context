@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 
@@ -23,6 +23,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -136,6 +137,180 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       'xlsm': 'fa-file-excel',
     };
     return iconMap[ext || ''] || 'fa-file';
+  };
+
+  // Функция для анимации прогресс-бара
+  const animateProgress = useCallback((fileId: string, startProgress: number, targetProgress: number, onComplete?: () => void) => {
+    let currentProgress = startProgress;
+    const interval = setInterval(() => {
+      currentProgress += 2; // Увеличиваем на 2% за раз для плавной анимации
+      
+      if (currentProgress >= targetProgress) {
+        currentProgress = targetProgress;
+        clearInterval(interval);
+        if (onComplete) {
+          onComplete();
+        }
+      }
+      
+      setUploadedFiles(prev => prev.map(f => {
+        if (f.id === fileId) {
+          return { ...f, progress: currentProgress };
+        }
+        return f;
+      }));
+    }, 50); // Обновляем каждые 50мс для плавной анимации
+    
+    return interval;
+  }, []);
+
+  const handleFileSelect = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setIsProcessing(true);
+    const newFiles: UploadedFile[] = Array.from(files).map((file, index) => ({
+      id: `${Date.now()}-${index}`,
+      name: file.name,
+      size: file.size,
+      status: 'uploading' as const,
+      progress: 0,
+    }));
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+
+    // Обрабатываем каждый файл через API
+    const processedDocuments: any[] = [];
+    const progressIntervals = new Map<string, NodeJS.Timeout>();
+    
+    for (let i = 0; i < newFiles.length; i++) {
+      const fileItem = newFiles[i];
+      const file = Array.from(files)[i];
+      
+      // Проверяем формат файла
+      const fileName = file.name.toLowerCase();
+      const extension = fileName.substring(fileName.lastIndexOf('.'));
+      const supportedExtensions = ['.txt', '.md', '.markdown', '.pdf', '.docx', '.xlsx', '.xls', '.xlsm', '.csv'];
+      
+      if (!supportedExtensions.includes(extension)) {
+        // Для неподдерживаемых файлов сразу показываем ошибку
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
+        ));
+        continue;
+      }
+
+      // Запускаем анимацию прогресса от 0 до 90% (будет продолжаться во время загрузки)
+      const interval = animateProgress(fileItem.id, 0, 90);
+      progressIntervals.set(fileItem.id, interval);
+
+      try {
+        // Отправляем файл на обработку
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/documents/process', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка обработки файла: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Останавливаем предыдущую анимацию
+        const currentInterval = progressIntervals.get(fileItem.id);
+        if (currentInterval) {
+          clearInterval(currentInterval);
+          progressIntervals.delete(fileItem.id);
+        }
+        
+        // Получаем текущий прогресс из состояния через функциональное обновление
+        setUploadedFiles(prevFiles => {
+          const currentFile = prevFiles.find(f => f.id === fileItem.id);
+          const currentProgress = currentFile?.progress || 90;
+          
+          // Запускаем анимацию от текущего значения до 100%
+          const newInterval = animateProgress(fileItem.id, currentProgress, 100, () => {
+            // После достижения 100% показываем галочку
+            setUploadedFiles(prev => prev.map(f => 
+              f.id === fileItem.id ? { ...f, status: 'success' as const, progress: 100 } : f
+            ));
+          });
+          progressIntervals.set(fileItem.id, newInterval);
+          
+          return prevFiles;
+        });
+
+        // Сохраняем обработанный документ
+        processedDocuments.push({
+          fileName: data.fileName,
+          text: data.text,
+          chunks: data.chunks,
+        });
+      } catch (error) {
+        console.error(`Ошибка при обработке файла ${file.name}:`, error);
+        // Останавливаем анимацию и показываем ошибку
+        const currentInterval = progressIntervals.get(fileItem.id);
+        if (currentInterval) {
+          clearInterval(currentInterval);
+          progressIntervals.delete(fileItem.id);
+        }
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileItem.id ? { ...f, status: 'error' as const, progress: 100 } : f
+        ));
+      }
+    }
+
+    // Вычисляем общий размер файлов в КБ
+    const totalSizeBytes = newFiles.reduce((sum, file) => sum + file.size, 0);
+    const totalSizeKB = Math.round(totalSizeBytes / 1024);
+
+    // Добавляем сообщение о загрузке документов
+    if (processedDocuments.length > 0) {
+      setMessages(prev => [...prev, {
+        text: `Загружено и обработано документов: ${processedDocuments.length} из ${newFiles.length} (${totalSizeKB} КБ)`,
+        isUser: false,
+        timestamp: new Date(),
+      }]);
+    }
+    
+    setIsProcessing(false);
+  }, [animateProgress]);
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileSelect(e.target.files);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files);
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   const handleSendMessage = () => {
@@ -286,12 +461,19 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 type="file"
                 multiple
                 accept=".txt,.csv,.md,.markdown,.pdf,.docx,.xlsx,.xls,.xlsm"
-                onChange={() => {}}
+                onChange={handleFileInputChange}
                 className="hidden"
               />
 
-              {/* Область файлов */}
-              <div className="flex-1 overflow-y-auto p-4">
+              {/* Область drag-n-drop для всего бокового меню */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`flex-1 overflow-y-auto p-4 transition-colors ${
+                  isDragging ? 'bg-blue-50' : ''
+                }`}
+              >
                 {uploadedFiles.length === 0 ? (
                   /* Пустое состояние */
                   <div className="flex flex-col items-center justify-center h-full text-center py-8">
@@ -299,7 +481,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       <i className="fas fa-download text-4xl text-gray-400"></i>
                     </div>
                     <p className="text-base text-gray-500">
-                      {selectedProject ? 'Файлы из выбранного проекта' : 'Нет загруженных файлов'}
+                      Перетащите файлы сюда<br />
+                      или нажмите кнопку ниже
                     </p>
                   </div>
                 ) : (
@@ -342,6 +525,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   )}
                                 </div>
                               </div>
+                              <button
+                                onClick={() => handleRemoveFile(fileItem.id)}
+                                className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                                title="Удалить файл"
+                              >
+                                <i className="fas fa-times text-xs"></i>
+                              </button>
                             </div>
 
                             {/* Прогресс загрузки - компактный */}
@@ -361,6 +551,17 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Бордер и кнопка внизу */}
+              <div className="p-4 border-t border-gray-200">
+                <button
+                  onClick={handleButtonClick}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
+                >
+                  <i className="fas fa-plus"></i>
+                  Добавить документы
+                </button>
               </div>
             </div>
 
