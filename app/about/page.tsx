@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function AboutPage() {
   const [email, setEmail] = useState('');
@@ -43,6 +44,13 @@ export default function AboutPage() {
               >
                 Mermaid
               </a>
+              . Используя Context, вы соглашаетесь с{' '}
+              <Link
+                href="/privacy"
+                className="text-blue-600 hover:underline"
+              >
+                Политикой конфиденциальности
+              </Link>
             </p>
           </div>
           <div className="space-y-4">
@@ -86,7 +94,7 @@ export default function AboutPage() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 required
-                rows={5}
+                rows={3}
                 className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 placeholder="Опишите вашу проблему или вопрос..."
               />
