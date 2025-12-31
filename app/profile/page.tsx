@@ -14,6 +14,13 @@ export default function ProfilePage() {
   const [birthDate, setBirthDate] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
+  const getDisplayName = (email: string) => {
+    if (!email) return '';
+    const atIndex = email.indexOf('@');
+    if (atIndex === -1) return email;
+    return email.substring(0, atIndex);
+  };
+
   useEffect(() => {
     // Загружаем данные пользователя
     const loadUser = () => {
@@ -97,22 +104,22 @@ export default function ProfilePage() {
   };
 
   return (
-    <div>
+    <div className="max-w-2xl">
       {/* Верхний блок: заголовок, описание */}
       <div className="mb-8 pb-6 border-b border-gray-200">
-        <h1 className="text-3xl font-medium mb-2">Мой профиль</h1>
+        <h1 className="text-3xl font-medium mb-2">{getDisplayName(email) || 'Профиль'}</h1>
         <p className="text-gray-600 text-base">
           Проверьте свои личные данные
         </p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Блок 1: Основная информация (слева) */}
-        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-xl font-medium text-gray-900 mb-6">Основная информация</h2>
-          
-          <div className="space-y-6">
-            {/* Фамилия */}
+      {/* Блок: Личные данные */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-xl font-medium text-gray-900 mb-6">Личные данные</h2>
+        
+        <div className="space-y-6">
+          {/* Фамилия, Имя, Отчество в одну строку */}
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-3">
                 Фамилия
@@ -126,7 +133,6 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Имя */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-3">
                 Имя
@@ -140,7 +146,6 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Отчество */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-3">
                 Отчество
@@ -153,72 +158,65 @@ export default function ProfilePage() {
                 className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* Дата рождения */}
-            <div>
-              <label className="block text-lg font-medium text-gray-900 mb-3">
-                Дата рождения
-              </label>
-              <input
-                type="date"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
           </div>
 
-          {/* Кнопки сохранения и выхода */}
-          <div className="mt-12 flex items-center gap-4">
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              Сохранить изменения
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
-            >
-              <i className="fas fa-sign-out-alt"></i>
-              Выйти из аккаунта
-            </button>
+          {/* Дата рождения */}
+          <div>
+            <label className="block text-lg font-medium text-gray-900 mb-3">
+              Дата рождения
+            </label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Эл. почта */}
+          <div>
+            <label className="block text-lg font-medium text-gray-900 mb-3">
+              Эл. почта
+            </label>
+            <input
+              type="email"
+              value={email}
+              disabled
+              className="w-full border border-gray-300 rounded-lg p-4 text-base bg-gray-50 text-gray-500 cursor-not-allowed"
+            />
+          </div>
+
+          {/* Телефон */}
+          <div>
+            <label className="block text-lg font-medium text-gray-900 mb-3">
+              Телефон
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+7 (999) 123-45-67"
+              className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
         </div>
 
-        {/* Блок 2: Контактная информация (справа) */}
-        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 flex flex-col">
-          <h2 className="text-xl font-medium text-gray-900 mb-6">Контактная информация</h2>
-          
-          <div className="space-y-6 flex-1">
-            {/* Эл. почта */}
-            <div>
-              <label className="block text-lg font-medium text-gray-900 mb-3">
-                Эл. почта
-              </label>
-              <input
-                type="email"
-                value={email}
-                disabled
-                className="w-full border border-gray-300 rounded-lg p-4 text-base bg-gray-50 text-gray-500 cursor-not-allowed"
-              />
-            </div>
-
-            {/* Телефон */}
-            <div>
-              <label className="block text-lg font-medium text-gray-900 mb-3">
-                Телефон
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+7 (999) 123-45-67"
-                className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
+        {/* Кнопки сохранения и выхода */}
+        <div className="mt-12 flex items-center gap-4">
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges}
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            Сохранить изменения
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
+          >
+            <i className="fas fa-sign-out-alt"></i>
+            Выйти из аккаунта
+          </button>
         </div>
       </div>
     </div>

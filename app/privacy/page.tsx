@@ -205,8 +205,6 @@ export default function PrivacyPage() {
             
             {/* Форма обратной связи */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Обратиться в поддержку</h3>
-              
               <form onSubmit={handleSubmit}>
                 {/* Поле Email */}
                 <div className="mb-4">
