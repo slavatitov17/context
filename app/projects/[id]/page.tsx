@@ -420,7 +420,7 @@ export default function ProjectDetailPage() {
                 <div className="mb-4">
                   <i className="fas fa-cloud-upload-alt text-4xl text-gray-400"></i>
                 </div>
-                <p className="text-base font-medium text-gray-500">
+                <p className="text-base text-gray-500">
                   Перетащите файлы сюда<br />
                   или нажмите кнопку выше
                 </p>
@@ -500,8 +500,8 @@ export default function ProjectDetailPage() {
             /* Пустое состояние чата */
             <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 min-h-0">
               <div className="text-center">
-                <i className="fas fa-comments text-6xl text-gray-300 mb-4"></i>
-                <p className="text-gray-500 text-base font-medium">
+                <i className="fas fa-comments text-6xl text-gray-400 mb-4"></i>
+                <p className="text-gray-500 text-base">
                   Загрузите документы, чтобы начать работу с ними
                 </p>
               </div>

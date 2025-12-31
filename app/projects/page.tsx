@@ -137,11 +137,11 @@ export default function ProjectsPage() {
               Проекты отсутствуют...
             </h3>
             <p className="text-gray-600 text-center max-w-md mb-6">
-              Создайте свой первый проект, загрузите файлы и получите ответы на вопросы по ним
+              Создайте свой первый проект, загрузите документы и получите ответы на вопросы по ним
             </p>
             <Link href="/projects/new">
               <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Создать проект
+                + Создать проект
               </button>
             </Link>
           </div>
