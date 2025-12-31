@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
   const [selectedOption, setSelectedOption] = useState<'projects' | 'scratch' | null>(null);
@@ -9,12 +10,43 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' }>>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const projects = [
-    { id: 'project1', name: 'Мой первый проект', files: 3 },
-    { id: 'project2', name: 'Исследование рынка', files: 5 },
-    { id: 'project3', name: 'Техническая документация', files: 8 },
-  ];
+  useEffect(() => {
+    const checkUser = () => {
+      const currentUser = auth.getCurrentUser();
+      if (currentUser) {
+        loadProjects(currentUser.id);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+  }, []);
+
+  const loadProjects = (userId: string) => {
+    try {
+      setLoading(true);
+      const userProjects = projectsStorage.getAll(userId);
+      // Сортируем по дате создания (новые первые)
+      userProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setProjects(userProjects);
+    } catch (error) {
+      console.error('Ошибка при загрузке проектов:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
 
   // Заглушка для Mermaid диаграммы
   const mermaidCode = `graph TD
@@ -91,9 +123,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
               <button
                 onClick={() => handleOptionSelect('projects')}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
               >
                 Выбрать проект
+                <i className="fas fa-arrow-right"></i>
               </button>
             </div>
           </div>
@@ -109,32 +142,58 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
               <button
                 onClick={() => handleOptionSelect('scratch')}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
               >
                 Ввести данные
+                <i className="fas fa-arrow-right"></i>
               </button>
             </div>
           </div>
         </div>
       ) : selectedOption === 'projects' && !selectedProject ? (
-        /* Список проектов */
+        /* Таблица проектов */
         <div>
           <h2 className="text-2xl font-medium mb-6">Выберите проект</h2>
-          <div className="space-y-4">
-            {projects.map((project, index) => (
-              <div key={project.id} className={index < projects.length - 1 ? 'mb-6' : ''}>
-                <div
-                  onClick={() => handleProjectSelect(project.id)}
-                  className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-lg text-gray-900">{project.name}</h3>
-                  </div>
-                  <p className="text-gray-600 text-sm">{project.files} файлов</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-gray-500">Загрузка...</div>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-500">У вас пока нет проектов</p>
+            </div>
+          ) : (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((project) => (
+                    <tr 
+                      key={project.id} 
+                      onClick={() => handleProjectSelect(project.id)}
+                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <td className="py-4 px-6 text-gray-900 font-medium">
+                        {project.name}
+                      </td>
+                      <td className="py-4 px-6 text-gray-600">
+                        {project.description || ''}
+                      </td>
+                      <td className="py-4 px-6 text-gray-500">
+                        {formatDate(project.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : (
         /* Область чата */
