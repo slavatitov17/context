@@ -432,19 +432,11 @@ export default function ProjectDetailPage() {
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
         <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+          {/* Заголовок с бордером */}
           <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-medium text-gray-900">
-                Документы {hasFiles && `(${uploadedFiles.length})`}
-              </h2>
-            </div>
-            <button
-              onClick={handleButtonClick}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
-            >
-              <i className="fas fa-plus"></i>
-              Добавить документы
-            </button>
+            <h2 className="text-lg font-medium text-gray-900">
+              Документы {hasFiles && `(${uploadedFiles.length})`}
+            </h2>
           </div>
 
           <input
@@ -469,11 +461,11 @@ export default function ProjectDetailPage() {
               /* Пустое состояние */
               <div className="flex flex-col items-center justify-center h-full text-center py-8">
                 <div className="mb-4">
-                  <i className="fas fa-cloud-upload-alt text-4xl text-gray-400"></i>
+                  <i className="fas fa-download text-4xl text-gray-400"></i>
                 </div>
                 <p className="text-base text-gray-500">
                   Перетащите файлы сюда<br />
-                  или нажмите кнопку выше
+                  или нажмите кнопку ниже
                 </p>
               </div>
             ) : (
@@ -542,6 +534,17 @@ export default function ProjectDetailPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Бордер и кнопка внизу */}
+          <div className="p-4 border-t border-gray-200">
+            <button
+              onClick={handleButtonClick}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
+            >
+              <i className="fas fa-plus"></i>
+              Добавить документы
+            </button>
           </div>
         </div>
 
