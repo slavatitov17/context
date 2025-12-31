@@ -109,17 +109,30 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         } else if (diagram.selectedOption === 'scratch') {
           // Если создание с нуля и нет сообщений, показываем приветственное
           setMessages([{
-            text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить. Также можете загрузить документы, связанные с предметной областью",
+            text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
             isUser: false,
             timestamp: new Date()
           }]);
         } else if (diagram.selectedProject) {
           // Если выбран проект и нет сообщений, показываем приветственное
-          setMessages([{
-            text: "Документы проанализированы. Диаграмму какого объекта требуется построить?",
-            isUser: false,
-            timestamp: new Date()
-          }]);
+          const projectData = projectsStorage.getById(diagram.selectedProject, currentUser.id);
+          if (projectData && projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
+            const filesList = projectData.files.map((file: any) => {
+              const sizeKB = Math.round((file.size || 0) / 1024);
+              return `${file.name || 'Неизвестный файл'} (${sizeKB} KB)`;
+            }).join(', ');
+            setMessages([{
+              text: `Обработаны документы: ${filesList}. Теперь можно выбрать объект, по которому будет построена диаграмма.`,
+              isUser: false,
+              timestamp: new Date()
+            }]);
+          } else {
+            setMessages([{
+              text: "Теперь можно выбрать объект, по которому будет построена диаграмма.",
+              isUser: false,
+              timestamp: new Date()
+            }]);
+          }
         }
       } catch (error) {
         console.error('Ошибка при загрузке диаграммы:', error);
@@ -234,7 +247,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     if (option === 'scratch') {
       // Для создания с нуля сразу переходим к чату
       setMessages([{
-        text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить. Также можете загрузить документы, связанные с предметной областью",
+        text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
         isUser: false,
         timestamp: new Date()
       }]);
@@ -265,17 +278,28 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             status: 'success' as const,
             progress: 100,
           })));
+          
+          // Формируем сообщение со списком документов
+          const filesList = projectData.files.map((file: any) => {
+            const sizeKB = Math.round((file.size || 0) / 1024);
+            return `${file.name || 'Неизвестный файл'} (${sizeKB} KB)`;
+          }).join(', ');
+          
+          setMessages([{
+            text: `Обработаны документы: ${filesList}. Теперь можно выбрать объект, по которому будет построена диаграмма.`,
+            isUser: false,
+            timestamp: new Date()
+          }]);
         } else {
           setUploadedFiles([]);
+          setMessages([{
+            text: "Теперь можно выбрать объект, по которому будет построена диаграмма.",
+            isUser: false,
+            timestamp: new Date()
+          }]);
         }
       }
     }
-    
-    setMessages([{
-      text: "Документы проанализированы. Диаграмму какого объекта требуется построить?",
-      isUser: false,
-      timestamp: new Date()
-    }]);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -550,8 +574,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
-      <p className="text-gray-600 mb-8 text-base">{diagramData.description || 'Выберите способ создания диаграммы'}</p>
+      <h1 className="text-3xl font-medium mb-2">{!selectedOption ? 'Способ создания диаграммы' : diagramData.name}</h1>
+      <p className="text-gray-600 mb-8 text-base">{!selectedOption ? 'Выберите способ создания диаграммы' : (diagramData.description || '')}</p>
       {!selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">
@@ -642,125 +666,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         /* Область чата */
         <div className="flex flex-col h-full">
           <div className="flex-1 flex gap-4 min-h-0">
-            {/* Левая колонка: Боковое меню с файлами */}
-            <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
-              {/* Заголовок с бордером */}
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Документы {uploadedFiles.length > 0 && `(${uploadedFiles.length})`}
-                </h2>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept=".txt,.csv,.md,.markdown,.pdf,.docx,.xlsx,.xls,.xlsm"
-                onChange={handleFileInputChange}
-                className="hidden"
-              />
-
-              {/* Область drag-n-drop для всего бокового меню */}
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`flex-1 overflow-y-auto p-4 transition-colors ${
-                  isDragging ? 'bg-blue-50' : ''
-                }`}
-              >
-                {uploadedFiles.length === 0 ? (
-                  /* Пустое состояние */
-                  <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                    <div className="mb-4">
-                      <i className="fas fa-download text-4xl text-gray-400"></i>
-                    </div>
-                    <p className="text-base text-gray-500">
-                      Перетащите файлы сюда<br />
-                      или нажмите кнопку ниже
-                    </p>
-                  </div>
-                ) : (
-                  /* Список файлов - компактный */
-                  <div className="space-y-2">
-                    {uploadedFiles.map((fileItem) => (
-                      <div
-                        key={fileItem.id}
-                        className="bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors group"
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Иконка файла - компактная */}
-                          <div className="flex-shrink-0 w-8 h-8 bg-blue-50 rounded flex items-center justify-center">
-                            <i className={`fas ${getFileIcon(fileItem.name)} text-blue-600 text-sm`}></i>
-                          </div>
-
-                          {/* Информация о файле - компактная */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-medium text-gray-900 truncate" title={fileItem.name}>
-                                  {fileItem.name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-sm text-gray-500">
-                                    {formatFileSize(fileItem.size)}
-                                  </p>
-                                  {/* Статус */}
-                                  {fileItem.status === 'uploading' && (
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                      <span className="text-sm text-blue-600">{fileItem.progress}%</span>
-                                    </div>
-                                  )}
-                                  {fileItem.status === 'success' && (
-                                    <i className="fas fa-check-circle text-green-500 text-sm"></i>
-                                  )}
-                                  {fileItem.status === 'error' && (
-                                    <i className="fas fa-exclamation-circle text-red-500 text-sm"></i>
-                                  )}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleRemoveFile(fileItem.id)}
-                                className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
-                                title="Удалить файл"
-                              >
-                                <i className="fas fa-times text-xs"></i>
-                              </button>
-                            </div>
-
-                            {/* Прогресс загрузки - компактный */}
-                            {fileItem.status === 'uploading' && (
-                              <div className="mt-2">
-                                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                  <div
-                                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                    style={{ width: `${fileItem.progress}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Бордер и кнопка внизу */}
-              <div className="p-4 border-t border-gray-200">
-                <button
-                  onClick={handleButtonClick}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
-                >
-                  <i className="fas fa-plus"></i>
-                  Добавить документы
-                </button>
-              </div>
-            </div>
-
-            {/* Правая колонка: Чат */}
+            {/* Чат */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
               {/* История сообщений */}
               <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
