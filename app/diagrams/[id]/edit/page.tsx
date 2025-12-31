@@ -84,10 +84,15 @@ export default function EditDiagramPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-3xl font-medium mb-2">Редактирование диаграммы</h1>
-      <p className="text-gray-600 mb-8 text-base">Измените информацию о диаграмме</p>
+      <div className="mb-8 pb-6 border-b border-gray-200">
+        <h1 className="text-3xl font-medium mb-2">Редактирование диаграммы</h1>
+        <p className="text-gray-600 text-base">Измените информацию о диаграмме</p>
+      </div>
 
       <div className="space-y-6">
+        {/* Информация о полях */}
+        <p className="text-gray-500 text-base">* - обязательные поля</p>
+
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
             Название диаграммы *
@@ -109,7 +114,7 @@ export default function EditDiagramPage() {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Опишите цель диаграммы..."
+            placeholder="Введите описание диаграммы..."
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={saving}
@@ -131,10 +136,6 @@ export default function EditDiagramPage() {
           >
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
-        </div>
-
-        <div className="border-t border-gray-200 pt-4">
-          <p className="text-gray-500 text-base">* - обязательные поля</p>
         </div>
       </div>
     </div>
