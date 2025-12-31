@@ -107,7 +107,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl">
       {/* Верхний блок: заголовок, описание */}
       <div className="mb-8 pb-6 border-b border-gray-200">
-        <h1 className="text-3xl font-medium mb-2">{getDisplayName(email) || 'Профиль'}</h1>
+        <h1 className="text-3xl font-medium mb-2">Мой профиль</h1>
         <p className="text-gray-600 text-base">
           Проверьте свои личные данные
         </p>
@@ -128,7 +128,7 @@ export default function ProfilePage() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                placeholder="Введите вашу фамилию"
+                placeholder="Иванов"
                 className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Введите ваше имя"
+                placeholder="Иван"
                 className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -154,7 +154,7 @@ export default function ProfilePage() {
                 type="text"
                 value={middleName}
                 onChange={(e) => setMiddleName(e.target.value)}
-                placeholder="Введите ваше отчество"
+                placeholder="Иванович"
                 className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
