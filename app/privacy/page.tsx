@@ -1,13 +1,23 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/storage';
 
 export default function PrivacyPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = auth.getCurrentUser();
+      setIsAuthenticated(!!user && auth.hasSession());
+    };
+    checkAuth();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,17 +28,27 @@ export default function PrivacyPage() {
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
 
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Загрузка...</div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className={isAuthenticated ? 'max-w-2xl' : 'max-w-2xl mx-auto'}>
       {/* Верхний блок: заголовок, описание */}
       <div className="mb-8 pb-6 border-b border-gray-200">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-        >
-          <i className="fas fa-arrow-left mr-2"></i>
-          <span className="text-base">Назад</span>
-        </button>
+        {!isAuthenticated && (
+          <button
+            onClick={() => router.push('/login')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          >
+            <i className="fas fa-arrow-left mr-2"></i>
+            <span className="text-base">Назад</span>
+          </button>
+        )}
         <h1 className="text-3xl font-medium mb-2">Политика конфиденциальности</h1>
         <p className="text-gray-600 text-base">
           Узнайте, как мы собираем, используем и защищаем ваши персональные данные
@@ -212,17 +232,17 @@ export default function PrivacyPage() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     required
-                    rows={5}
+                    rows={3}
                     className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     placeholder="Опишите вашу проблему или вопрос..."
                   />
                   <div className="flex justify-end mt-2">
                     <button
                       type="button"
-                      className="text-gray-500 hover:text-gray-700 text-sm flex items-center hover:text-blue-600 transition-colors"
+                      className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
                       onClick={() => alert('Функция прикрепления файла (заглушка)')}
                     >
-                      <i className="fas fa-paperclip mr-2"></i>
+                      <i className="fas fa-paperclip mr-2 text-lg"></i>
                       Прикрепить файл
                     </button>
                   </div>
@@ -242,10 +262,6 @@ export default function PrivacyPage() {
                 </button>
               </form>
             </div>
-
-            <p className="mt-6 text-sm text-gray-500">
-              Дата последнего обновления: 01.12.2025
-            </p>
           </div>
         </div>
       </div>

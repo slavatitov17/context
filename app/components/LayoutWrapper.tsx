@@ -8,7 +8,8 @@ import { auth, type User } from '@/lib/storage';
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/privacy';
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isPrivacyPage = pathname === '/privacy';
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
@@ -25,7 +26,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         setUser(null);
         setUserEmail('');
         setIsAuthenticated(false);
-        if (!isAuthPage) {
+        if (!isAuthPage && !isPrivacyPage) {
           router.push('/login');
         }
       }
@@ -45,7 +46,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [isAuthPage, router]);
+  }, [isAuthPage, isPrivacyPage, router]);
 
   const handleLogout = async () => {
     try {
@@ -66,8 +67,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return email.substring(0, atIndex);
   };
 
-  // На страницах авторизации всегда показываем контент
-  if (isAuthPage) {
+  // На страницах авторизации и privacy (для неавторизованных) всегда показываем контент
+  if (isAuthPage || (isPrivacyPage && isAuthenticated === false)) {
     return (
       <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
         <main className="flex-1 p-8 overflow-auto bg-white text-gray-900">
@@ -101,8 +102,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
-      {/* Боковое меню - показывается только если не страница авторизации */}
-      {!isAuthPage && (
+      {/* Боковое меню - показывается только если не страница авторизации и пользователь авторизован */}
+      {!isAuthPage && isAuthenticated && (
         <aside className="fixed left-4 top-4 w-64 bg-gray-50 text-gray-800 p-6 rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="mb-10 flex items-center gap-3">
             {/* Логотип - диаграмма с узлами (уменьшен) */}

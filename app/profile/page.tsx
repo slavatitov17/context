@@ -188,10 +188,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Блок 2: Контактная информация (справа) */}
-        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 flex flex-col">
           <h2 className="text-xl font-medium text-gray-900 mb-6">Контактная информация</h2>
           
-          <div className="space-y-6">
+          <div className="space-y-6 flex-1">
             {/* Эл. почта */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-3">
@@ -206,7 +206,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Телефон */}
-            <div className="mb-6 pb-6 border-b border-gray-200">
+            <div>
               <label className="block text-lg font-medium text-gray-900 mb-3">
                 Телефон
               </label>
