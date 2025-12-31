@@ -1,17 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  status: 'uploading' | 'success' | 'error';
+  progress: number;
+}
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
   const [selectedOption, setSelectedOption] = useState<'projects' | 'scratch' | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedProjectData, setSelectedProjectData] = useState<Project | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table'; timestamp?: Date }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const checkUser = () => {
@@ -62,24 +74,81 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     if (option === 'scratch') {
       // Для создания с нуля сразу переходим к чату
       setMessages([{
-        text: "Опишите предметную область для построения диаграммы.",
-        isUser: false
+        text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить. Также можете загрузить документы, связанные с предметной областью",
+        isUser: false,
+        timestamp: new Date()
       }]);
+      setUploadedFiles([]);
     }
   };
 
   const handleProjectSelect = (projectId: string) => {
     setSelectedProject(projectId);
+    
+    // Загружаем данные проекта
+    const currentUser = auth.getCurrentUser();
+    if (currentUser) {
+      const projectData = projectsStorage.getById(projectId, currentUser.id);
+      if (projectData) {
+        setSelectedProjectData(projectData);
+        
+        // Загружаем файлы из проекта
+        if (projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
+          setUploadedFiles(projectData.files.map((file: any) => ({
+            id: file.id || `file-${Date.now()}`,
+            name: file.name || 'Неизвестный файл',
+            size: file.size || 0,
+            status: 'success' as const,
+            progress: 100,
+          })));
+        } else {
+          setUploadedFiles([]);
+        }
+      }
+    }
+    
     setMessages([{
       text: "Документы проанализированы. Диаграмму какого объекта требуется построить?",
-      isUser: false
+      isUser: false,
+      timestamp: new Date()
     }]);
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const iconMap: Record<string, string> = {
+      'txt': 'fa-file-alt',
+      'csv': 'fa-file-csv',
+      'md': 'fa-file-alt',
+      'markdown': 'fa-file-alt',
+      'pdf': 'fa-file-pdf',
+      'docx': 'fa-file-word',
+      'xlsx': 'fa-file-excel',
+      'xls': 'fa-file-excel',
+      'xlsm': 'fa-file-excel',
+    };
+    return iconMap[ext || ''] || 'fa-file';
+  };
+
   const handleSendMessage = () => {
-    if (message.trim()) {
-      setMessages(prev => [...prev, { text: message, isUser: true }]);
+    if (message.trim() && !isProcessing) {
+      const question = message.trim();
+      const newMessage = {
+        text: question,
+        isUser: true,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, newMessage]);
       setMessage('');
+      setIsProcessing(true);
 
       // Имитация построения диаграммы
       setTimeout(() => {
@@ -87,20 +156,24 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           ...prev,
           {
             text: "Диаграмма построена:",
-            isUser: false
+            isUser: false,
+            timestamp: new Date()
           },
           {
             text: mermaidCode,
             isUser: false,
-            type: 'diagram'
+            type: 'diagram',
+            timestamp: new Date()
           },
           {
             text: "Элементы диаграммы:",
             isUser: false,
-            type: 'table'
+            type: 'table',
+            timestamp: new Date()
           }
         ]);
         setShowDiagram(true);
+        setIsProcessing(false);
       }, 1500);
     }
   };
@@ -111,7 +184,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       <p className="text-gray-600 mb-8 text-base">Выберите способ создания диаграммы</p>
       {!selectedOption ? (
         /* Выбор источника данных */
-        <div className="space-y-6">
+        <div className="max-w-2xl space-y-6">
           {/* Блок 1: Выбрать из проектов */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center justify-between">
@@ -197,99 +270,234 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
       ) : (
         /* Область чата */
-        <div className="flex-1 flex flex-col">
-          {/* История сообщений */}
-          <div className="flex-1 bg-gray-50 rounded-lg p-6 mb-6 overflow-y-auto">
-            <div className="space-y-4">
-              {messages.map((msg, index) => (
-                <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                  {msg.type === 'diagram' ? (
-                    /* Блок диаграммы */
-                    <div className="max-w-full w-full">
-                      <div className="bg-white border border-gray-200 rounded-lg p-6">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="font-medium text-lg">MindMap диаграмма</h3>
-                          <div className="flex space-x-2">
-                            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                              Скачать PNG
-                            </button>
-                            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                              Скачать SVG
-                            </button>
-                            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                              Копировать код
-                            </button>
-                          </div>
-                        </div>
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                          <div className="text-gray-500 mb-4">[Здесь будет визуализация Mermaid диаграммы]</div>
-                          <div className="text-xs text-gray-400 font-mono bg-gray-100 p-4 rounded text-left">
-                            {msg.text}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : msg.type === 'table' ? (
-                    /* Блок таблицы */
-                    <div className="max-w-full w-full">
-                      <div className="bg-white border border-gray-200 rounded-lg p-6">
-                        <h4 className="font-medium text-lg mb-4">Элементы диаграммы</h4>
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-gray-200">
-                              <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
-                              <th className="text-left py-2 font-medium text-gray-900">Описание</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b border-gray-100">
-                              <td className="py-3 text-gray-900">Основной объект</td>
-                              <td className="py-3 text-gray-600">Центральный элемент системы</td>
-                            </tr>
-                            <tr className="border-b border-gray-100">
-                              <td className="py-3 text-gray-900">Подобъект 1</td>
-                              <td className="py-3 text-gray-600">Первая основная ветвь</td>
-                            </tr>
-                            <tr className="border-b border-gray-100">
-                              <td className="py-3 text-gray-900">Подобъект 2</td>
-                              <td className="py-3 text-gray-600">Вторая основная ветвь</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Обычное сообщение */
-                    <div className={`max-w-[80%] rounded-2xl p-4 ${
-                      msg.isUser
-                        ? 'bg-blue-600 text-white rounded-br-none'
-                        : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
-                    }`}>
-                      <p className="text-sm">{msg.text}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex flex-col h-full">
+          <div className="flex-1 flex gap-4 min-h-0">
+            {/* Левая колонка: Боковое меню с файлами */}
+            <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+              {/* Заголовок с бордером */}
+              <div className="p-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-900">
+                  Документы {uploadedFiles.length > 0 && `(${uploadedFiles.length})`}
+                </h2>
+              </div>
 
-          {/* Поле ввода */}
-          <div className="flex space-x-4">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={selectedOption === 'projects' ? "Введите название объекта для диаграммы..." : "Опишите предметную область..."}
-              className="flex-1 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!message.trim()}
-              className="bg-blue-600 text-white px-8 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              Отправить
-            </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".txt,.csv,.md,.markdown,.pdf,.docx,.xlsx,.xls,.xlsm"
+                onChange={() => {}}
+                className="hidden"
+              />
+
+              {/* Область файлов */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {uploadedFiles.length === 0 ? (
+                  /* Пустое состояние */
+                  <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                    <div className="mb-4">
+                      <i className="fas fa-download text-4xl text-gray-400"></i>
+                    </div>
+                    <p className="text-base text-gray-500">
+                      {selectedProject ? 'Файлы из выбранного проекта' : 'Нет загруженных файлов'}
+                    </p>
+                  </div>
+                ) : (
+                  /* Список файлов - компактный */
+                  <div className="space-y-2">
+                    {uploadedFiles.map((fileItem) => (
+                      <div
+                        key={fileItem.id}
+                        className="bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors group"
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Иконка файла - компактная */}
+                          <div className="flex-shrink-0 w-8 h-8 bg-blue-50 rounded flex items-center justify-center">
+                            <i className={`fas ${getFileIcon(fileItem.name)} text-blue-600 text-sm`}></i>
+                          </div>
+
+                          {/* Информация о файле - компактная */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-base font-medium text-gray-900 truncate" title={fileItem.name}>
+                                  {fileItem.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-sm text-gray-500">
+                                    {formatFileSize(fileItem.size)}
+                                  </p>
+                                  {/* Статус */}
+                                  {fileItem.status === 'uploading' && (
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                      <span className="text-sm text-blue-600">{fileItem.progress}%</span>
+                                    </div>
+                                  )}
+                                  {fileItem.status === 'success' && (
+                                    <i className="fas fa-check-circle text-green-500 text-sm"></i>
+                                  )}
+                                  {fileItem.status === 'error' && (
+                                    <i className="fas fa-exclamation-circle text-red-500 text-sm"></i>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Прогресс загрузки - компактный */}
+                            {fileItem.status === 'uploading' && (
+                              <div className="mt-2">
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                    style={{ width: `${fileItem.progress}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Правая колонка: Чат */}
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
+              {/* История сообщений */}
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
+                <div className="space-y-4">
+                  {messages.map((msg, index) => {
+                    const timestamp = msg.timestamp || new Date();
+                    const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    
+                    if (msg.type === 'diagram') {
+                      return (
+                        <div key={index} className="flex flex-col items-start">
+                          <div className="text-base text-gray-500 mb-1 px-1">
+                            {dateStr} {timeStr}
+                          </div>
+                          <div className="max-w-full w-full">
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                              <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-medium text-lg">MindMap диаграмма</h3>
+                                <div className="flex space-x-2">
+                                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                                    Скачать PNG
+                                  </button>
+                                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                                    Скачать SVG
+                                  </button>
+                                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                                    Копировать код
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                                <div className="text-gray-500 mb-4">[Здесь будет визуализация Mermaid диаграммы]</div>
+                                <div className="text-xs text-gray-400 font-mono bg-gray-100 p-4 rounded text-left">
+                                  {msg.text}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    if (msg.type === 'table') {
+                      return (
+                        <div key={index} className="flex flex-col items-start">
+                          <div className="text-base text-gray-500 mb-1 px-1">
+                            {dateStr} {timeStr}
+                          </div>
+                          <div className="max-w-full w-full">
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                              <h4 className="font-medium text-lg mb-4">Элементы диаграммы</h4>
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="border-b border-gray-200">
+                                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
+                                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-b border-gray-100">
+                                    <td className="py-3 text-gray-900">Основной объект</td>
+                                    <td className="py-3 text-gray-600">Центральный элемент системы</td>
+                                  </tr>
+                                  <tr className="border-b border-gray-100">
+                                    <td className="py-3 text-gray-900">Подобъект 1</td>
+                                    <td className="py-3 text-gray-600">Первая основная ветвь</td>
+                                  </tr>
+                                  <tr className="border-b border-gray-100">
+                                    <td className="py-3 text-gray-900">Подобъект 2</td>
+                                    <td className="py-3 text-gray-600">Вторая основная ветвь</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
+                        <div className="text-base text-gray-500 mb-1 px-1">
+                          {dateStr} {timeStr}
+                        </div>
+                        <div className={`max-w-[75%] rounded-2xl p-4 ${
+                          msg.isUser
+                            ? 'bg-blue-600 text-white rounded-br-none'
+                            : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
+                        }`}>
+                          <p className={`text-base break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Поле ввода */}
+              <div className="relative flex-shrink-0 bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all">
+                {/* Textarea */}
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder={selectedOption === 'projects' ? "Введите название объекта для диаграммы..." : "Опишите предметную область..."}
+                  disabled={isProcessing}
+                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
+                  style={{
+                    minHeight: '6.5rem',
+                    maxHeight: '6.5rem',
+                    lineHeight: '1.5',
+                  }}
+                />
+
+                {/* Кнопка отправки */}
+                <div className="absolute right-3 bottom-3 z-10">
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!message.trim() || isProcessing}
+                    className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
+                    title="Отправить"
+                  >
+                    <i className="fas fa-paper-plane text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -17,7 +17,7 @@ export default function AboutPage() {
   const isFormValid = email.trim() !== '' && message.trim() !== '';
 
   return (
-    <div>
+    <div className="max-w-2xl">
       {/* Верхний блок: заголовок, описание */}
       <div className="mb-8 pb-6 border-b border-gray-200">
         <h1 className="text-3xl font-medium mb-2">О системе</h1>

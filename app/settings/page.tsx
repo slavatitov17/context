@@ -7,7 +7,7 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState('ru');
 
   return (
-    <div>
+    <div className="max-w-2xl">
       {/* Верхний блок: заголовок, описание */}
       <div className="mb-8 pb-6 border-b border-gray-200">
         <h1 className="text-3xl font-medium mb-2">Настройки</h1>
