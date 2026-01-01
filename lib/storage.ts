@@ -35,6 +35,11 @@ export interface Diagram {
   user_id: string;
   selectedOption?: 'projects' | 'scratch' | null;
   selectedProject?: string | null;
+  diagramType?: 'UML' | 'ER' | 'Sequence' | 'Activity' | 'Class' | null;
+  selectedObject?: string | null;
+  plantUmlCode?: string | null;
+  diagramImageUrl?: string | null;
+  glossary?: Array<{ element: string; description: string }> | null;
   files?: any[];
   messages?: any[];
   created_at: string;

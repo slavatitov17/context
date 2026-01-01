@@ -20,9 +20,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [selectedOption, setSelectedOption] = useState<'projects' | 'scratch' | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedProjectData, setSelectedProjectData] = useState<Project | null>(null);
+  const [diagramType, setDiagramType] = useState<'UML' | 'ER' | 'Sequence' | 'Activity' | 'Class' | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table'; timestamp?: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code'; plantUmlCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -60,6 +61,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         // Восстанавливаем состояние диаграммы
         if (diagram.selectedOption) {
           setSelectedOption(diagram.selectedOption);
+        }
+        
+        if (diagram.diagramType) {
+          setDiagramType(diagram.diagramType);
         }
         
         if (diagram.selectedProject) {
@@ -104,6 +109,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             text: msg.text || '',
             isUser: msg.isUser || false,
             type: msg.type,
+            plantUmlCode: msg.plantUmlCode,
+            diagramImageUrl: msg.diagramImageUrl,
+            glossary: msg.glossary,
             timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
           })));
         } else if (diagram.selectedOption === 'scratch') {
@@ -220,7 +228,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
   }, [uploadedFiles, loading, diagramData, saveDiagram]);
 
-  // Сохранение сообщений
+        // Сохранение сообщений
   useEffect(() => {
     if (messages.length > 0 && !loading && diagramData) {
       const timer = setTimeout(() => {
@@ -228,6 +236,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           text: msg.text,
           isUser: msg.isUser,
           type: msg.type,
+          plantUmlCode: msg.plantUmlCode,
+          diagramImageUrl: msg.diagramImageUrl,
+          glossary: msg.glossary,
           timestamp: msg.timestamp || new Date(),
         }));
         saveDiagram({ messages: messagesData as any });
@@ -245,13 +256,37 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
     
     if (option === 'scratch') {
-      // Для создания с нуля сразу переходим к чату
+      // Для создания с нуля показываем выбор типа диаграммы
       setMessages([{
-        text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
+        text: "Сначала выберите тип диаграммы, затем опишите предметную область и конкретный объект",
         isUser: false,
         timestamp: new Date()
       }]);
       setUploadedFiles([]);
+    }
+  };
+
+  const handleDiagramTypeSelect = (type: 'UML' | 'ER' | 'Sequence' | 'Activity' | 'Class') => {
+    setDiagramType(type);
+    
+    const currentUser = auth.getCurrentUser();
+    if (currentUser && diagramId) {
+      saveDiagram({ diagramType: type });
+    }
+    
+    // Обновляем сообщение в зависимости от выбранного источника
+    if (selectedOption === 'scratch') {
+      setMessages([{
+        text: `Выбран тип диаграммы: ${type}. Теперь опишите предметную область и конкретный объект, диаграмму которого нужно будет построить`,
+        isUser: false,
+        timestamp: new Date()
+      }]);
+    } else if (selectedOption === 'projects' && selectedProject) {
+      setMessages([{
+        text: `Выбран тип диаграммы: ${type}. Теперь выберите объект или процесс из проекта, для которого будет построена диаграмма`,
+        isUser: false,
+        timestamp: new Date()
+      }]);
     }
   };
 
@@ -516,11 +551,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  const handleSendMessage = () => {
-    if (message.trim() && !isProcessing) {
-      const question = message.trim();
+  const handleSendMessage = async () => {
+    if (message.trim() && !isProcessing && diagramType) {
+      const objectDescription = message.trim();
       const newMessage = {
-        text: question,
+        text: objectDescription,
         isUser: true,
         timestamp: new Date(),
       };
@@ -528,8 +563,63 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       setMessage('');
       setIsProcessing(true);
 
-      // Имитация построения диаграммы
-      setTimeout(() => {
+      try {
+        // Собираем документы из проекта (если есть)
+        let documents: any[] = [];
+        if (selectedOption === 'projects' && selectedProjectData && selectedProjectData.processedDocuments) {
+          documents = selectedProjectData.processedDocuments;
+        }
+
+        // Вызываем API для генерации PlantUML кода
+        const generateResponse = await fetch('/api/diagrams/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            diagramType,
+            objectDescription,
+            documents,
+            isFromProject: selectedOption === 'projects',
+          }),
+        });
+
+        if (!generateResponse.ok) {
+          throw new Error('Ошибка при генерации диаграммы');
+        }
+
+        const { plantUmlCode, glossary } = await generateResponse.json();
+
+        // Вызываем API для рендеринга диаграммы
+        const renderResponse = await fetch('/api/diagrams/render', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            plantUmlCode,
+          }),
+        });
+
+        if (!renderResponse.ok) {
+          throw new Error('Ошибка при рендеринге диаграммы');
+        }
+
+        const { imageUrl } = await renderResponse.json();
+
+        // Сохраняем данные в диаграмму
+        const currentUser = auth.getCurrentUser();
+        if (currentUser && diagramId) {
+          saveDiagram({
+            diagramType,
+            selectedObject: objectDescription,
+            plantUmlCode,
+            diagramImageUrl: imageUrl,
+            glossary,
+          });
+        }
+
+        // Добавляем сообщения с результатами
         setMessages(prev => [
           ...prev,
           {
@@ -538,21 +628,32 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             timestamp: new Date()
           },
           {
-            text: mermaidCode,
+            text: plantUmlCode,
             isUser: false,
-            type: 'diagram',
+            type: 'code',
+            plantUmlCode,
+            diagramImageUrl: imageUrl,
             timestamp: new Date()
           },
           {
-            text: "Элементы диаграммы:",
+            text: "Глоссарий элементов диаграммы:",
             isUser: false,
             type: 'table',
+            glossary,
             timestamp: new Date()
           }
         ]);
         setShowDiagram(true);
+      } catch (error) {
+        console.error('Ошибка при создании диаграммы:', error);
+        setMessages(prev => [...prev, {
+          text: `Ошибка при создании диаграммы: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+          isUser: false,
+          timestamp: new Date()
+        }]);
+      } finally {
         setIsProcessing(false);
-      }, 1500);
+      }
     }
   };
 
@@ -617,6 +718,29 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
           </div>
         </div>
+      ) : !diagramType ? (
+        /* Выбор типа диаграммы */
+        <div>
+          <h2 className="text-2xl font-medium mb-6">Выберите тип диаграммы</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(['UML', 'ER', 'Sequence', 'Activity', 'Class'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => handleDiagramTypeSelect(type)}
+                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+              >
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{type}</h3>
+                <p className="text-gray-600 text-sm">
+                  {type === 'UML' && 'UML диаграмма классов'}
+                  {type === 'ER' && 'ER диаграмма (Entity-Relationship)'}
+                  {type === 'Sequence' && 'UML диаграмма последовательности'}
+                  {type === 'Activity' && 'UML диаграмма активности'}
+                  {type === 'Class' && 'UML диаграмма классов'}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
       ) : selectedOption === 'projects' && !selectedProject ? (
         /* Таблица проектов */
         <div>
@@ -676,7 +800,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     
-                    if (msg.type === 'diagram') {
+                    if (msg.type === 'code') {
                       return (
                         <div key={index} className="flex flex-col items-start">
                           <div className="text-base text-gray-500 mb-1 px-1">
@@ -685,24 +809,43 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           <div className="max-w-full w-full">
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
                               <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-medium text-lg">MindMap диаграмма</h3>
+                                <h3 className="font-medium text-lg">PlantUML диаграмма</h3>
                                 <div className="flex space-x-2">
-                                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                                    Скачать PNG
-                                  </button>
-                                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                                    Скачать SVG
-                                  </button>
-                                  <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                                  {msg.diagramImageUrl && (
+                                    <>
+                                      <a
+                                        href={msg.diagramImageUrl}
+                                        download
+                                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                      >
+                                        Скачать PNG
+                                      </a>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      if (msg.plantUmlCode) {
+                                        navigator.clipboard.writeText(msg.plantUmlCode);
+                                        alert('Код скопирован в буфер обмена');
+                                      }
+                                    }}
+                                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                  >
                                     Копировать код
                                   </button>
                                 </div>
                               </div>
-                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                                <div className="text-gray-500 mb-4">[Здесь будет визуализация Mermaid диаграммы]</div>
-                                <div className="text-xs text-gray-400 font-mono bg-gray-100 p-4 rounded text-left">
-                                  {msg.text}
+                              {msg.diagramImageUrl && (
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                                  <img
+                                    src={msg.diagramImageUrl}
+                                    alt="PlantUML диаграмма"
+                                    className="max-w-full h-auto mx-auto"
+                                  />
                                 </div>
+                              )}
+                              <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
+                                <pre className="whitespace-pre-wrap">{msg.plantUmlCode || msg.text}</pre>
                               </div>
                             </div>
                           </div>
@@ -710,7 +853,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       );
                     }
                     
-                    if (msg.type === 'table') {
+                    if (msg.type === 'table' && msg.glossary) {
                       return (
                         <div key={index} className="flex flex-col items-start">
                           <div className="text-base text-gray-500 mb-1 px-1">
@@ -718,7 +861,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           </div>
                           <div className="max-w-full w-full">
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
-                              <h4 className="font-medium text-lg mb-4">Элементы диаграммы</h4>
+                              <h4 className="font-medium text-lg mb-4">{msg.text || 'Глоссарий элементов диаграммы'}</h4>
                               <table className="w-full">
                                 <thead>
                                   <tr className="border-b border-gray-200">
@@ -727,18 +870,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr className="border-b border-gray-100">
-                                    <td className="py-3 text-gray-900">Основной объект</td>
-                                    <td className="py-3 text-gray-600">Центральный элемент системы</td>
-                                  </tr>
-                                  <tr className="border-b border-gray-100">
-                                    <td className="py-3 text-gray-900">Подобъект 1</td>
-                                    <td className="py-3 text-gray-600">Первая основная ветвь</td>
-                                  </tr>
-                                  <tr className="border-b border-gray-100">
-                                    <td className="py-3 text-gray-900">Подобъект 2</td>
-                                    <td className="py-3 text-gray-600">Вторая основная ветвь</td>
-                                  </tr>
+                                  {msg.glossary.map((item, idx) => (
+                                    <tr key={idx} className="border-b border-gray-100">
+                                      <td className="py-3 text-gray-900 font-medium">{item.element}</td>
+                                      <td className="py-3 text-gray-600">{item.description}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
@@ -777,7 +914,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       handleSendMessage();
                     }
                   }}
-                  placeholder={selectedOption === 'projects' ? "Введите название объекта для диаграммы..." : "Опишите предметную область..."}
+                  placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
+                  disabled={isProcessing || !diagramType}
                   disabled={isProcessing}
                   className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
@@ -791,7 +929,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 <div className="absolute right-3 bottom-3 z-10">
                   <button
                     onClick={handleSendMessage}
-                    disabled={!message.trim() || isProcessing}
+                    disabled={!message.trim() || isProcessing || !diagramType}
                     className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
                     title="Отправить"
                   >
