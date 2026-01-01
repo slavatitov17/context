@@ -100,9 +100,20 @@ export default function NewProjectPage() {
           <button
             onClick={handleCreate}
             disabled={!projectName.trim() || loading}
-            className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-1 text-base font-medium"
+            className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-1 text-base font-medium flex items-center justify-center gap-2"
           >
-            {loading ? 'Создание...' : 'Перейти к загрузке документов'}
+            {loading ? (
+              <>
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span>Создание проекта...</span>
+              </>
+            ) : (
+              'Перейти к загрузке документов'
+            )}
           </button>
         </div>
       </div>

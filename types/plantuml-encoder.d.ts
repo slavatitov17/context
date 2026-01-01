@@ -8,3 +8,4 @@ declare module 'plantuml-encoder' {
   export = plantumlEncoder;
 }
 
+

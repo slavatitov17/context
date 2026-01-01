@@ -29,6 +29,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [viewModes, setViewModes] = useState<Map<number, 'diagram' | 'code'>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Состояния для поиска, фильтров и сортировки типов диаграмм
@@ -1123,6 +1124,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     
                     if (msg.type === 'code') {
+                      const currentViewMode = viewModes.get(index) || 'diagram';
                       return (
                         <div key={index} className="flex flex-col items-start">
                           <div className="text-base text-gray-500 mb-1 px-1">
@@ -1131,7 +1133,37 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           <div className="max-w-full w-full">
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
                               <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-medium text-lg">PlantUML диаграмма</h3>
+                                {/* Свитчер Диаграмма/Код */}
+                                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                                  <button
+                                    onClick={() => {
+                                      const newModes = new Map(viewModes);
+                                      newModes.set(index, 'diagram');
+                                      setViewModes(newModes);
+                                    }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                      currentViewMode === 'diagram'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                  >
+                                    Диаграмма
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const newModes = new Map(viewModes);
+                                      newModes.set(index, 'code');
+                                      setViewModes(newModes);
+                                    }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                      currentViewMode === 'code'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                  >
+                                    Код
+                                  </button>
+                                </div>
                                 <div className="flex space-x-2">
                                   {msg.diagramImageUrl && (
                                     <>
@@ -1157,8 +1189,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   </button>
                                 </div>
                               </div>
-                              {msg.diagramImageUrl && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                              {/* Показываем диаграмму или код в зависимости от выбранного режима */}
+                              {currentViewMode === 'diagram' && msg.diagramImageUrl && (
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                   <img
                                     src={msg.diagramImageUrl}
                                     alt="PlantUML диаграмма"
@@ -1166,9 +1199,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   />
                                 </div>
                               )}
-                              <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
-                                <pre className="whitespace-pre-wrap">{msg.plantUmlCode || msg.text}</pre>
-                              </div>
+                              {currentViewMode === 'code' && (
+                                <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
+                                  <pre className="whitespace-pre-wrap">{msg.plantUmlCode || msg.text}</pre>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1221,6 +1256,21 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       </div>
                     );
                   })}
+                  {/* Индикатор загрузки ответа */}
+                  {isProcessing && (
+                    <div className="flex flex-col items-start">
+                      <div className="max-w-[75%] rounded-2xl p-4 bg-white border border-gray-200 rounded-bl-none shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                          <span className="text-sm text-gray-500 ml-2">Думаю...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
