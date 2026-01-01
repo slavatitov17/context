@@ -159,12 +159,10 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
       // Извлекаем код PlantUML
       // Для разных типов диаграмм нужны разные теги
       const isMindMap = diagramType === 'MindMap';
-      const isGantt = diagramType === 'Gantt';
-      const isSalt = diagramType === 'Salt';
-      const isDitaa = diagramType === 'Ditaa';
+      const isJSON = diagramType === 'JSON';
       
-      const startTag = isMindMap ? '@startmindmap' : (isGantt ? '@startgantt' : (isSalt ? '@startsalt' : (isDitaa ? '@startditaa' : '@startuml')));
-      const endTag = isMindMap ? '@endmindmap' : (isGantt ? '@endgantt' : (isSalt ? '@endsalt' : (isDitaa ? '@endditaa' : '@enduml')));
+      const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
+      const endTag = isMindMap ? '@endmindmap' : (isJSON ? '@endjson' : '@enduml');
       
       const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
                            responseText.match(new RegExp(`${startTag}\\s*\\n([\\s\\S]*?)${endTag}`, 'i')) ||
