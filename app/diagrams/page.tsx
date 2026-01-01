@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage, type Diagram } from '@/lib/storage';
@@ -10,6 +10,9 @@ export default function DiagramsPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [selectedDiagrams, setSelectedDiagrams] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'alphabet' | 'date'>('date');
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -62,6 +65,29 @@ export default function DiagramsPage() {
     }
   };
 
+  // Фильтрация и сортировка диаграмм
+  const filteredAndSortedDiagrams = useMemo(() => {
+    let filtered = diagrams;
+
+    // Фильтрация по поисковому запросу
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(diagram =>
+        diagram.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Сортировка
+    const sorted = [...filtered];
+    if (sortBy === 'alphabet') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    return sorted;
+  }, [diagrams, searchQuery, sortBy]);
+
   const handleDelete = (diagramId: string) => {
     if (!user) return;
     
@@ -73,6 +99,11 @@ export default function DiagramsPage() {
       const success = diagramsStorage.delete(diagramId, user.id);
       if (success) {
         setDiagrams(diagrams.filter(d => d.id !== diagramId));
+        setSelectedDiagrams(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(diagramId);
+          return newSet;
+        });
         setOpenMenuId(null);
       } else {
         alert('Не удалось удалить диаграмму. Попробуйте еще раз.');
@@ -83,9 +114,60 @@ export default function DiagramsPage() {
     }
   };
 
+  const handleBulkDelete = () => {
+    if (!user || selectedDiagrams.size === 0) return;
+    
+    const count = selectedDiagrams.size;
+    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`)) {
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      selectedDiagrams.forEach(diagramId => {
+        const success = diagramsStorage.delete(diagramId, user.id);
+        if (success) {
+          successCount++;
+        }
+      });
+
+      if (successCount > 0) {
+        setDiagrams(diagrams.filter(d => !selectedDiagrams.has(d.id)));
+        setSelectedDiagrams(new Set());
+      }
+
+      if (successCount < count) {
+        alert(`Удалено ${successCount} из ${count} диаграмм.`);
+      }
+    } catch (error) {
+      console.error('Ошибка при массовом удалении диаграмм:', error);
+      alert('Произошла ошибка при удалении диаграмм.');
+    }
+  };
+
   const handleEdit = (diagramId: string) => {
     setOpenMenuId(null);
     router.push(`/diagrams/${diagramId}/edit`);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDiagrams(new Set(filteredAndSortedDiagrams.map(d => d.id)));
+    } else {
+      setSelectedDiagrams(new Set());
+    }
+  };
+
+  const handleSelectDiagram = (diagramId: string, checked: boolean) => {
+    setSelectedDiagrams(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(diagramId);
+      } else {
+        newSet.delete(diagramId);
+      }
+      return newSet;
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -105,6 +187,8 @@ export default function DiagramsPage() {
   }
 
   const hasDiagrams = diagrams.length > 0;
+  const allSelected = filteredAndSortedDiagrams.length > 0 && filteredAndSortedDiagrams.every(d => selectedDiagrams.has(d.id));
+  const someSelected = selectedDiagrams.size > 0;
 
   return (
     <div>
@@ -125,7 +209,44 @@ export default function DiagramsPage() {
 
       {/* Контент: пустое состояние или таблица */}
       <div>
-        <h2 className="text-2xl font-medium mb-6">Мои диаграммы</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-medium">Мои диаграммы</h2>
+          
+          {hasDiagrams && (
+            <div className="flex items-center gap-4">
+              {/* Поиск */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Поиск по названию..."
+                  className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <i className="fas fa-search text-gray-400"></i>
+                </div>
+              </div>
+              
+              {/* Сортировка */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'date')}
+                  className="border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
+                >
+                  <option value="date">По дате создания</option>
+                  <option value="alphabet">По алфавиту</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
         
         {!hasDiagrams ? (
           /* Пустое состояние */
@@ -147,82 +268,113 @@ export default function DiagramsPage() {
           </div>
         ) : (
           /* Таблица диаграмм */
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                  <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
-                  <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
-                  <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {diagrams.map((diagram) => (
-                  <tr 
-                    key={diagram.id} 
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="py-4 px-6 text-gray-900 font-medium">
-                      <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full hover:text-blue-600 transition-colors">
-                        {diagram.name}
-                      </Link>
-                    </td>
-                    <td className="py-4 px-6 text-gray-600">
-                      <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full">
-                        {diagram.description || ''}
-                      </Link>
-                    </td>
-                    <td className="py-4 px-6 text-gray-500">
-                      <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full">
-                        {formatDate(diagram.created_at)}
-                      </Link>
-                    </td>
-                    <td className="py-4 px-6 relative">
-                      <div className="relative" ref={openMenuId === diagram.id ? menuRef : null}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === diagram.id ? null : diagram.id);
-                          }}
-                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105"
-                          title="Действия"
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                        
-                        {openMenuId === diagram.id && (
-                          <div className="absolute right-full top-0 mr-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 transition-all duration-200 flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(diagram.id);
-                              }}
-                              className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
-                              title="Редактировать"
-                            >
-                              <i className="fas fa-edit text-gray-500 text-sm"></i>
-                              <span className="text-sm">Редактировать</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(diagram.id);
-                              }}
-                              className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
-                              title="Удалить"
-                            >
-                              <i className="fas fa-trash text-red-600 text-sm"></i>
-                              <span className="text-sm">Удалить</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+          <div>
+            {someSelected && (
+              <div className="mb-4 flex items-center gap-4">
+                <button
+                  onClick={handleBulkDelete}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
+                >
+                  <i className="fas fa-trash"></i>
+                  <span>Удалить выбранное ({selectedDiagrams.size})</span>
+                </button>
+              </div>
+            )}
+            
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-4 px-6 font-medium text-gray-900 w-12">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredAndSortedDiagrams.map((diagram) => (
+                    <tr 
+                      key={diagram.id} 
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-4 px-6">
+                        <input
+                          type="checkbox"
+                          checked={selectedDiagrams.has(diagram.id)}
+                          onChange={(e) => handleSelectDiagram(diagram.id, e.target.checked)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-gray-900 font-medium">
+                        <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full hover:text-blue-600 transition-colors">
+                          {diagram.name}
+                        </Link>
+                      </td>
+                      <td className="py-4 px-6 text-gray-600">
+                        <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full">
+                          {diagram.description || ''}
+                        </Link>
+                      </td>
+                      <td className="py-4 px-6 text-gray-500">
+                        <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full">
+                          {formatDate(diagram.created_at)}
+                        </Link>
+                      </td>
+                      <td className="py-4 px-6 relative">
+                        <div className="relative" ref={openMenuId === diagram.id ? menuRef : null}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(openMenuId === diagram.id ? null : diagram.id);
+                            }}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105"
+                            title="Действия"
+                          >
+                            <i className="fas fa-ellipsis-v"></i>
+                          </button>
+                          
+                          {openMenuId === diagram.id && (
+                            <div className="absolute right-full top-0 mr-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 transition-all duration-200 flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(diagram.id);
+                                }}
+                                className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
+                                title="Редактировать"
+                              >
+                                <i className="fas fa-edit text-gray-500 text-sm"></i>
+                                <span className="text-sm">Редактировать</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(diagram.id);
+                                }}
+                                className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
+                                title="Удалить"
+                              >
+                                <i className="fas fa-trash text-red-600 text-sm"></i>
+                                <span className="text-sm">Удалить</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

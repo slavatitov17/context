@@ -14,6 +14,41 @@ export default function ProfilePage() {
   const [birthDate, setBirthDate] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
+  const formatPhoneNumber = (value: string) => {
+    // Удаляем все нецифровые символы
+    let numbers = value.replace(/\D/g, '');
+    
+    // Если начинается с 8, заменяем на 7
+    if (numbers.startsWith('8')) {
+      numbers = '7' + numbers.substring(1);
+    }
+    
+    // Ограничиваем до 11 цифр
+    if (numbers.length > 11) {
+      numbers = numbers.substring(0, 11);
+    }
+    
+    // Форматируем номер
+    if (numbers.length === 0) {
+      return '';
+    } else if (numbers.length <= 1) {
+      return `+${numbers}`;
+    } else if (numbers.length <= 4) {
+      return `+${numbers.substring(0, 1)} (${numbers.substring(1)}`;
+    } else if (numbers.length <= 7) {
+      return `+${numbers.substring(0, 1)} (${numbers.substring(1, 4)}) ${numbers.substring(4)}`;
+    } else if (numbers.length <= 9) {
+      return `+${numbers.substring(0, 1)} (${numbers.substring(1, 4)}) ${numbers.substring(4, 7)}-${numbers.substring(7)}`;
+    } else {
+      return `+${numbers.substring(0, 1)} (${numbers.substring(1, 4)}) ${numbers.substring(4, 7)}-${numbers.substring(7, 9)}-${numbers.substring(9)}`;
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
+
   const getDisplayName = (email: string) => {
     if (!email) return '';
     const atIndex = email.indexOf('@');
@@ -194,7 +229,7 @@ export default function ProfilePage() {
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={handlePhoneChange}
               placeholder="+7 (999) 123-45-67"
               className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
