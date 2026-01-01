@@ -30,6 +30,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Состояния для поиска, фильтров и сортировки типов диаграмм
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStandard, setSelectedStandard] = useState<string>('Все');
+  const [selectedPurpose, setSelectedPurpose] = useState<string>('Все');
+  const [selectedTag, setSelectedTag] = useState<string>('Все');
+  const [sortBy, setSortBy] = useState<'alphabet' | 'popularity'>('alphabet');
 
   // Загрузка диаграммы
   useEffect(() => {
@@ -676,6 +683,179 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'JSON': 'JSON диаграмма',
   };
 
+  // Расширенная информация о типах диаграмм
+  interface DiagramTypeInfo {
+    type: DiagramType;
+    name: string;
+    description: string;
+    standard: string;
+    purpose: string;
+    tags: string[];
+    popularity: number; // для сортировки по популярности
+  }
+
+  const diagramTypesInfo: DiagramTypeInfo[] = [
+    {
+      type: 'Class',
+      name: 'Class',
+      description: 'Отображает структуру системы, показывая классы, их атрибуты, методы и отношения между ними',
+      standard: 'UML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'Объектно-ориентированное программирование'],
+      popularity: 9
+    },
+    {
+      type: 'Sequence',
+      name: 'Sequence',
+      description: 'Показывает взаимодействие объектов в хронологическом порядке, отображая последовательность сообщений',
+      standard: 'UML',
+      purpose: 'Взаимодействие',
+      tags: ['UML', 'Взаимодействие', 'Временные последовательности'],
+      popularity: 8
+    },
+    {
+      type: 'Activity',
+      name: 'Activity',
+      description: 'Визуализирует бизнес-процессы и потоки работ, показывая действия и переходы между ними',
+      standard: 'UML',
+      purpose: 'Бизнес-процессы',
+      tags: ['UML', 'Бизнес-процессы', 'Workflow'],
+      popularity: 7
+    },
+    {
+      type: 'State',
+      name: 'State',
+      description: 'Отображает различные состояния объекта и переходы между ними в течение жизненного цикла',
+      standard: 'UML',
+      purpose: 'Моделирование состояний',
+      tags: ['UML', 'Состояния', 'Жизненный цикл'],
+      popularity: 6
+    },
+    {
+      type: 'Component',
+      name: 'Component',
+      description: 'Показывает структуру системы на уровне компонентов и их взаимосвязи',
+      standard: 'UML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'Компоненты'],
+      popularity: 7
+    },
+    {
+      type: 'UseCase',
+      name: 'UseCase',
+      description: 'Описывает функциональные требования системы через взаимодействие актеров и прецедентов использования',
+      standard: 'UML',
+      purpose: 'Требования',
+      tags: ['UML', 'Требования', 'Прецеденты'],
+      popularity: 8
+    },
+    {
+      type: 'Object',
+      name: 'Object',
+      description: 'Показывает конкретные экземпляры классов и их связи в определенный момент времени',
+      standard: 'UML',
+      purpose: 'Моделирование',
+      tags: ['UML', 'Объекты', 'Экземпляры'],
+      popularity: 5
+    },
+    {
+      type: 'ER',
+      name: 'ER',
+      description: 'Моделирует структуру базы данных, показывая сущности, их атрибуты и отношения',
+      standard: 'ER',
+      purpose: 'База данных',
+      tags: ['База данных', 'Сущности', 'Схема данных'],
+      popularity: 9
+    },
+    {
+      type: 'MindMap',
+      name: 'MindMap',
+      description: 'Визуализирует идеи и концепции в виде древовидной структуры данных',
+      standard: 'Общее',
+      purpose: 'Идеи',
+      tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'Высокоуровневые'],
+      popularity: 6
+    },
+    {
+      type: 'Network',
+      name: 'Network',
+      description: 'Отображает сетевую топологию, показывая узлы, соединения и маршруты',
+      standard: 'Общее',
+      purpose: 'Инфраструктура',
+      tags: ['Сеть', 'Инфраструктура', 'Топология'],
+      popularity: 5
+    },
+    {
+      type: 'Archimate',
+      name: 'Archimate',
+      description: 'Моделирует архитектуру предприятия, показывая бизнес-процессы, приложения и технологии',
+      standard: 'ArchiMate',
+      purpose: 'Архитектура',
+      tags: ['ArchiMate', 'Архитектура предприятия', 'EA'],
+      popularity: 6
+    },
+    {
+      type: 'Timing',
+      name: 'Timing',
+      description: 'Показывает временные зависимости и изменения состояний объектов во времени',
+      standard: 'UML',
+      purpose: 'Временной анализ',
+      tags: ['UML', 'Время', 'Сигналы', 'Синхронизация'],
+      popularity: 4
+    },
+    {
+      type: 'WBS',
+      name: 'WBS',
+      description: 'Структурирует проект в виде иерархии работ и задач для управления проектом',
+      standard: 'PMI',
+      purpose: 'Управление проектами',
+      tags: ['Управление проектами', 'WBS', 'Планирование'],
+      popularity: 5
+    },
+    {
+      type: 'JSON',
+      name: 'JSON',
+      description: 'Визуализирует структуру JSON-данных в виде дерева для лучшего понимания',
+      standard: 'JSON',
+      purpose: 'Данные',
+      tags: ['JSON', 'Данные', 'Структура'],
+      popularity: 4
+    }
+  ];
+
+  // Получаем уникальные значения для фильтров
+  const allStandards = Array.from(new Set(diagramTypesInfo.map(d => d.standard)));
+  const allPurposes = Array.from(new Set(diagramTypesInfo.map(d => d.purpose)));
+  const allTags = Array.from(new Set(diagramTypesInfo.flatMap(d => d.tags)));
+
+  // Фильтрация и сортировка
+  const filteredAndSortedTypes = diagramTypesInfo
+    .filter(diagram => {
+      // Поиск по названию и описанию
+      const matchesSearch = searchQuery === '' || 
+        diagram.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        diagram.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        diagram.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // Фильтр по стандарту
+      const matchesStandard = selectedStandard === 'Все' || diagram.standard === selectedStandard;
+      
+      // Фильтр по цели
+      const matchesPurpose = selectedPurpose === 'Все' || diagram.purpose === selectedPurpose;
+      
+      // Фильтр по тегу
+      const matchesTag = selectedTag === 'Все' || diagram.tags.includes(selectedTag);
+      
+      return matchesSearch && matchesStandard && matchesPurpose && matchesTag;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'alphabet') {
+        return a.name.localeCompare(b.name, 'ru');
+      } else {
+        return b.popularity - a.popularity;
+      }
+    });
+
   return (
     <div className="h-full flex flex-col">
       {!diagramType ? (
@@ -685,20 +865,138 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             <h1 className="text-3xl font-medium mb-2">Тип диаграммы</h1>
             <p className="text-gray-600 text-base">Выберите тип диаграммы</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(['Class', 'Sequence', 'Activity', 'State', 'Component', 'UseCase', 'Object', 'ER', 'MindMap', 'Network', 'Archimate', 'Timing', 'WBS', 'JSON'] as DiagramType[]).map((type) => (
+
+          {/* Панель управления: Поиск, Фильтры, Сортировка */}
+          <div className="mb-8 space-y-6">
+            {/* Поиск и Сортировка в одной строке */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Поиск */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Поиск</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Введите название или описание диаграммы"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Сортировка */}
+              <div className="md:w-64">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Сортировка</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="alphabet">По алфавиту</option>
+                  <option value="popularity">По популярности</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Фильтры */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Фильтры</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Фильтр по стандарту/нотации */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Стандарт или нотация
+                  </label>
+                  <select
+                    value={selectedStandard}
+                    onChange={(e) => setSelectedStandard(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="Все">Все</option>
+                    {allStandards.map(standard => (
+                      <option key={standard} value={standard}>{standard}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Фильтр по цели использования */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Цель использования
+                  </label>
+                  <select
+                    value={selectedPurpose}
+                    onChange={(e) => setSelectedPurpose(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="Все">Все</option>
+                    {allPurposes.map(purpose => (
+                      <option key={purpose} value={purpose}>{purpose}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Фильтр по тегам */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Теги
+                  </label>
+                  <select
+                    value={selectedTag}
+                    onChange={(e) => setSelectedTag(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="Все">Все</option>
+                    {allTags.map(tag => (
+                      <option key={tag} value={tag}>{tag}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Карточки типов диаграмм */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAndSortedTypes.map((diagram, index) => (
               <button
-                key={type}
-                onClick={() => handleDiagramTypeSelect(type)}
-                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                key={diagram.type}
+                onClick={() => handleDiagramTypeSelect(diagram.type)}
+                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all text-left relative group"
               >
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{type}</h3>
-                <p className="text-gray-600 text-sm">
-                  {diagramTypeNames[type]}
+                {/* Индикатор номера */}
+                <div className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-600 group-hover:bg-blue-100">
+                  {index + 1}
+                </div>
+                
+                {/* Заголовок */}
+                <h3 className="text-xl font-medium text-gray-900 mb-3 pr-10">{diagram.name}</h3>
+                
+                {/* Описание */}
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                  {diagram.description}
                 </p>
+                
+                {/* Теги */}
+                <div className="flex flex-wrap gap-2">
+                  {diagram.tags.slice(0, 4).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md group-hover:bg-blue-100"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </button>
             ))}
           </div>
+
+          {/* Сообщение, если ничего не найдено */}
+          {filteredAndSortedTypes.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">Диаграммы не найдены</p>
+              <p className="text-gray-400 text-sm mt-2">Попробуйте изменить параметры поиска или фильтры</p>
+            </div>
+          )}
         </div>
       ) : (
         <>
