@@ -916,7 +916,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   }}
                   placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
                   disabled={isProcessing || !diagramType}
-                  disabled={isProcessing}
                   className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
                     minHeight: '6.5rem',
