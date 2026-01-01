@@ -701,7 +701,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       description: 'Отображает структуру системы, показывая классы, их атрибуты, методы и отношения между ними',
       standard: 'UML',
       purpose: 'Архитектура',
-      tags: ['UML', 'Архитектура', 'Объектно-ориентированное программирование'],
+      tags: ['UML', 'Архитектура'],
       popularity: 9
     },
     {
