@@ -828,6 +828,16 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const allPurposes = Array.from(new Set(diagramTypesInfo.map(d => d.purpose)));
   const allTags = Array.from(new Set(diagramTypesInfo.flatMap(d => d.tags)));
 
+  // Проверяем, применены ли фильтры
+  const hasActiveFilters = selectedStandard !== 'Все' || selectedPurpose !== 'Все' || selectedTag !== 'Все';
+
+  // Функция для сброса всех фильтров
+  const handleClearFilters = () => {
+    setSelectedStandard('Все');
+    setSelectedPurpose('Все');
+    setSelectedTag('Все');
+  };
+
   // Фильтрация и сортировка
   const filteredAndSortedTypes = diagramTypesInfo
     .filter(diagram => {
@@ -898,7 +908,17 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
             {/* Фильтры */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-xl font-medium text-gray-900 mb-4">Фильтры</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-medium text-gray-900">Фильтры</h3>
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-base text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Убрать фильтры
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Фильтр по стандарту/нотации */}
                 <div>
