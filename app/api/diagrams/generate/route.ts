@@ -82,7 +82,6 @@ export async function POST(request: NextRequest) {
       'UseCase': 'UML диаграмма прецедентов (Use Case Diagram)',
       'Object': 'UML диаграмма объектов (Object Diagram)',
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
-      'Gantt': 'Диаграмма Ганта (Gantt Chart)',
       'MindMap': 'Интеллект-карта (Mind Map)',
       'Network': 'Сетевая диаграмма (Network Diagram)',
       'Archimate': 'ArchiMate диаграмма',
@@ -100,7 +99,6 @@ ${objectDescription}
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
-${diagramType === 'Gantt' ? 'ДЛЯ GANTT: ОБЯЗАТЕЛЬНО используй синтаксис @startgantt ... @endgantt. В НАЧАЛЕ добавь projecttitle "Название проекта". Формат задач: [YYYY-MM-DD, YYYY-MM-DD] Название задачи. Пример: @startgantt\nprojecttitle "Проект"\n[2025-01-01, 2025-01-07] Задача 1\n@endgantt' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Timing' ? 'ДЛЯ TIMING: Используй синтаксис timing диаграммы: @startuml ... @enduml с clock, binary, analog сигналами. Пример: clock clk, binary "сигнал" as sig' : ''}
 ${diagramType === 'JSON' ? 'ДЛЯ JSON: Используй синтаксис @startjson ... @endjson. Внутри должен быть валидный JSON код. Пример: @startjson\n{\n  "ключ": "значение"\n}\n@endjson' : ''}
@@ -181,18 +179,11 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
         plantUmlCode = plantUmlCode.replace(/@enduml\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@startmindmap\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@endmindmap\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@startgantt\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@endgantt\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@startjson\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@endjson\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
         plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
         plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
-        
-        // Для Gantt: добавляем projecttitle если его нет
-        if (isGantt && !plantUmlCode.toLowerCase().includes('projecttitle')) {
-          plantUmlCode = `projecttitle "Проект"\n` + plantUmlCode;
-        }
         
         // Для Class: исправляем длинные названия классов без пробелов
         if (diagramType === 'Class') {

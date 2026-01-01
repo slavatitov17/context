@@ -37,7 +37,6 @@ export type DiagramType =
   | 'UseCase' 
   | 'Object' 
   | 'ER' 
-  | 'Gantt' 
   | 'MindMap' 
   | 'Network' 
   | 'Archimate' 
