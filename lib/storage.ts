@@ -34,7 +34,6 @@ export type DiagramType =
   | 'Activity' 
   | 'State' 
   | 'Component' 
-  | 'Deployment' 
   | 'UseCase' 
   | 'Object' 
   | 'ER' 

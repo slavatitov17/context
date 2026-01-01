@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
       'Activity': 'UML диаграмма активности (Activity Diagram)',
       'State': 'UML диаграмма состояний (State Diagram)',
       'Component': 'UML диаграмма компонентов (Component Diagram)',
-      'Deployment': 'UML диаграмма развертывания (Deployment Diagram)',
       'UseCase': 'UML диаграмма прецедентов (Use Case Diagram)',
       'Object': 'UML диаграмма объектов (Object Diagram)',
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
@@ -101,11 +100,11 @@ ${objectDescription}
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
-${diagramType === 'Gantt' ? 'ДЛЯ GANTT: Используй синтаксис @startgantt ... @endgantt. Формат задач: [YYYY-MM-DD, YYYY-MM-DD] Название задачи. Пример: [2025-01-01, 2025-01-07] Подготовка к аттестации' : ''}
+${diagramType === 'Gantt' ? 'ДЛЯ GANTT: ОБЯЗАТЕЛЬНО используй синтаксис @startgantt ... @endgantt. В НАЧАЛЕ добавь projecttitle "Название проекта". Формат задач: [YYYY-MM-DD, YYYY-MM-DD] Название задачи. Пример: @startgantt\nprojecttitle "Проект"\n[2025-01-01, 2025-01-07] Задача 1\n@endgantt' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
-${diagramType === 'Deployment' ? 'ДЛЯ DEPLOYMENT: Используй синтаксис deployment diagram. Формат: node "название" as alias { компоненты }, database "название", cloud "название". НЕ используй "deployment Diagram as" в начале!' : ''}
 ${diagramType === 'Timing' ? 'ДЛЯ TIMING: Используй синтаксис timing диаграммы: @startuml ... @enduml с clock, binary, analog сигналами. Пример: clock clk, binary "сигнал" as sig' : ''}
-${diagramType === 'JSON' ? 'ДЛЯ JSON: Используй синтаксис @startjson ... @endjson для JSON диаграмм' : ''}`;
+${diagramType === 'JSON' ? 'ДЛЯ JSON: Используй синтаксис @startjson ... @endjson. Внутри должен быть валидный JSON код. Пример: @startjson\n{\n  "ключ": "значение"\n}\n@endjson' : ''}
+${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
 
     if (context) {
       userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
