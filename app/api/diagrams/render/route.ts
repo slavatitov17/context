@@ -1,23 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deflateSync } from 'zlib';
-
-// Функция для кодирования PlantUML кода в формат для PlantUML Server
-// PlantUML использует специальный алгоритм: deflate -> base64 -> замена символов
-function encodePlantUml(plantUmlCode: string): string {
-  // Сжимаем код через deflate
-  const compressed = deflateSync(plantUmlCode, { level: 9 });
-  
-  // Кодируем в base64
-  const base64 = Buffer.from(compressed).toString('base64');
-  
-  // Заменяем символы согласно спецификации PlantUML
-  const encoded = base64
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-  
-  return encoded;
-}
+import plantumlEncoder from 'plantuml-encoder';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,17 +14,14 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Кодируем код PlantUML
-      const encoded = encodePlantUml(plantUmlCode);
-      
-      // Добавляем префикс ~1 для указания типа кодирования (HUFFMAN)
-      // PlantUML сервер требует этот префикс для правильной обработки данных
-      const encodedWithHeader = `~1${encoded}`;
+      // Кодируем код PlantUML используя правильный алгоритм из библиотеки
+      // PlantUML использует специальный алгоритм: UTF-8 -> Deflate -> специальное base64-подобное кодирование
+      const encoded = plantumlEncoder.encode(plantUmlCode);
       
       // Формируем URL для получения изображения
       // Используем публичный сервер PlantUML
-      const imageUrl = `https://www.plantuml.com/plantuml/png/${encodedWithHeader}`;
-      const svgUrl = `https://www.plantuml.com/plantuml/svg/${encodedWithHeader}`;
+      const imageUrl = `https://www.plantuml.com/plantuml/png/${encoded}`;
+      const svgUrl = `https://www.plantuml.com/plantuml/svg/${encoded}`;
       
       return NextResponse.json({
         imageUrl,
