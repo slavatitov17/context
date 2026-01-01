@@ -872,7 +872,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             <div className="flex flex-col md:flex-row gap-4">
               {/* Поиск */}
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Поиск</label>
+                <label className="block text-xl font-medium text-gray-900 mb-2">Поиск</label>
                 <input
                   type="text"
                   value={searchQuery}
@@ -884,7 +884,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               
               {/* Сортировка */}
               <div className="md:w-64">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Сортировка</label>
+                <label className="block text-xl font-medium text-gray-900 mb-2">Сортировка</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
@@ -898,17 +898,17 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
             {/* Фильтры */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Фильтры</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-4">Фильтры</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Фильтр по стандарту/нотации */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-base font-medium text-gray-900 mb-2">
                     Стандарт или нотация
                   </label>
                   <select
                     value={selectedStandard}
                     onChange={(e) => setSelectedStandard(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   >
                     <option value="Все">Все</option>
                     {allStandards.map(standard => (
@@ -919,13 +919,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                 {/* Фильтр по цели использования */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-base font-medium text-gray-900 mb-2">
                     Цель использования
                   </label>
                   <select
                     value={selectedPurpose}
                     onChange={(e) => setSelectedPurpose(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   >
                     <option value="Все">Все</option>
                     {allPurposes.map(purpose => (
@@ -936,13 +936,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                 {/* Фильтр по тегам */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-base font-medium text-gray-900 mb-2">
                     Теги
                   </label>
                   <select
                     value={selectedTag}
                     onChange={(e) => setSelectedTag(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   >
                     <option value="Все">Все</option>
                     {allTags.map(tag => (
@@ -980,7 +980,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   {diagram.tags.slice(0, 4).map((tag) => (
                     <span
                       key={tag}
-                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md group-hover:bg-blue-100"
+                      className="px-2 py-1 bg-[#EAEEFF] text-[#3B5AE4] text-sm rounded-md"
                     >
                       {tag}
                     </span>
