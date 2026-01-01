@@ -64,26 +64,44 @@ export async function POST(request: NextRequest) {
     // Формируем промпт для генерации PlantUML кода
     const systemPrompt = `Ты эксперт по созданию диаграмм в формате PlantUML. Твоя задача - создать корректный код PlantUML для указанного типа диаграммы.
 
-Важно:
+КРИТИЧЕСКИ ВАЖНО:
 1. Генерируй только валидный код PlantUML, без дополнительных объяснений
 2. Код должен начинаться с @startuml и заканчиваться @enduml
-3. Используй правильный синтаксис для указанного типа диаграммы
-4. Добавь комментарии на русском языке для лучшей читаемости
-5. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"`;
+3. Используй правильный синтаксис для указанного типа диаграммы (английские ключевые слова: class, interface, component, etc.)
+4. ВСЕ НАЗВАНИЯ ОБЪЕКТОВ, КЛАССОВ, МЕТОДОВ, АТРИБУТОВ И ДРУГИХ ЭЛЕМЕНТОВ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ
+5. Используй русские названия для всех сущностей в диаграмме (например: "Институт" вместо "Institute", "Студент" вместо "Student")
+6. Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском
+7. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"`;
 
     const diagramTypeDescriptions: Record<string, string> = {
-      'UML': 'UML диаграмма классов (Class Diagram)',
-      'ER': 'ER диаграмма (Entity-Relationship Diagram)',
+      'Class': 'UML диаграмма классов (Class Diagram)',
       'Sequence': 'UML диаграмма последовательности (Sequence Diagram)',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
-      'Class': 'UML диаграмма классов (Class Diagram)',
+      'State': 'UML диаграмма состояний (State Diagram)',
+      'Component': 'UML диаграмма компонентов (Component Diagram)',
+      'Deployment': 'UML диаграмма развертывания (Deployment Diagram)',
+      'UseCase': 'UML диаграмма прецедентов (Use Case Diagram)',
+      'Object': 'UML диаграмма объектов (Object Diagram)',
+      'ER': 'ER диаграмма (Entity-Relationship Diagram)',
+      'Gantt': 'Диаграмма Ганта (Gantt Chart)',
+      'MindMap': 'Интеллект-карта (Mind Map)',
+      'Network': 'Сетевая диаграмма (Network Diagram)',
+      'Archimate': 'ArchiMate диаграмма',
+      'Salt': 'Salt диаграмма',
+      'Ditaa': 'Ditaa диаграмма',
+      'Timing': 'Диаграмма временных зависимостей (Timing Diagram)',
+      'WBS': 'WBS диаграмма (Work Breakdown Structure)',
+      'JSON': 'JSON диаграмма',
+      'YAML': 'YAML диаграмма',
     };
 
     const typeDescription = diagramTypeDescriptions[diagramType] || diagramType;
 
     let userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
 
-${objectDescription}`;
+${objectDescription}
+
+ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.`;
 
     if (context) {
       userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
@@ -92,13 +110,13 @@ ${objectDescription}`;
     userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
 @startuml
-[код диаграммы]
+[код диаграммы с русскими названиями объектов]
 @enduml
 \`\`\`
 
 \`\`\`json
 [
-  {"element": "Название элемента", "description": "Описание элемента"},
+  {"element": "Название элемента на русском", "description": "Описание элемента на русском"},
   ...
 ]
 \`\`\``;

@@ -28,6 +28,27 @@ export interface User {
   created_at: string;
 }
 
+export type DiagramType = 
+  | 'Class' 
+  | 'Sequence' 
+  | 'Activity' 
+  | 'State' 
+  | 'Component' 
+  | 'Deployment' 
+  | 'UseCase' 
+  | 'Object' 
+  | 'ER' 
+  | 'Gantt' 
+  | 'MindMap' 
+  | 'Network' 
+  | 'Archimate' 
+  | 'Salt' 
+  | 'Ditaa' 
+  | 'Timing' 
+  | 'WBS' 
+  | 'JSON' 
+  | 'YAML';
+
 export interface Diagram {
   id: string;
   name: string;
@@ -35,7 +56,7 @@ export interface Diagram {
   user_id: string;
   selectedOption?: 'projects' | 'scratch' | null;
   selectedProject?: string | null;
-  diagramType?: 'UML' | 'ER' | 'Sequence' | 'Activity' | 'Class' | null;
+  diagramType?: DiagramType | null;
   selectedObject?: string | null;
   plantUmlCode?: string | null;
   diagramImageUrl?: string | null;

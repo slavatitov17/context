@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram } from '@/lib/storage';
+import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
 
 interface UploadedFile {
   id: string;
@@ -20,7 +20,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [selectedOption, setSelectedOption] = useState<'projects' | 'scratch' | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedProjectData, setSelectedProjectData] = useState<Project | null>(null);
-  const [diagramType, setDiagramType] = useState<'UML' | 'ER' | 'Sequence' | 'Activity' | 'Class' | null>(null);
+  const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code'; plantUmlCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
@@ -247,6 +247,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
   }, [messages, loading, diagramData, saveDiagram]);
 
+  const handleDiagramTypeSelect = (type: DiagramType) => {
+    setDiagramType(type);
+    
+    const currentUser = auth.getCurrentUser();
+    if (currentUser && diagramId) {
+      saveDiagram({ diagramType: type });
+    }
+  };
+
   const handleOptionSelect = (option: 'projects' | 'scratch') => {
     setSelectedOption(option);
     
@@ -256,37 +265,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
     
     if (option === 'scratch') {
-      // Для создания с нуля показываем выбор типа диаграммы
+      // Для создания с нуля сразу переходим в чат
       setMessages([{
-        text: "Сначала выберите тип диаграммы, затем опишите предметную область и конкретный объект",
+        text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
         isUser: false,
         timestamp: new Date()
       }]);
       setUploadedFiles([]);
-    }
-  };
-
-  const handleDiagramTypeSelect = (type: 'UML' | 'ER' | 'Sequence' | 'Activity' | 'Class') => {
-    setDiagramType(type);
-    
-    const currentUser = auth.getCurrentUser();
-    if (currentUser && diagramId) {
-      saveDiagram({ diagramType: type });
-    }
-    
-    // Обновляем сообщение в зависимости от выбранного источника
-    if (selectedOption === 'scratch') {
-      setMessages([{
-        text: `Выбран тип диаграммы: ${type}. Теперь опишите предметную область и конкретный объект, диаграмму которого нужно будет построить`,
-        isUser: false,
-        timestamp: new Date()
-      }]);
-    } else if (selectedOption === 'projects' && selectedProject) {
-      setMessages([{
-        text: `Выбран тип диаграммы: ${type}. Теперь выберите объект или процесс из проекта, для которого будет построена диаграмма`,
-        isUser: false,
-        timestamp: new Date()
-      }]);
     }
   };
 
@@ -673,11 +658,53 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     );
   }
 
+  // Определяем порядок шагов: тип диаграммы -> способ создания -> проект/чат
+  const diagramTypeNames: Record<DiagramType, string> = {
+    'Class': 'UML диаграмма классов',
+    'Sequence': 'UML диаграмма последовательности',
+    'Activity': 'UML диаграмма активности',
+    'State': 'UML диаграмма состояний',
+    'Component': 'UML диаграмма компонентов',
+    'Deployment': 'UML диаграмма развертывания',
+    'UseCase': 'UML диаграмма прецедентов',
+    'Object': 'UML диаграмма объектов',
+    'ER': 'ER диаграмма (Entity-Relationship)',
+    'Gantt': 'Диаграмма Ганта',
+    'MindMap': 'Интеллект-карта',
+    'Network': 'Сетевая диаграмма',
+    'Archimate': 'ArchiMate диаграмма',
+    'Salt': 'Salt диаграмма',
+    'Ditaa': 'Ditaa диаграмма',
+    'Timing': 'Диаграмма временных зависимостей',
+    'WBS': 'WBS диаграмма',
+    'JSON': 'JSON диаграмма',
+    'YAML': 'YAML диаграмма',
+  };
+
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-3xl font-medium mb-2">{!selectedOption ? 'Способ создания диаграммы' : diagramData.name}</h1>
-      <p className="text-gray-600 mb-8 text-base">{!selectedOption ? 'Выберите способ создания диаграммы' : (diagramData.description || '')}</p>
-      {!selectedOption ? (
+      <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
+      <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+      {!diagramType ? (
+        /* Выбор типа диаграммы */
+        <div>
+          <h2 className="text-2xl font-medium mb-6">Выберите тип диаграммы</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(['Class', 'Sequence', 'Activity', 'State', 'Component', 'Deployment', 'UseCase', 'Object', 'ER', 'Gantt', 'MindMap', 'Network', 'Archimate', 'Salt', 'Ditaa', 'Timing', 'WBS', 'JSON', 'YAML'] as DiagramType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => handleDiagramTypeSelect(type)}
+                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+              >
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{type}</h3>
+                <p className="text-gray-600 text-sm">
+                  {diagramTypeNames[type]}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : !selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">
           {/* Блок 1: Выбрать из проектов */}
@@ -716,29 +743,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 <i className="fas fa-arrow-right"></i>
               </button>
             </div>
-          </div>
-        </div>
-      ) : !diagramType ? (
-        /* Выбор типа диаграммы */
-        <div>
-          <h2 className="text-2xl font-medium mb-6">Выберите тип диаграммы</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(['UML', 'ER', 'Sequence', 'Activity', 'Class'] as const).map((type) => (
-              <button
-                key={type}
-                onClick={() => handleDiagramTypeSelect(type)}
-                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
-              >
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{type}</h3>
-                <p className="text-gray-600 text-sm">
-                  {type === 'UML' && 'UML диаграмма классов'}
-                  {type === 'ER' && 'ER диаграмма (Entity-Relationship)'}
-                  {type === 'Sequence' && 'UML диаграмма последовательности'}
-                  {type === 'Activity' && 'UML диаграмма активности'}
-                  {type === 'Class' && 'UML диаграмма классов'}
-                </p>
-              </button>
-            ))}
           </div>
         </div>
       ) : selectedOption === 'projects' && !selectedProject ? (
