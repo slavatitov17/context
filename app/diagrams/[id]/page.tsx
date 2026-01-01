@@ -28,6 +28,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<'processing' | 'generating' | 'creating'>('processing');
   const [isDragging, setIsDragging] = useState(false);
   const [viewModes, setViewModes] = useState<Map<number, 'diagram' | 'code'>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -544,6 +545,36 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
+  // Управление этапами загрузки
+  useEffect(() => {
+    if (!isProcessing) {
+      setLoadingStage('processing');
+      return;
+    }
+
+    // Этап 1: Обработка запроса (сразу)
+    setLoadingStage('processing');
+    
+    // Этап 2: Формирование кода (через 2 секунды)
+    const timer1 = setTimeout(() => {
+      if (isProcessing) {
+        setLoadingStage('generating');
+      }
+    }, 2000);
+
+    // Этап 3: Создание диаграммы (через 4 секунды)
+    const timer2 = setTimeout(() => {
+      if (isProcessing) {
+        setLoadingStage('creating');
+      }
+    }, 4000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [isProcessing]);
+
   const handleSendMessage = async () => {
     if (message.trim() && !isProcessing && diagramType) {
       const objectDescription = message.trim();
@@ -555,6 +586,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       setMessages(prev => [...prev, newMessage]);
       setMessage('');
       setIsProcessing(true);
+      setLoadingStage('processing');
 
       try {
         // Собираем документы из проекта (если есть)
@@ -615,11 +647,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         // Добавляем сообщения с результатами
         setMessages(prev => [
           ...prev,
-          {
-            text: "Диаграмма построена:",
-            isUser: false,
-            timestamp: new Date()
-          },
           {
             text: plantUmlCode,
             isUser: false,
@@ -1266,7 +1293,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
-                          <span className="text-sm text-gray-500 ml-2">Думаю...</span>
+                          <span className="text-sm text-gray-500 ml-2">
+                            {loadingStage === 'processing' && 'Обработка запроса'}
+                            {loadingStage === 'generating' && 'Формирование кода'}
+                            {loadingStage === 'creating' && 'Создание диаграммы'}
+                          </span>
                         </div>
                       </div>
                     </div>
