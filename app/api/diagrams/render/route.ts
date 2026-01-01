@@ -35,10 +35,14 @@ export async function POST(request: NextRequest) {
       // Кодируем код PlantUML
       const encoded = encodePlantUml(plantUmlCode);
       
+      // Добавляем префикс ~1 для указания типа кодирования (HUFFMAN)
+      // PlantUML сервер требует этот префикс для правильной обработки данных
+      const encodedWithHeader = `~1${encoded}`;
+      
       // Формируем URL для получения изображения
       // Используем публичный сервер PlantUML
-      const imageUrl = `https://www.plantuml.com/plantuml/png/${encoded}`;
-      const svgUrl = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+      const imageUrl = `https://www.plantuml.com/plantuml/png/${encodedWithHeader}`;
+      const svgUrl = `https://www.plantuml.com/plantuml/svg/${encodedWithHeader}`;
       
       return NextResponse.json({
         imageUrl,
