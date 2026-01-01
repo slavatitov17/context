@@ -87,12 +87,9 @@ export async function POST(request: NextRequest) {
       'MindMap': 'Интеллект-карта (Mind Map)',
       'Network': 'Сетевая диаграмма (Network Diagram)',
       'Archimate': 'ArchiMate диаграмма',
-      'Salt': 'Salt диаграмма',
-      'Ditaa': 'Ditaa диаграмма',
       'Timing': 'Диаграмма временных зависимостей (Timing Diagram)',
       'WBS': 'WBS диаграмма (Work Breakdown Structure)',
       'JSON': 'JSON диаграмма',
-      'YAML': 'YAML диаграмма',
     };
 
     const typeDescription = diagramTypeDescriptions[diagramType] || diagramType;
@@ -104,9 +101,11 @@ ${objectDescription}
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
-${diagramType === 'Gantt' ? 'ДЛЯ GANTT: Используй синтаксис @startgantt ... @endgantt' : ''}
-${diagramType === 'Salt' ? 'ДЛЯ SALT: Используй синтаксис @startsalt ... @endsalt' : ''}
-${diagramType === 'Ditaa' ? 'ДЛЯ DITAA: Используй синтаксис @startditaa ... @endditaa' : ''}`;
+${diagramType === 'Gantt' ? 'ДЛЯ GANTT: Используй синтаксис @startgantt ... @endgantt. Формат задач: [YYYY-MM-DD, YYYY-MM-DD] Название задачи. Пример: [2025-01-01, 2025-01-07] Подготовка к аттестации' : ''}
+${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
+${diagramType === 'Deployment' ? 'ДЛЯ DEPLOYMENT: Используй синтаксис deployment diagram. Формат: node "название" as alias { компоненты }, database "название", cloud "название". НЕ используй "deployment Diagram as" в начале!' : ''}
+${diagramType === 'Timing' ? 'ДЛЯ TIMING: Используй синтаксис timing диаграммы: @startuml ... @enduml с clock, binary, analog сигналами. Пример: clock clk, binary "сигнал" as sig' : ''}
+${diagramType === 'JSON' ? 'ДЛЯ JSON: Используй синтаксис @startjson ... @endjson для JSON диаграмм' : ''}`;
 
     if (context) {
       userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
@@ -183,7 +182,14 @@ ${diagramType === 'Ditaa' ? 'ДЛЯ DITAA: Используй синтаксис
         plantUmlCode = plantUmlCode.replace(/@enduml\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@startmindmap\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@endmindmap\s*/gi, '');
+        plantUmlCode = plantUmlCode.replace(/@startgantt\s*/gi, '');
+        plantUmlCode = plantUmlCode.replace(/@endgantt\s*/gi, '');
+        plantUmlCode = plantUmlCode.replace(/@startjson\s*/gi, '');
+        plantUmlCode = plantUmlCode.replace(/@endjson\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
+        plantUmlCode = plantUmlCode.replace(/deployment\s+Diagram\s+as\s+\w+\s*/gi, ''); // Удаляем "deployment Diagram as ..."
+        plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
+        plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
         
         // Добавляем правильные теги
         if (!plantUmlCode.includes(startTag)) {

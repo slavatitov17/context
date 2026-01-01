@@ -42,12 +42,9 @@ export type DiagramType =
   | 'MindMap' 
   | 'Network' 
   | 'Archimate' 
-  | 'Salt' 
-  | 'Ditaa' 
   | 'Timing' 
   | 'WBS' 
-  | 'JSON' 
-  | 'YAML';
+  | 'JSON';
 
 export interface Diagram {
   id: string;

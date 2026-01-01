@@ -673,12 +673,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'MindMap': 'Интеллект-карта',
     'Network': 'Сетевая диаграмма',
     'Archimate': 'ArchiMate диаграмма',
-    'Salt': 'Salt диаграмма',
-    'Ditaa': 'Ditaa диаграмма',
     'Timing': 'Диаграмма временных зависимостей',
     'WBS': 'WBS диаграмма',
     'JSON': 'JSON диаграмма',
-    'YAML': 'YAML диаграмма',
   };
 
   return (
@@ -690,7 +687,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         <div>
           <h2 className="text-2xl font-medium mb-6">Выберите тип диаграммы</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(['Class', 'Sequence', 'Activity', 'State', 'Component', 'Deployment', 'UseCase', 'Object', 'ER', 'Gantt', 'MindMap', 'Network', 'Archimate', 'Salt', 'Ditaa', 'Timing', 'WBS', 'JSON', 'YAML'] as DiagramType[]).map((type) => (
+            {(['Class', 'Sequence', 'Activity', 'State', 'Component', 'Deployment', 'UseCase', 'Object', 'ER', 'Gantt', 'MindMap', 'Network', 'Archimate', 'Timing', 'WBS', 'JSON'] as DiagramType[]).map((type) => (
               <button
                 key={type}
                 onClick={() => handleDiagramTypeSelect(type)}
