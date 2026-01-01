@@ -678,12 +678,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
-      <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
-          <h2 className="text-2xl font-medium mb-6">Выберите тип диаграммы</h2>
+          <div className="mb-8 pb-6 border-b border-gray-200">
+            <h1 className="text-3xl font-medium mb-2">Тип диаграммы</h1>
+            <p className="text-gray-600 text-base">Выберите тип диаграммы</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(['Class', 'Sequence', 'Activity', 'State', 'Component', 'UseCase', 'Object', 'ER', 'MindMap', 'Network', 'Archimate', 'Timing', 'WBS', 'JSON'] as DiagramType[]).map((type) => (
               <button
@@ -699,7 +700,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             ))}
           </div>
         </div>
-      ) : !selectedOption ? (
+      ) : (
+        <>
+          <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
+          <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+          {!selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">
           {/* Блок 1: Выбрать из проектов */}
@@ -785,9 +790,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
           )}
         </div>
-      ) : (
-        /* Область чата */
-        <div className="flex flex-col h-full">
+        ) : (
+          /* Область чата */
+          <div className="flex flex-col h-full">
           <div className="flex-1 flex gap-4 min-h-0">
             {/* Чат */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -938,6 +943,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
           </div>
         </div>
+        )}
+        </>
       )}
     </div>
   );
