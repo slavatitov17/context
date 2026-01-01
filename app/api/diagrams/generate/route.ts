@@ -186,9 +186,30 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
         plantUmlCode = plantUmlCode.replace(/@startjson\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/@endjson\s*/gi, '');
         plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
-        plantUmlCode = plantUmlCode.replace(/deployment\s+Diagram\s+as\s+\w+\s*/gi, ''); // Удаляем "deployment Diagram as ..."
         plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
         plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
+        
+        // Для Gantt: добавляем projecttitle если его нет
+        if (isGantt && !plantUmlCode.toLowerCase().includes('projecttitle')) {
+          plantUmlCode = `projecttitle "Проект"\n` + plantUmlCode;
+        }
+        
+        // Для Class: исправляем длинные названия классов без пробелов
+        if (diagramType === 'Class') {
+          // Заменяем длинные слитные русские слова на слова с пробелами в кавычках
+          plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s+as\s+(\w+)/gi, (match, className, alias) => {
+            // Разбиваем длинное слово на части (каждые 15-20 символов)
+            const words = className.match(/.{1,20}/g);
+            const spacedName = words ? words.join(' ') : className;
+            return `class "${spacedName}" as ${alias}`;
+          });
+          // Также обрабатываем случаи без "as"
+          plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s*{/gi, (match, className) => {
+            const words = className.match(/.{1,20}/g);
+            const spacedName = words ? words.join(' ') : className;
+            return `class "${spacedName}" {`;
+          });
+        }
         
         // Добавляем правильные теги
         if (!plantUmlCode.includes(startTag)) {
