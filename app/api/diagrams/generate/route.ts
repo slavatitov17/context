@@ -122,7 +122,20 @@ ${objectDescription}`;
       });
 
       const responseContent = chatResponse.choices?.[0]?.message?.content;
-      const responseText = typeof responseContent === 'string' ? responseContent : (Array.isArray(responseContent) ? responseContent.map(c => typeof c === 'string' ? c : c.text || '').join('') : String(responseContent || ''));
+      let responseText = '';
+      if (typeof responseContent === 'string') {
+        responseText = responseContent;
+      } else if (Array.isArray(responseContent)) {
+        responseText = responseContent
+          .map(c => {
+            if (typeof c === 'string') return c;
+            if ('text' in c && typeof (c as any).text === 'string') return (c as any).text;
+            return '';
+          })
+          .join('');
+      } else {
+        responseText = String(responseContent || '');
+      }
 
       // Извлекаем код PlantUML
       const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
