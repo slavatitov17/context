@@ -121,7 +121,8 @@ ${objectDescription}`;
         temperature: 0.3, // Низкая температура для более точного кода
       });
 
-      const responseText = chatResponse.choices?.[0]?.message?.content || '';
+      const responseContent = chatResponse.choices?.[0]?.message?.content;
+      const responseText = typeof responseContent === 'string' ? responseContent : (Array.isArray(responseContent) ? responseContent.map(c => typeof c === 'string' ? c : c.text || '').join('') : String(responseContent || ''));
 
       // Извлекаем код PlantUML
       const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
