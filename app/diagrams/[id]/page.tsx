@@ -64,8 +64,8 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   );
 }
 
-// Компонент для отображения унифицированного сообщения MindMap2
-function MindMap2Message({
+// Компонент для отображения унифицированного сообщения с двумя форматами (PlantUML и Mermaid)
+function DualFormatMessage({
   msg,
   index,
   dateStr,
@@ -1147,7 +1147,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
         const generateData = await generateResponse.json();
         const isMermaid = diagramType === 'MindMapMermaid';
-        const isMindMap2 = diagramType === 'MindMap2';
+        const isDualFormat = diagramType.endsWith('2');
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
         const glossary = generateData.glossary;
@@ -1155,8 +1155,37 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         // Сохраняем данные в диаграмму
         const currentUser = auth.getCurrentUser();
         
-        if (isMindMap2) {
-          // Для MindMap2 генерируем оба формата
+        // Функция для получения базового типа диаграммы
+        const getBaseType = (type: DiagramType): string => {
+          if (type === 'MindMap2') return 'MindMap';
+          if (type === 'Sequence2') return 'Sequence';
+          if (type === 'Class2') return 'Class';
+          if (type === 'State2') return 'State';
+          if (type === 'Activity2') return 'Activity';
+          if (type === 'Component2') return 'Component';
+          if (type === 'Gantt2') return 'Gantt';
+          if (type === 'ER2') return 'ER';
+          return type;
+        };
+
+        // Функция для получения Mermaid типа диаграммы
+        const getMermaidType = (type: DiagramType): string => {
+          if (type === 'MindMap2') return 'MindMapMermaid';
+          if (type === 'Sequence2') return 'SequenceMermaid';
+          if (type === 'Class2') return 'ClassMermaid';
+          if (type === 'State2') return 'StateMermaid';
+          if (type === 'Activity2') return 'ActivityMermaid';
+          if (type === 'Component2') return 'ComponentMermaid';
+          if (type === 'Gantt2') return 'GanttMermaid';
+          if (type === 'ER2') return 'ERMermaid';
+          return type;
+        };
+        
+        if (isDualFormat) {
+          // Для всех (2) типов генерируем оба формата
+          const baseType = getBaseType(diagramType);
+          const mermaidType = getMermaidType(diagramType);
+          
           // Сначала генерируем PlantUML
           const plantUmlResponse = await fetch('/api/diagrams/generate', {
             method: 'POST',
@@ -1164,7 +1193,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              diagramType: 'MindMap',
+              diagramType: baseType,
               objectDescription,
               documents,
               isFromProject: selectedOption === 'projects',
@@ -1176,7 +1205,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           }
 
           const plantUmlData = await plantUmlResponse.json();
-          const plantUmlCodeForMindMap2 = plantUmlData.plantUmlCode;
+          const plantUmlCodeForDual = plantUmlData.plantUmlCode;
           const plantUmlGlossary = plantUmlData.glossary;
 
           // Рендерим PlantUML
@@ -1186,7 +1215,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              plantUmlCode: plantUmlCodeForMindMap2,
+              plantUmlCode: plantUmlCodeForDual,
             }),
           });
 
@@ -1203,7 +1232,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              diagramType: 'MindMapMermaid',
+              diagramType: mermaidType,
               objectDescription,
               documents,
               isFromProject: selectedOption === 'projects',
@@ -1215,14 +1244,14 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           }
 
           const mermaidData = await mermaidResponse.json();
-          const mermaidCodeForMindMap2 = mermaidData.mermaidCode;
+          const mermaidCodeForDual = mermaidData.mermaidCode;
           const mermaidGlossary = mermaidData.glossary;
 
           if (currentUser && diagramId) {
             saveDiagram({
               diagramType,
               selectedObject: objectDescription,
-              plantUmlCode: plantUmlCodeForMindMap2,
+              plantUmlCode: plantUmlCodeForDual,
               diagramImageUrl: imageUrl,
               glossary: plantUmlGlossary,
             });
@@ -1234,9 +1263,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             {
               text: '',
               isUser: false,
-              type: 'mindmap2',
-              plantUmlCode: plantUmlCodeForMindMap2,
-              mermaidCode: mermaidCodeForMindMap2,
+              type: 'dualformat',
+              plantUmlCode: plantUmlCodeForDual,
+              mermaidCode: mermaidCodeForDual,
               plantUmlGlossary,
               mermaidGlossary,
               diagramImageUrl: imageUrl,
@@ -1367,6 +1396,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'MindMap': 'Интеллект-карта',
     'MindMapMermaid': 'MindMap (Mermaid)',
     'MindMap2': 'MindMap (2)',
+    'Sequence2': 'Sequence (2)',
+    'Class2': 'Class (2)',
+    'State2': 'State (2)',
+    'Activity2': 'Activity (2)',
+    'Component2': 'Component (2)',
+    'Gantt2': 'Gantt (2)',
+    'ER2': 'ER (2)',
     'Network': 'Сетевая диаграмма',
     'Archimate': 'ArchiMate диаграмма',
     'Timing': 'Диаграмма временных зависимостей',
@@ -1484,6 +1520,69 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Идеи',
       tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'PlantUML', 'Mermaid'],
       popularity: 8
+    },
+    {
+      type: 'Sequence2',
+      name: 'Sequence (2)',
+      description: 'Диаграмма последовательности с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'UML',
+      purpose: 'Взаимодействие',
+      tags: ['UML', 'Взаимодействие', 'Временные последовательности', 'PlantUML', 'Mermaid'],
+      popularity: 8
+    },
+    {
+      type: 'Class2',
+      name: 'Class (2)',
+      description: 'Диаграмма классов с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'UML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'PlantUML', 'Mermaid'],
+      popularity: 9
+    },
+    {
+      type: 'State2',
+      name: 'State (2)',
+      description: 'Диаграмма состояний с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'UML',
+      purpose: 'Моделирование состояний',
+      tags: ['UML', 'Состояния', 'Жизненный цикл', 'PlantUML', 'Mermaid'],
+      popularity: 7
+    },
+    {
+      type: 'Activity2',
+      name: 'Activity (2)',
+      description: 'Диаграмма активности с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'UML',
+      purpose: 'Бизнес-процессы',
+      tags: ['UML', 'Бизнес-процессы', 'Workflow', 'PlantUML', 'Mermaid'],
+      popularity: 8
+    },
+    {
+      type: 'Component2',
+      name: 'Component (2)',
+      description: 'Диаграмма компонентов с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'UML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'Компоненты', 'PlantUML', 'Mermaid'],
+      popularity: 8
+    },
+    {
+      type: 'Gantt2',
+      name: 'Gantt (2)',
+      description: 'Диаграмма Ганта с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'Общее',
+      purpose: 'Управление проектами',
+      tags: ['Управление проектами', 'Планирование', 'График', 'PlantUML', 'Mermaid'],
+      popularity: 7
+    },
+    {
+      type: 'ER2',
+      name: 'ER (2)',
+      description: 'ER диаграмма с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'ER',
+      purpose: 'База данных',
+      tags: ['База данных', 'Сущности', 'Схема данных', 'PlantUML', 'Mermaid'],
+      popularity: 9
     },
     {
       type: 'Network',
@@ -1831,9 +1930,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     
-                    if (msg.type === 'mindmap2') {
+                    if (msg.type === 'dualformat' || msg.type === 'mindmap2') {
                       return (
-                        <MindMap2Message
+                        <DualFormatMessage
                           key={index}
                           msg={msg}
                           index={index}

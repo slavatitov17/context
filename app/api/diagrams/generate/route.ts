@@ -62,21 +62,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем, является ли это Mermaid диаграммой
-    const isMermaid = diagramType === 'MindMapMermaid';
+    const isMermaid = diagramType === 'MindMapMermaid' || 
+                      diagramType === 'SequenceMermaid' ||
+                      diagramType === 'ClassMermaid' ||
+                      diagramType === 'StateMermaid' ||
+                      diagramType === 'ActivityMermaid' ||
+                      diagramType === 'ComponentMermaid' ||
+                      diagramType === 'GanttMermaid' ||
+                      diagramType === 'ERMermaid';
+
+    // Определяем тип Mermaid диаграммы
+    const getMermaidDiagramType = (type: string): string => {
+      if (type === 'MindMapMermaid') return 'mindmap';
+      if (type === 'SequenceMermaid') return 'sequenceDiagram';
+      if (type === 'ClassMermaid') return 'classDiagram';
+      if (type === 'StateMermaid') return 'stateDiagram-v2';
+      if (type === 'ActivityMermaid') return 'flowchart';
+      if (type === 'ComponentMermaid') return 'graph';
+      if (type === 'GanttMermaid') return 'gantt';
+      if (type === 'ERMermaid') return 'erDiagram';
+      return 'mindmap';
+    };
+
+    const mermaidDiagramType = isMermaid ? getMermaidDiagramType(diagramType) : '';
 
     // Формируем промпт для генерации кода
     const systemPrompt = isMermaid 
-      ? `Ты эксперт по созданию диаграмм в формате Mermaid. Твоя задача - создать корректный код Mermaid для MindMap диаграммы.
+      ? `Ты эксперт по созданию диаграмм в формате Mermaid. Твоя задача - создать корректный код Mermaid для ${mermaidDiagramType} диаграммы.
 
 КРИТИЧЕСКИ ВАЖНО:
 1. Генерируй только валидный код Mermaid, без дополнительных объяснений
-2. Код должен начинаться с "mindmap" (без кавычек)
-3. Используй правильный синтаксис Mermaid MindMap с отступами для иерархии
-4. ВСЕ НАЗВАНИЯ УЗЛОВ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ
+2. Код должен начинаться с правильного типа диаграммы (${mermaidDiagramType})
+3. Используй правильный синтаксис Mermaid для указанного типа диаграммы
+4. ВСЕ НАЗВАНИЯ УЗЛОВ, КЛАССОВ, СОСТОЯНИЙ И ДРУГИХ ЭЛЕМЕНТОВ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ
 5. Используй русские названия для всех элементов (например: "Институт", "Студент", "Преподаватель")
-6. Синтаксис Mermaid остается на английском (mindmap, root, etc.), но содержимое - на русском
-7. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"
-8. Формат MindMap: mindmap\\n  root((Корневой узел))\\n    Подтема 1\\n      Деталь 1.1\\n    Подтема 2`
+6. Синтаксис Mermaid остается на английском (classDiagram, sequenceDiagram, etc.), но содержимое - на русском
+7. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"`
       : `Ты эксперт по созданию диаграмм в формате PlantUML. Твоя задача - создать корректный код PlantUML для указанного типа диаграммы.
 
 КРИТИЧЕСКИ ВАЖНО:
@@ -99,6 +120,14 @@ export async function POST(request: NextRequest) {
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
       'MindMap': 'Интеллект-карта (Mind Map)',
       'MindMapMermaid': 'MindMap диаграмма (Mermaid)',
+      'SequenceMermaid': 'Sequence диаграмма (Mermaid)',
+      'ClassMermaid': 'Class диаграмма (Mermaid)',
+      'StateMermaid': 'State диаграмма (Mermaid)',
+      'ActivityMermaid': 'Activity диаграмма (Mermaid)',
+      'ComponentMermaid': 'Component диаграмма (Mermaid)',
+      'GanttMermaid': 'Gantt диаграмма (Mermaid)',
+      'ERMermaid': 'ER диаграмма (Mermaid)',
+      'Gantt': 'Диаграмма Ганта (Gantt Chart)',
       'Network': 'Сетевая диаграмма (Network Diagram)',
       'Archimate': 'ArchiMate диаграмма',
       'Timing': 'Диаграмма временных зависимостей (Timing Diagram)',
@@ -115,20 +144,16 @@ export async function POST(request: NextRequest) {
 
 ${objectDescription}
 
-ВАЖНО: Все названия узлов должны быть на русском языке. Используй русские названия для всех элементов (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис Mermaid остается на английском (mindmap, root, etc.), но содержимое - на русском.
+ВАЖНО: Все названия узлов, классов, состояний и других элементов должны быть на русском языке. Используй русские названия для всех элементов (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис Mermaid остается на английском (${mermaidDiagramType}, classDiagram, sequenceDiagram, etc.), но содержимое - на русском.
 
-ДЛЯ MERMAID MINDMAP: Используй правильный синтаксис Mermaid MindMap:
-- Начинай с "mindmap"
-- Используй отступы (2 пробела) для создания иерархии
-- Корневой узел можно обозначить как root((Название)) или просто как первый элемент
-- Пример структуры:
-mindmap
-  root((Корневой узел))
-    Подтема 1
-      Деталь 1.1
-      Деталь 1.2
-    Подтема 2
-      Деталь 2.1`;
+${diagramType === 'MindMapMermaid' ? 'ДЛЯ MERMAID MINDMAP: Используй правильный синтаксис Mermaid MindMap:\n- Начинай с "mindmap"\n- Используй отступы (2 пробела) для создания иерархии\n- Корневой узел можно обозначить как root((Название)) или просто как первый элемент' : ''}
+${diagramType === 'SequenceMermaid' ? 'ДЛЯ MERMAID SEQUENCE: Используй правильный синтаксис sequenceDiagram:\n- Начинай с "sequenceDiagram"\n- Используй участников (participant) с русскими названиями\n- Используй стрелки (->, -->) для сообщений' : ''}
+${diagramType === 'ClassMermaid' ? 'ДЛЯ MERMAID CLASS: Используй правильный синтаксис classDiagram:\n- Начинай с "classDiagram"\n- Определяй классы с русскими названиями\n- Используй отношения (-->, <|--, etc.)' : ''}
+${diagramType === 'StateMermaid' ? 'ДЛЯ MERMAID STATE: Используй правильный синтаксис stateDiagram-v2:\n- Начинай с "stateDiagram-v2"\n- Определяй состояния с русскими названиями\n- Используй переходы (-->)' : ''}
+${diagramType === 'ActivityMermaid' ? 'ДЛЯ MERMAID ACTIVITY: Используй правильный синтаксис flowchart:\n- Начинай с "flowchart TD" или "flowchart LR"\n- Используй узлы с русскими названиями\n- Используй стрелки (-->)' : ''}
+${diagramType === 'ComponentMermaid' ? 'ДЛЯ MERMAID COMPONENT: Используй правильный синтаксис graph:\n- Начинай с "graph TD" или "graph LR"\n- Используй узлы с русскими названиями\n- Используй стрелки (-->)' : ''}
+${diagramType === 'GanttMermaid' ? 'ДЛЯ MERMAID GANTT: Используй правильный синтаксис gantt:\n- Начинай с "gantt"\n- Определяй задачи с русскими названиями\n- Используй даты и длительности' : ''}
+${diagramType === 'ERMermaid' ? 'ДЛЯ MERMAID ER: Используй правильный синтаксис erDiagram:\n- Начинай с "erDiagram"\n- Определяй сущности с русскими названиями\n- Используй отношения (||--||, }o--||, etc.)' : ''}`;
 
       if (context) {
         userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
@@ -136,8 +161,8 @@ mindmap
 
       userPrompt += `\n\nСгенерируй код Mermaid и глоссарий. Формат ответа:
 \`\`\`mermaid
-mindmap
-[код диаграммы с русскими названиями узлов]
+${mermaidDiagramType}
+[код диаграммы с русскими названиями элементов]
 \`\`\`
 
 \`\`\`json
@@ -216,25 +241,29 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
       if (isMermaid) {
         // Извлекаем код Mermaid
         const mermaidMatch = responseText.match(/```mermaid\s*\n([\s\S]*?)\n```/i) ||
-                           responseText.match(/mindmap\s*\n([\s\S]*?)(?=\n```|$)/i);
+                           responseText.match(new RegExp(`${mermaidDiagramType}\\s*\\n([\\s\\S]*?)(?=\\n\`\`\`|$)`, 'i'));
         
         let mermaidCode = '';
         if (mermaidMatch) {
           mermaidCode = mermaidMatch[1].trim();
           
-          // Убеждаемся, что код начинается с "mindmap"
-          if (!mermaidCode.startsWith('mindmap')) {
-            mermaidCode = 'mindmap\n' + mermaidCode;
+          // Убеждаемся, что код начинается с правильного типа диаграммы
+          if (!mermaidCode.startsWith(mermaidDiagramType)) {
+            mermaidCode = `${mermaidDiagramType}\n` + mermaidCode;
           }
         } else {
-          // Fallback: создаем базовую Mermaid MindMap
-          const rootNode = objectDescription.split(' ')[0] || 'Корневой узел';
-          mermaidCode = `mindmap
+          // Fallback: создаем базовую Mermaid диаграмму в зависимости от типа
+          if (mermaidDiagramType === 'mindmap') {
+            const rootNode = objectDescription.split(' ')[0] || 'Корневой узел';
+            mermaidCode = `mindmap
   root((${rootNode}))
     Подтема 1
       Деталь 1.1
     Подтема 2
       Деталь 2.1`;
+          } else {
+            mermaidCode = `${mermaidDiagramType}\n    ${objectDescription.split(' ')[0] || 'Элемент'}`;
+          }
         }
 
         // Извлекаем глоссарий
