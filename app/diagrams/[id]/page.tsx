@@ -14,7 +14,7 @@ mermaid.initialize({
 });
 
 // Компонент для рендеринга Mermaid диаграммы
-function MermaidDiagram({ code, index }: { code: string; index: number }) {
+function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: number; onSvgReady?: (svg: string) => void }) {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const [mermaidError, setMermaidError] = useState<string>('');
@@ -27,6 +27,9 @@ function MermaidDiagram({ code, index }: { code: string; index: number }) {
           const { svg } = await mermaid.render(id, code);
           setMermaidSvg(svg);
           setMermaidError('');
+          if (onSvgReady) {
+            onSvgReady(svg);
+          }
         } catch (error) {
           console.error('Ошибка рендеринга Mermaid:', error);
           setMermaidError(error instanceof Error ? error.message : 'Ошибка рендеринга');
@@ -34,7 +37,7 @@ function MermaidDiagram({ code, index }: { code: string; index: number }) {
       };
       renderMermaid();
     }
-  }, [code, index]);
+  }, [code, index, onSvgReady]);
   
   if (mermaidError) {
     return (
@@ -57,6 +60,175 @@ function MermaidDiagram({ code, index }: { code: string; index: number }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-center">
       <div className="text-gray-500">Рендеринг диаграммы...</div>
+    </div>
+  );
+}
+
+// Компонент для отображения Mermaid сообщения
+function MermaidMessage({ 
+  msg, 
+  index, 
+  dateStr, 
+  timeStr, 
+  viewModes, 
+  setViewModes 
+}: { 
+  msg: { mermaidCode?: string }; 
+  index: number; 
+  dateStr: string; 
+  timeStr: string;
+  viewModes: Map<number, 'diagram' | 'code'>;
+  setViewModes: (modes: Map<number, 'diagram' | 'code'>) => void;
+}) {
+  const [mermaidSvg, setMermaidSvg] = useState<string>('');
+  const currentViewMode = viewModes.get(index) || 'diagram';
+  
+  // Функция для скачивания SVG
+  const downloadSVG = () => {
+    if (mermaidSvg) {
+      const blob = new Blob([mermaidSvg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mermaid-diagram-${index}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+  
+  // Функция для скачивания PNG
+  const downloadPNG = async () => {
+    if (mermaidSvg) {
+      try {
+        const svgBlob = new Blob([mermaidSvg], { type: 'image/svg+xml' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        const img = new Image();
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `mermaid-diagram-${index}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }
+            }, 'image/png');
+          }
+          URL.revokeObjectURL(svgUrl);
+        };
+        
+        img.onerror = () => {
+          console.error('Ошибка загрузки SVG');
+          URL.revokeObjectURL(svgUrl);
+        };
+        
+        img.src = svgUrl;
+      } catch (error) {
+        console.error('Ошибка при создании PNG:', error);
+        alert('Не удалось создать PNG файл');
+      }
+    }
+  };
+  
+  return (
+    <div className="flex flex-col items-start">
+      <div className="text-base text-gray-500 mb-1 px-1">
+        {dateStr} {timeStr}
+      </div>
+      <div className="max-w-full w-full">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            {/* Свитчер Диаграмма/Код */}
+            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => {
+                  const newModes = new Map(viewModes);
+                  newModes.set(index, 'diagram');
+                  setViewModes(newModes);
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  currentViewMode === 'diagram'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Диаграмма
+              </button>
+              <button
+                onClick={() => {
+                  const newModes = new Map(viewModes);
+                  newModes.set(index, 'code');
+                  setViewModes(newModes);
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  currentViewMode === 'code'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Код
+              </button>
+            </div>
+            <div className="flex space-x-2">
+              {mermaidSvg && (
+                <>
+                  <button
+                    onClick={downloadPNG}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    Скачать PNG
+                  </button>
+                  <button
+                    onClick={downloadSVG}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    Скачать SVG
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => {
+                  if (msg.mermaidCode) {
+                    navigator.clipboard.writeText(msg.mermaidCode);
+                    alert('Код скопирован в буфер обмена');
+                  }
+                }}
+                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                Копировать код
+              </button>
+            </div>
+          </div>
+          {/* Показываем диаграмму или код в зависимости от выбранного режима */}
+          {currentViewMode === 'diagram' && (
+            <MermaidDiagram 
+              code={msg.mermaidCode || ''} 
+              index={index}
+              onSvgReady={setMermaidSvg}
+            />
+          )}
+          {currentViewMode === 'code' && (
+            <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
+              <pre className="whitespace-pre-wrap">{msg.mermaidCode}</pre>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1271,32 +1443,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     
                     if (msg.type === 'mermaid' && msg.mermaidCode) {
                       return (
-                        <div key={index} className="flex flex-col items-start">
-                          <div className="text-base text-gray-500 mb-1 px-1">
-                            {dateStr} {timeStr}
-                          </div>
-                          <div className="max-w-full w-full">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                              <div className="flex justify-between items-center mb-4">
-                                <h4 className="font-medium text-lg">Mermaid диаграмма</h4>
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => {
-                                      if (msg.mermaidCode) {
-                                        navigator.clipboard.writeText(msg.mermaidCode);
-                                        alert('Код скопирован в буфер обмена');
-                                      }
-                                    }}
-                                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                                  >
-                                    Копировать код
-                                  </button>
-                                </div>
-                              </div>
-                              <MermaidDiagram code={msg.mermaidCode} index={index} />
-                            </div>
-                          </div>
-                        </div>
+                        <MermaidMessage
+                          key={index}
+                          msg={msg}
+                          index={index}
+                          dateStr={dateStr}
+                          timeStr={timeStr}
+                          viewModes={viewModes}
+                          setViewModes={setViewModes}
+                        />
                       );
                     }
                     
