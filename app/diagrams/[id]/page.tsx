@@ -83,64 +83,79 @@ function MermaidMessage({
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
   
-  // Функция для скачивания SVG
-  const downloadSVG = () => {
-    if (mermaidSvg) {
-      const blob = new Blob([mermaidSvg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `mermaid-diagram-${index}.svg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  };
-  
   // Функция для скачивания PNG
   const downloadPNG = async () => {
     if (mermaidSvg) {
       try {
-        const svgBlob = new Blob([mermaidSvg], { type: 'image/svg+xml' });
+        // Создаем временный элемент для парсинга SVG
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(mermaidSvg, 'image/svg+xml');
+        const svgElement = svgDoc.documentElement;
+        
+        // Получаем размеры SVG
+        const svgWidth = parseInt(svgElement.getAttribute('width') || '800', 10);
+        const svgHeight = parseInt(svgElement.getAttribute('height') || '600', 10);
+        
+        // Создаем canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = svgWidth;
+        canvas.height = svgHeight;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          throw new Error('Не удалось получить контекст canvas');
+        }
+        
+        // Заполняем белым фоном
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Создаем изображение из SVG
+        const svgBlob = new Blob([mermaidSvg], { type: 'image/svg+xml;charset=utf-8' });
         const svgUrl = URL.createObjectURL(svgBlob);
+        
         const img = new Image();
         
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            
-            canvas.toBlob((blob) => {
-              if (blob) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `mermaid-diagram-${index}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }
-            }, 'image/png');
-          }
-          URL.revokeObjectURL(svgUrl);
-        };
-        
-        img.onerror = () => {
-          console.error('Ошибка загрузки SVG');
-          URL.revokeObjectURL(svgUrl);
-        };
-        
-        img.src = svgUrl;
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            try {
+              // Рисуем изображение на canvas
+              ctx.drawImage(img, 0, 0);
+              
+              // Конвертируем в PNG и скачиваем
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `mermaid-diagram-${index}.png`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  URL.revokeObjectURL(svgUrl);
+                  resolve();
+                } else {
+                  URL.revokeObjectURL(svgUrl);
+                  reject(new Error('Не удалось создать PNG blob'));
+                }
+              }, 'image/png');
+            } catch (error) {
+              URL.revokeObjectURL(svgUrl);
+              reject(error);
+            }
+          };
+          
+          img.onerror = () => {
+            URL.revokeObjectURL(svgUrl);
+            reject(new Error('Ошибка загрузки SVG изображения'));
+          };
+          
+          img.src = svgUrl;
+        });
       } catch (error) {
         console.error('Ошибка при создании PNG:', error);
-        alert('Не удалось создать PNG файл');
+        alert(`Не удалось создать PNG файл: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
     }
   };
@@ -186,20 +201,12 @@ function MermaidMessage({
             </div>
             <div className="flex space-x-2">
               {mermaidSvg && (
-                <>
-                  <button
-                    onClick={downloadPNG}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                  >
-                    Скачать PNG
-                  </button>
-                  <button
-                    onClick={downloadSVG}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                  >
-                    Скачать SVG
-                  </button>
-                </>
+                <button
+                  onClick={downloadPNG}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  Скачать PNG
+                </button>
               )}
               <button
                 onClick={() => {
