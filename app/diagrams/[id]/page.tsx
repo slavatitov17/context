@@ -634,7 +634,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         if (diagram.messages && Array.isArray(diagram.messages) && diagram.messages.length > 0) {
           setMessages(diagram.messages.map((msg: any) => {
             // Если это Mermaid диаграмма и есть plantUmlCode, конвертируем в mermaidCode
-            if (diagram.diagramType === 'MindMapMermaid' && msg.plantUmlCode && !msg.mermaidCode) {
+            // Удалена проверка на MindMapMermaid, так как этот тип больше не используется
+            if (false && msg.plantUmlCode && !msg.mermaidCode) {
               return {
                 text: msg.text || '',
                 isUser: msg.isUser || false,
@@ -1146,7 +1147,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         }
 
         const generateData = await generateResponse.json();
-        const isMermaid = diagramType === 'MindMapMermaid';
+        const isMermaid = false; // MindMapMermaid больше не используется
         const isDualFormat = diagramType.endsWith('2');
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
