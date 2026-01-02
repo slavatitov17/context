@@ -86,7 +86,7 @@ function DualFormatMessage({
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
-  const currentFormat = formatSelectors.get(index) || 'plantuml';
+  const currentFormat = formatSelectors.get(index) || 'mermaid';
   
   // Функция для скачивания PNG для Mermaid
   const downloadMermaidPNG = async () => {
@@ -188,8 +188,8 @@ function DualFormatMessage({
                 }}
                 className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
               >
-                <option value="plantuml">PlantUML</option>
                 <option value="mermaid">Mermaid</option>
+                <option value="plantuml">PlantUML</option>
               </select>
               {/* Кастомная стрелочка */}
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -1186,7 +1186,29 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           const baseType = getBaseType(diagramType);
           const mermaidType = getMermaidType(diagramType);
           
-          // Сначала генерируем PlantUML
+          // Сначала генерируем Mermaid (так как он показывается первым)
+          const mermaidResponse = await fetch('/api/diagrams/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              diagramType: mermaidType,
+              objectDescription,
+              documents,
+              isFromProject: selectedOption === 'projects',
+            }),
+          });
+
+          if (!mermaidResponse.ok) {
+            throw new Error('Ошибка при генерации Mermaid диаграммы');
+          }
+
+          const mermaidData = await mermaidResponse.json();
+          const mermaidCodeForDual = mermaidData.mermaidCode;
+          const mermaidGlossary = mermaidData.glossary;
+
+          // Генерируем PlantUML
           const plantUmlResponse = await fetch('/api/diagrams/generate', {
             method: 'POST',
             headers: {
@@ -1224,28 +1246,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           }
 
           const { imageUrl } = await renderResponse.json();
-
-          // Генерируем Mermaid
-          const mermaidResponse = await fetch('/api/diagrams/generate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              diagramType: mermaidType,
-              objectDescription,
-              documents,
-              isFromProject: selectedOption === 'projects',
-            }),
-          });
-
-          if (!mermaidResponse.ok) {
-            throw new Error('Ошибка при генерации Mermaid диаграммы');
-          }
-
-          const mermaidData = await mermaidResponse.json();
-          const mermaidCodeForDual = mermaidData.mermaidCode;
-          const mermaidGlossary = mermaidData.glossary;
 
           if (currentUser && diagramId) {
             saveDiagram({
@@ -1385,16 +1385,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
   // Определяем порядок шагов: тип диаграммы -> способ создания -> проект/чат
   const diagramTypeNames: Record<DiagramType, string> = {
-    'Class': 'UML диаграмма классов',
-    'Sequence': 'UML диаграмма последовательности',
-    'Activity': 'UML диаграмма активности',
-    'State': 'UML диаграмма состояний',
-    'Component': 'UML диаграмма компонентов',
     'UseCase': 'UML диаграмма прецедентов',
     'Object': 'UML диаграмма объектов',
-    'ER': 'ER диаграмма (Entity-Relationship)',
-    'MindMap': 'Интеллект-карта',
-    'MindMapMermaid': 'MindMap (Mermaid)',
     'MindMap2': 'MindMap (2)',
     'Sequence2': 'Sequence (2)',
     'Class2': 'Class (2)',
@@ -1423,51 +1415,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
   const diagramTypesInfo: DiagramTypeInfo[] = [
     {
-      type: 'Class',
-      name: 'Class',
-      description: 'Отображает структуру системы, показывая классы, их атрибуты, методы и отношения между ними',
-      standard: 'UML',
-      purpose: 'Архитектура',
-      tags: ['UML', 'Архитектура'],
-      popularity: 9
-    },
-    {
-      type: 'Sequence',
-      name: 'Sequence',
-      description: 'Показывает взаимодействие объектов в хронологическом порядке, отображая последовательность сообщений',
-      standard: 'UML',
-      purpose: 'Взаимодействие',
-      tags: ['UML', 'Взаимодействие', 'Временные последовательности'],
-      popularity: 8
-    },
-    {
-      type: 'Activity',
-      name: 'Activity',
-      description: 'Визуализирует бизнес-процессы и потоки работ, показывая действия и переходы между ними',
-      standard: 'UML',
-      purpose: 'Бизнес-процессы',
-      tags: ['UML', 'Бизнес-процессы', 'Workflow'],
-      popularity: 7
-    },
-    {
-      type: 'State',
-      name: 'State',
-      description: 'Отображает различные состояния объекта и переходы между ними в течение жизненного цикла',
-      standard: 'UML',
-      purpose: 'Моделирование состояний',
-      tags: ['UML', 'Состояния', 'Жизненный цикл'],
-      popularity: 6
-    },
-    {
-      type: 'Component',
-      name: 'Component',
-      description: 'Показывает структуру системы на уровне компонентов и их взаимосвязи',
-      standard: 'UML',
-      purpose: 'Архитектура',
-      tags: ['UML', 'Архитектура', 'Компоненты'],
-      popularity: 7
-    },
-    {
       type: 'UseCase',
       name: 'UseCase',
       description: 'Описывает функциональные требования системы через взаимодействие актеров и прецедентов использования',
@@ -1484,33 +1431,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Моделирование',
       tags: ['UML', 'Объекты', 'Экземпляры'],
       popularity: 5
-    },
-    {
-      type: 'ER',
-      name: 'ER',
-      description: 'Моделирует структуру базы данных, показывая сущности, их атрибуты и отношения',
-      standard: 'ER',
-      purpose: 'База данных',
-      tags: ['База данных', 'Сущности', 'Схема данных'],
-      popularity: 9
-    },
-    {
-      type: 'MindMap',
-      name: 'MindMap',
-      description: 'Визуализирует идеи и концепции в виде древовидной структуры данных',
-      standard: 'Общее',
-      purpose: 'Идеи',
-      tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'Высокоуровневые'],
-      popularity: 6
-    },
-    {
-      type: 'MindMapMermaid',
-      name: 'MindMap (Mermaid)',
-      description: 'Создает интеллект-карту с помощью Mermaid - визуализирует идеи и концепции в виде древовидной структуры',
-      standard: 'Mermaid',
-      purpose: 'Идеи',
-      tags: ['Mermaid', 'Идеи', 'Мозговой штурм', 'Концептуальные'],
-      popularity: 7
     },
     {
       type: 'MindMap2',

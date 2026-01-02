@@ -29,16 +29,8 @@ export interface User {
 }
 
 export type DiagramType = 
-  | 'Class' 
-  | 'Sequence' 
-  | 'Activity' 
-  | 'State' 
-  | 'Component' 
   | 'UseCase' 
   | 'Object' 
-  | 'ER' 
-  | 'MindMap' 
-  | 'MindMapMermaid'
   | 'MindMap2'
   | 'Sequence2'
   | 'Class2'
