@@ -39,6 +39,7 @@ export type DiagramType =
   | 'ER' 
   | 'MindMap' 
   | 'MindMapMermaid'
+  | 'MindMap2'
   | 'Network' 
   | 'Archimate' 
   | 'Timing' 

@@ -64,6 +64,263 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   );
 }
 
+// Компонент для отображения унифицированного сообщения MindMap2
+function MindMap2Message({
+  msg,
+  index,
+  dateStr,
+  timeStr,
+  viewModes,
+  setViewModes,
+  formatSelectors,
+  setFormatSelectors
+}: {
+  msg: { plantUmlCode?: string; mermaidCode?: string; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; diagramImageUrl?: string };
+  index: number;
+  dateStr: string;
+  timeStr: string;
+  viewModes: Map<number, 'diagram' | 'code'>;
+  setViewModes: (modes: Map<number, 'diagram' | 'code'>) => void;
+  formatSelectors: Map<number, 'plantuml' | 'mermaid'>;
+  setFormatSelectors: (selectors: Map<number, 'plantuml' | 'mermaid'>) => void;
+}) {
+  const [mermaidSvg, setMermaidSvg] = useState<string>('');
+  const currentViewMode = viewModes.get(index) || 'diagram';
+  const currentFormat = formatSelectors.get(index) || 'plantuml';
+  
+  // Функция для скачивания PNG для Mermaid
+  const downloadMermaidPNG = async () => {
+    if (mermaidSvg) {
+      try {
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(mermaidSvg, 'image/svg+xml');
+        const svgElement = svgDoc.documentElement;
+        const scale = 3;
+        let svgWidth = 800;
+        let svgHeight = 600;
+        const viewBox = svgElement.getAttribute('viewBox');
+        if (viewBox) {
+          const parts = viewBox.split(/\s+/);
+          if (parts.length >= 4) {
+            svgWidth = parseFloat(parts[2]) || 800;
+            svgHeight = parseFloat(parts[3]) || 600;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Не удалось получить контекст canvas');
+        ctx.scale(scale, scale);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, svgWidth, svgHeight);
+        svgElement.setAttribute('width', svgWidth.toString());
+        svgElement.setAttribute('height', svgHeight.toString());
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            try {
+              ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `mermaid-diagram-${index}.png`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  resolve();
+                } else {
+                  reject(new Error('Не удалось создать PNG blob'));
+                }
+              }, 'image/png');
+            } catch (error) {
+              reject(error);
+            }
+          };
+          img.onerror = () => reject(new Error('Ошибка загрузки SVG изображения'));
+          img.src = svgDataUrl;
+        });
+      } catch (error) {
+        console.error('Ошибка при создании PNG:', error);
+        alert(`Не удалось создать PNG файл: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      }
+    }
+  };
+
+  // Функция для скачивания PNG для PlantUML
+  const downloadPlantUmlPNG = () => {
+    if (msg.diagramImageUrl) {
+      const a = document.createElement('a');
+      a.href = msg.diagramImageUrl;
+      a.download = `plantuml-diagram-${index}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
+  const currentCode = currentFormat === 'plantuml' ? msg.plantUmlCode : msg.mermaidCode;
+  const currentGlossary = currentFormat === 'plantuml' ? msg.plantUmlGlossary : msg.mermaidGlossary;
+
+  return (
+    <div className="flex flex-col items-start">
+      <div className="text-base text-gray-500 mb-1 px-1">
+        {dateStr} {timeStr}
+      </div>
+      <div className="max-w-full w-full">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          {/* Верхняя панель: выпадающий список слева, свитчер и кнопки справа */}
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+            {/* Выпадающий список формата (слева сверху) */}
+            <div className="relative">
+              <select
+                value={currentFormat}
+                onChange={(e) => {
+                  const newSelectors = new Map(formatSelectors);
+                  newSelectors.set(index, e.target.value as 'plantuml' | 'mermaid');
+                  setFormatSelectors(newSelectors);
+                }}
+                className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
+              >
+                <option value="plantuml">PlantUML</option>
+                <option value="mermaid">Mermaid</option>
+              </select>
+              {/* Кастомная стрелочка */}
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+
+            {/* Свитчер и кнопки (справа) */}
+            <div className="flex items-center gap-4">
+              {/* Свитчер Диаграмма/Код */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => {
+                    const newModes = new Map(viewModes);
+                    newModes.set(index, 'diagram');
+                    setViewModes(newModes);
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    currentViewMode === 'diagram'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Диаграмма
+                </button>
+                <button
+                  onClick={() => {
+                    const newModes = new Map(viewModes);
+                    newModes.set(index, 'code');
+                    setViewModes(newModes);
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    currentViewMode === 'code'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Код
+                </button>
+              </div>
+
+              {/* Кнопки действий */}
+              <div className="flex space-x-2">
+                {currentFormat === 'mermaid' && mermaidSvg && (
+                  <button
+                    onClick={downloadMermaidPNG}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    Скачать PNG
+                  </button>
+                )}
+                {currentFormat === 'plantuml' && msg.diagramImageUrl && (
+                  <button
+                    onClick={downloadPlantUmlPNG}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    Скачать PNG
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    if (currentCode) {
+                      navigator.clipboard.writeText(currentCode);
+                      alert('Код скопирован в буфер обмена');
+                    }
+                  }}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  Копировать код
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Область диаграммы/кода */}
+          {currentViewMode === 'diagram' && (
+            <>
+              {currentFormat === 'mermaid' && msg.mermaidCode && (
+                <MermaidDiagram 
+                  code={msg.mermaidCode || ''} 
+                  index={index}
+                  onSvgReady={setMermaidSvg}
+                />
+              )}
+              {currentFormat === 'plantuml' && msg.diagramImageUrl && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <img
+                    src={msg.diagramImageUrl}
+                    alt="PlantUML диаграмма"
+                    className="max-w-full h-auto mx-auto"
+                  />
+                </div>
+              )}
+            </>
+          )}
+          {currentViewMode === 'code' && currentCode && (
+            <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
+              <pre className="whitespace-pre-wrap">{currentCode}</pre>
+            </div>
+          )}
+
+          {/* Глоссарий (внизу, в том же сообщении) */}
+          {currentGlossary && currentGlossary.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
+                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentGlossary.map((item, idx) => (
+                    <tr key={idx} className="border-b border-gray-100">
+                      <td className="py-3 text-gray-900 font-medium">{item.element}</td>
+                      <td className="py-3 text-gray-600">{item.description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Компонент для отображения Mermaid сообщения
 function MermaidMessage({ 
   msg, 
@@ -283,7 +540,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -291,6 +548,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [loadingStage, setLoadingStage] = useState<'processing' | 'generating' | 'creating'>('processing');
   const [isDragging, setIsDragging] = useState(false);
   const [viewModes, setViewModes] = useState<Map<number, 'diagram' | 'code'>>(new Map());
+  const [formatSelectors, setFormatSelectors] = useState<Map<number, 'plantuml' | 'mermaid'>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Состояния для поиска, фильтров и сортировки типов диаграмм
@@ -889,6 +1147,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
         const generateData = await generateResponse.json();
         const isMermaid = diagramType === 'MindMapMermaid';
+        const isMindMap2 = diagramType === 'MindMap2';
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
         const glossary = generateData.glossary;
@@ -896,7 +1155,96 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         // Сохраняем данные в диаграмму
         const currentUser = auth.getCurrentUser();
         
-        if (isMermaid && mermaidCode) {
+        if (isMindMap2) {
+          // Для MindMap2 генерируем оба формата
+          // Сначала генерируем PlantUML
+          const plantUmlResponse = await fetch('/api/diagrams/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              diagramType: 'MindMap',
+              objectDescription,
+              documents,
+              isFromProject: selectedOption === 'projects',
+            }),
+          });
+
+          if (!plantUmlResponse.ok) {
+            throw new Error('Ошибка при генерации PlantUML диаграммы');
+          }
+
+          const plantUmlData = await plantUmlResponse.json();
+          const plantUmlCodeForMindMap2 = plantUmlData.plantUmlCode;
+          const plantUmlGlossary = plantUmlData.glossary;
+
+          // Рендерим PlantUML
+          const renderResponse = await fetch('/api/diagrams/render', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              plantUmlCode: plantUmlCodeForMindMap2,
+            }),
+          });
+
+          if (!renderResponse.ok) {
+            throw new Error('Ошибка при рендеринге PlantUML диаграммы');
+          }
+
+          const { imageUrl } = await renderResponse.json();
+
+          // Генерируем Mermaid
+          const mermaidResponse = await fetch('/api/diagrams/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              diagramType: 'MindMapMermaid',
+              objectDescription,
+              documents,
+              isFromProject: selectedOption === 'projects',
+            }),
+          });
+
+          if (!mermaidResponse.ok) {
+            throw new Error('Ошибка при генерации Mermaid диаграммы');
+          }
+
+          const mermaidData = await mermaidResponse.json();
+          const mermaidCodeForMindMap2 = mermaidData.mermaidCode;
+          const mermaidGlossary = mermaidData.glossary;
+
+          if (currentUser && diagramId) {
+            saveDiagram({
+              diagramType,
+              selectedObject: objectDescription,
+              plantUmlCode: plantUmlCodeForMindMap2,
+              diagramImageUrl: imageUrl,
+              glossary: plantUmlGlossary,
+            });
+          }
+
+          // Добавляем единое сообщение с обоими форматами
+          setMessages(prev => [
+            ...prev,
+            {
+              text: '',
+              isUser: false,
+              type: 'mindmap2',
+              plantUmlCode: plantUmlCodeForMindMap2,
+              mermaidCode: mermaidCodeForMindMap2,
+              plantUmlGlossary,
+              mermaidGlossary,
+              diagramImageUrl: imageUrl,
+              timestamp: new Date()
+            }
+          ]);
+          setShowDiagram(true);
+        } else if (isMermaid && mermaidCode) {
           // Для Mermaid диаграмм рендерим на клиенте
           if (currentUser && diagramId) {
             saveDiagram({
@@ -1018,6 +1366,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'ER': 'ER диаграмма (Entity-Relationship)',
     'MindMap': 'Интеллект-карта',
     'MindMapMermaid': 'MindMap (Mermaid)',
+    'MindMap2': 'MindMap (2)',
     'Network': 'Сетевая диаграмма',
     'Archimate': 'ArchiMate диаграмма',
     'Timing': 'Диаграмма временных зависимостей',
@@ -1126,6 +1475,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Идеи',
       tags: ['Mermaid', 'Идеи', 'Мозговой штурм', 'Концептуальные'],
       popularity: 7
+    },
+    {
+      type: 'MindMap2',
+      name: 'MindMap (2)',
+      description: 'Интеллект-карта с возможностью выбора между PlantUML и Mermaid форматами',
+      standard: 'Общее',
+      purpose: 'Идеи',
+      tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'PlantUML', 'Mermaid'],
+      popularity: 8
     },
     {
       type: 'Network',
@@ -1472,6 +1830,22 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     const timestamp = msg.timestamp || new Date();
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    
+                    if (msg.type === 'mindmap2') {
+                      return (
+                        <MindMap2Message
+                          key={index}
+                          msg={msg}
+                          index={index}
+                          dateStr={dateStr}
+                          timeStr={timeStr}
+                          viewModes={viewModes}
+                          setViewModes={setViewModes}
+                          formatSelectors={formatSelectors}
+                          setFormatSelectors={setFormatSelectors}
+                        />
+                      );
+                    }
                     
                     if (msg.type === 'mermaid' && msg.mermaidCode) {
                       return (
