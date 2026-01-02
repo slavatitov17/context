@@ -61,8 +61,20 @@ export async function POST(request: NextRequest) {
       context = getContextFromDocuments(documents);
     }
 
-    // Формируем промпт для генерации PlantUML кода
-    const systemPrompt = `Ты эксперт по созданию диаграмм в формате PlantUML. Твоя задача - создать корректный код PlantUML для указанного типа диаграммы.
+    // Формируем промпт для генерации кода
+    const systemPrompt = isMermaid 
+      ? `Ты эксперт по созданию диаграмм в формате Mermaid. Твоя задача - создать корректный код Mermaid для MindMap диаграммы.
+
+КРИТИЧЕСКИ ВАЖНО:
+1. Генерируй только валидный код Mermaid, без дополнительных объяснений
+2. Код должен начинаться с "mindmap" (без кавычек)
+3. Используй правильный синтаксис Mermaid MindMap с отступами для иерархии
+4. ВСЕ НАЗВАНИЯ УЗЛОВ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ
+5. Используй русские названия для всех элементов (например: "Институт", "Студент", "Преподаватель")
+6. Синтаксис Mermaid остается на английском (mindmap, root, etc.), но содержимое - на русском
+7. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"
+8. Формат MindMap: mindmap\\n  root((Корневой узел))\\n    Подтема 1\\n      Деталь 1.1\\n    Подтема 2`
+      : `Ты эксперт по созданию диаграмм в формате PlantUML. Твоя задача - создать корректный код PlantUML для указанного типа диаграммы.
 
 КРИТИЧЕСКИ ВАЖНО:
 1. Генерируй только валидный код PlantUML, без дополнительных объяснений
@@ -83,6 +95,7 @@ export async function POST(request: NextRequest) {
       'Object': 'UML диаграмма объектов (Object Diagram)',
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
       'MindMap': 'Интеллект-карта (Mind Map)',
+      'MindMapMermaid': 'MindMap диаграмма (Mermaid)',
       'Network': 'Сетевая диаграмма (Network Diagram)',
       'Archimate': 'ArchiMate диаграмма',
       'Timing': 'Диаграмма временных зависимостей (Timing Diagram)',
@@ -90,9 +103,51 @@ export async function POST(request: NextRequest) {
       'JSON': 'JSON диаграмма',
     };
 
+    // Проверяем, является ли это Mermaid диаграммой
+    const isMermaid = diagramType === 'MindMapMermaid';
+
     const typeDescription = diagramTypeDescriptions[diagramType] || diagramType;
 
-    let userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
+    let userPrompt = '';
+    
+    if (isMermaid) {
+      userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
+
+${objectDescription}
+
+ВАЖНО: Все названия узлов должны быть на русском языке. Используй русские названия для всех элементов (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис Mermaid остается на английском (mindmap, root, etc.), но содержимое - на русском.
+
+ДЛЯ MERMAID MINDMAP: Используй правильный синтаксис Mermaid MindMap:
+- Начинай с "mindmap"
+- Используй отступы (2 пробела) для создания иерархии
+- Корневой узел можно обозначить как root((Название)) или просто как первый элемент
+- Пример структуры:
+mindmap
+  root((Корневой узел))
+    Подтема 1
+      Деталь 1.1
+      Деталь 1.2
+    Подтема 2
+      Деталь 2.1`;
+
+      if (context) {
+        userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
+      }
+
+      userPrompt += `\n\nСгенерируй код Mermaid и глоссарий. Формат ответа:
+\`\`\`mermaid
+mindmap
+[код диаграммы с русскими названиями узлов]
+\`\`\`
+
+\`\`\`json
+[
+  {"element": "Название элемента на русском", "description": "Описание элемента на русском"},
+  ...
+]
+\`\`\``;
+    } else {
+      userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
 
 ${objectDescription}
 
@@ -104,11 +159,11 @@ ${diagramType === 'Timing' ? 'ДЛЯ TIMING: Используй синтакси
 ${diagramType === 'JSON' ? 'ДЛЯ JSON: Используй синтаксис @startjson ... @endjson. Внутри должен быть валидный JSON код. Пример: @startjson\n{\n  "ключ": "значение"\n}\n@endjson' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
 
-    if (context) {
-      userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
-    }
+      if (context) {
+        userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
+      }
 
-    userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
+      userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
 @startuml
 [код диаграммы с русскими названиями объектов]
@@ -121,6 +176,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
   ...
 ]
 \`\`\``;
+    }
 
     try {
       // Вызываем модель Mistral AI
@@ -156,108 +212,159 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
         responseText = String(responseContent || '');
       }
 
-      // Извлекаем код PlantUML
-      // Для разных типов диаграмм нужны разные теги
-      const isMindMap = diagramType === 'MindMap';
-      const isJSON = diagramType === 'JSON';
-      
-      const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
-      const endTag = isMindMap ? '@endmindmap' : (isJSON ? '@endjson' : '@enduml');
-      
-      const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
-                           responseText.match(new RegExp(`${startTag}\\s*\\n([\\s\\S]*?)${endTag}`, 'i')) ||
-                           responseText.match(/@startuml\s*\n([\s\S]*?)@enduml/i);
-      
-      let plantUmlCode = '';
-      if (plantUmlMatch) {
-        plantUmlCode = plantUmlMatch[1].trim();
+      // Извлекаем код в зависимости от типа диаграммы
+      if (isMermaid) {
+        // Извлекаем код Mermaid
+        const mermaidMatch = responseText.match(/```mermaid\s*\n([\s\S]*?)\n```/i) ||
+                           responseText.match(/mindmap\s*\n([\s\S]*?)(?=\n```|$)/i);
         
-        // Удаляем неправильные теги, если они есть
-        plantUmlCode = plantUmlCode.replace(/@startuml\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@enduml\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@startmindmap\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@endmindmap\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@startjson\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/@endjson\s*/gi, '');
-        plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
-        plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
-        plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
-        
-        // Для Class: исправляем длинные названия классов без пробелов
-        if (diagramType === 'Class') {
-          // Заменяем длинные слитные русские слова на слова с пробелами в кавычках
-          plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s+as\s+(\w+)/gi, (match, className, alias) => {
-            // Разбиваем длинное слово на части (каждые 15-20 символов)
-            const words = className.match(/.{1,20}/g);
-            const spacedName = words ? words.join(' ') : className;
-            return `class "${spacedName}" as ${alias}`;
-          });
-          // Также обрабатываем случаи без "as"
-          plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s*{/gi, (match, className) => {
-            const words = className.match(/.{1,20}/g);
-            const spacedName = words ? words.join(' ') : className;
-            return `class "${spacedName}" {`;
-          });
-        }
-        
-        // Добавляем правильные теги
-        if (!plantUmlCode.includes(startTag)) {
-          plantUmlCode = `${startTag}\n` + plantUmlCode;
-        }
-        if (!plantUmlCode.includes(endTag)) {
-          plantUmlCode = plantUmlCode + `\n${endTag}`;
-        }
-      } else {
-        // Если не нашли в markdown, ищем напрямую
-        const startIndex = responseText.indexOf(startTag);
-        const endIndex = responseText.indexOf(endTag);
-        if (startIndex !== -1 && endIndex !== -1) {
-          plantUmlCode = responseText.substring(startIndex, endIndex + endTag.length).trim();
+        let mermaidCode = '';
+        if (mermaidMatch) {
+          mermaidCode = mermaidMatch[1].trim();
+          
+          // Убеждаемся, что код начинается с "mindmap"
+          if (!mermaidCode.startsWith('mindmap')) {
+            mermaidCode = 'mindmap\n' + mermaidCode;
+          }
         } else {
-          // Fallback: создаем базовую диаграмму в зависимости от типа
-          if (isMindMap) {
-            plantUmlCode = `${startTag}
+          // Fallback: создаем базовую Mermaid MindMap
+          const rootNode = objectDescription.split(' ')[0] || 'Корневой узел';
+          mermaidCode = `mindmap
+  root((${rootNode}))
+    Подтема 1
+      Деталь 1.1
+    Подтема 2
+      Деталь 2.1`;
+        }
+
+        // Извлекаем глоссарий
+        const glossaryMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/i);
+        let glossary: Array<{ element: string; description: string }> = [];
+        
+        if (glossaryMatch) {
+          try {
+            glossary = JSON.parse(glossaryMatch[1]);
+          } catch (e) {
+            console.error('Ошибка парсинга глоссария:', e);
+            glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
+          }
+        } else {
+          glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
+        }
+
+        // Валидация глоссария
+        if (!Array.isArray(glossary)) {
+          glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
+        }
+
+        return NextResponse.json({
+          mermaidCode,
+          glossary,
+        });
+      } else {
+        // Извлекаем код PlantUML
+        // Для разных типов диаграмм нужны разные теги
+        const isMindMap = diagramType === 'MindMap';
+        const isJSON = diagramType === 'JSON';
+        
+        const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
+        const endTag = isMindMap ? '@endmindmap' : (isJSON ? '@endjson' : '@enduml');
+        
+        const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
+                             responseText.match(new RegExp(`${startTag}\\s*\\n([\\s\\S]*?)${endTag}`, 'i')) ||
+                             responseText.match(/@startuml\s*\n([\s\S]*?)@enduml/i);
+        
+        let plantUmlCode = '';
+        if (plantUmlMatch) {
+          plantUmlCode = plantUmlMatch[1].trim();
+          
+          // Удаляем неправильные теги, если они есть
+          plantUmlCode = plantUmlCode.replace(/@startuml\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@enduml\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@startmindmap\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@endmindmap\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@startjson\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@endjson\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
+          plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
+          plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
+          
+          // Для Class: исправляем длинные названия классов без пробелов
+          if (diagramType === 'Class') {
+            // Заменяем длинные слитные русские слова на слова с пробелами в кавычках
+            plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s+as\s+(\w+)/gi, (match, className, alias) => {
+              // Разбиваем длинное слово на части (каждые 15-20 символов)
+              const words = className.match(/.{1,20}/g);
+              const spacedName = words ? words.join(' ') : className;
+              return `class "${spacedName}" as ${alias}`;
+            });
+            // Также обрабатываем случаи без "as"
+            plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s*{/gi, (match, className) => {
+              const words = className.match(/.{1,20}/g);
+              const spacedName = words ? words.join(' ') : className;
+              return `class "${spacedName}" {`;
+            });
+          }
+          
+          // Добавляем правильные теги
+          if (!plantUmlCode.includes(startTag)) {
+            plantUmlCode = `${startTag}\n` + plantUmlCode;
+          }
+          if (!plantUmlCode.includes(endTag)) {
+            plantUmlCode = plantUmlCode + `\n${endTag}`;
+          }
+        } else {
+          // Если не нашли в markdown, ищем напрямую
+          const startIndex = responseText.indexOf(startTag);
+          const endIndex = responseText.indexOf(endTag);
+          if (startIndex !== -1 && endIndex !== -1) {
+            plantUmlCode = responseText.substring(startIndex, endIndex + endTag.length).trim();
+          } else {
+            // Fallback: создаем базовую диаграмму в зависимости от типа
+            if (isMindMap) {
+              plantUmlCode = `${startTag}
 * ${objectDescription.split(' ')[0]}
 ** Подтема 1
 *** Деталь 1.1
 ** Подтема 2
 ${endTag}`;
-          } else {
-            plantUmlCode = `${startTag}
+            } else {
+              plantUmlCode = `${startTag}
 class ${objectDescription.split(' ')[0]} {
   + описание
 }
 ${endTag}`;
+            }
           }
         }
-      }
 
-      // Извлекаем глоссарий
-      const glossaryMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/i);
-      let glossary: Array<{ element: string; description: string }> = [];
-      
-      if (glossaryMatch) {
-        try {
-          glossary = JSON.parse(glossaryMatch[1]);
-        } catch (e) {
-          console.error('Ошибка парсинга глоссария:', e);
-          // Создаем простой глоссарий на основе кода
+        // Извлекаем глоссарий
+        const glossaryMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/i);
+        let glossary: Array<{ element: string; description: string }> = [];
+        
+        if (glossaryMatch) {
+          try {
+            glossary = JSON.parse(glossaryMatch[1]);
+          } catch (e) {
+            console.error('Ошибка парсинга глоссария:', e);
+            // Создаем простой глоссарий на основе кода
+            glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
+          }
+        } else {
+          // Если глоссарий не найден, создаем базовый
           glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
         }
-      } else {
-        // Если глоссарий не найден, создаем базовый
-        glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
-      }
 
-      // Валидация глоссария
-      if (!Array.isArray(glossary)) {
-        glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
-      }
+        // Валидация глоссария
+        if (!Array.isArray(glossary)) {
+          glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
+        }
 
-      return NextResponse.json({
-        plantUmlCode,
-        glossary,
-      });
+        return NextResponse.json({
+          plantUmlCode,
+          glossary,
+        });
+      }
     } catch (apiError) {
       console.error('Ошибка при вызове Mistral AI API:', apiError);
       return NextResponse.json(

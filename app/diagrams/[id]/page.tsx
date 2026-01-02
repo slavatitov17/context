@@ -4,6 +4,62 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
+import mermaid from 'mermaid';
+
+// Инициализация Mermaid
+mermaid.initialize({ 
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+});
+
+// Компонент для рендеринга Mermaid диаграммы
+function MermaidDiagram({ code, index }: { code: string; index: number }) {
+  const mermaidRef = useRef<HTMLDivElement>(null);
+  const [mermaidSvg, setMermaidSvg] = useState<string>('');
+  const [mermaidError, setMermaidError] = useState<string>('');
+  
+  useEffect(() => {
+    if (code) {
+      const renderMermaid = async () => {
+        try {
+          const id = `mermaid-${index}-${Date.now()}`;
+          const { svg } = await mermaid.render(id, code);
+          setMermaidSvg(svg);
+          setMermaidError('');
+        } catch (error) {
+          console.error('Ошибка рендеринга Mermaid:', error);
+          setMermaidError(error instanceof Error ? error.message : 'Ошибка рендеринга');
+        }
+      };
+      renderMermaid();
+    }
+  }, [code, index]);
+  
+  if (mermaidError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <p className="font-medium mb-2">Ошибка рендеринга:</p>
+        <p className="text-sm">{mermaidError}</p>
+        <div className="mt-4 bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
+          <pre className="whitespace-pre-wrap">{code}</pre>
+        </div>
+      </div>
+    );
+  }
+  
+  if (mermaidSvg) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: mermaidSvg }} />
+    );
+  }
+  
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-center">
+      <div className="text-gray-500">Рендеринг диаграммы...</div>
+    </div>
+  );
+}
 
 interface UploadedFile {
   id: string;
@@ -23,7 +79,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code'; plantUmlCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -114,15 +170,29 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
         // Загружаем сообщения
         if (diagram.messages && Array.isArray(diagram.messages) && diagram.messages.length > 0) {
-          setMessages(diagram.messages.map((msg: any) => ({
-            text: msg.text || '',
-            isUser: msg.isUser || false,
-            type: msg.type,
-            plantUmlCode: msg.plantUmlCode,
-            diagramImageUrl: msg.diagramImageUrl,
-            glossary: msg.glossary,
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-          })));
+          setMessages(diagram.messages.map((msg: any) => {
+            // Если это Mermaid диаграмма и есть plantUmlCode, конвертируем в mermaidCode
+            if (diagram.diagramType === 'MindMapMermaid' && msg.plantUmlCode && !msg.mermaidCode) {
+              return {
+                text: msg.text || '',
+                isUser: msg.isUser || false,
+                type: 'mermaid' as const,
+                mermaidCode: msg.plantUmlCode,
+                glossary: msg.glossary,
+                timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+              };
+            }
+            return {
+              text: msg.text || '',
+              isUser: msg.isUser || false,
+              type: msg.type,
+              plantUmlCode: msg.plantUmlCode,
+              mermaidCode: msg.mermaidCode,
+              diagramImageUrl: msg.diagramImageUrl,
+              glossary: msg.glossary,
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            };
+          }));
         } else if (diagram.selectedOption === 'scratch') {
           // Если создание с нуля и нет сообщений, показываем приветственное
           setMessages([{
@@ -613,57 +683,96 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           throw new Error('Ошибка при генерации диаграммы');
         }
 
-        const { plantUmlCode, glossary } = await generateResponse.json();
-
-        // Вызываем API для рендеринга диаграммы
-        const renderResponse = await fetch('/api/diagrams/render', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            plantUmlCode,
-          }),
-        });
-
-        if (!renderResponse.ok) {
-          throw new Error('Ошибка при рендеринге диаграммы');
-        }
-
-        const { imageUrl } = await renderResponse.json();
+        const generateData = await generateResponse.json();
+        const isMermaid = diagramType === 'MindMapMermaid';
+        const plantUmlCode = generateData.plantUmlCode;
+        const mermaidCode = generateData.mermaidCode;
+        const glossary = generateData.glossary;
 
         // Сохраняем данные в диаграмму
         const currentUser = auth.getCurrentUser();
-        if (currentUser && diagramId) {
-          saveDiagram({
-            diagramType,
-            selectedObject: objectDescription,
-            plantUmlCode,
-            diagramImageUrl: imageUrl,
-            glossary,
-          });
-        }
-
-        // Добавляем сообщения с результатами
-        setMessages(prev => [
-          ...prev,
-          {
-            text: plantUmlCode,
-            isUser: false,
-            type: 'code',
-            plantUmlCode,
-            diagramImageUrl: imageUrl,
-            timestamp: new Date()
-          },
-          {
-            text: "Глоссарий элементов диаграммы:",
-            isUser: false,
-            type: 'table',
-            glossary,
-            timestamp: new Date()
+        
+        if (isMermaid && mermaidCode) {
+          // Для Mermaid диаграмм рендерим на клиенте
+          if (currentUser && diagramId) {
+            saveDiagram({
+              diagramType,
+              selectedObject: objectDescription,
+              plantUmlCode: mermaidCode, // Сохраняем как plantUmlCode для совместимости
+              glossary,
+            });
           }
-        ]);
-        setShowDiagram(true);
+
+          // Добавляем сообщения с результатами
+          setMessages(prev => [
+            ...prev,
+            {
+              text: mermaidCode,
+              isUser: false,
+              type: 'mermaid',
+              mermaidCode,
+              timestamp: new Date()
+            },
+            {
+              text: "Глоссарий элементов диаграммы:",
+              isUser: false,
+              type: 'table',
+              glossary,
+              timestamp: new Date()
+            }
+          ]);
+          setShowDiagram(true);
+        } else if (plantUmlCode) {
+          // Для PlantUML диаграмм используем API рендеринга
+          const renderResponse = await fetch('/api/diagrams/render', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              plantUmlCode,
+            }),
+          });
+
+          if (!renderResponse.ok) {
+            throw new Error('Ошибка при рендеринге диаграммы');
+          }
+
+          const { imageUrl } = await renderResponse.json();
+
+          if (currentUser && diagramId) {
+            saveDiagram({
+              diagramType,
+              selectedObject: objectDescription,
+              plantUmlCode,
+              diagramImageUrl: imageUrl,
+              glossary,
+            });
+          }
+
+          // Добавляем сообщения с результатами
+          setMessages(prev => [
+            ...prev,
+            {
+              text: plantUmlCode,
+              isUser: false,
+              type: 'code',
+              plantUmlCode,
+              diagramImageUrl: imageUrl,
+              timestamp: new Date()
+            },
+            {
+              text: "Глоссарий элементов диаграммы:",
+              isUser: false,
+              type: 'table',
+              glossary,
+              timestamp: new Date()
+            }
+          ]);
+          setShowDiagram(true);
+        } else {
+          throw new Error('Не удалось получить код диаграммы');
+        }
       } catch (error) {
         console.error('Ошибка при создании диаграммы:', error);
         setMessages(prev => [...prev, {
@@ -704,6 +813,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Object': 'UML диаграмма объектов',
     'ER': 'ER диаграмма (Entity-Relationship)',
     'MindMap': 'Интеллект-карта',
+    'MindMapMermaid': 'MindMap (Mermaid)',
     'Network': 'Сетевая диаграмма',
     'Archimate': 'ArchiMate диаграмма',
     'Timing': 'Диаграмма временных зависимостей',
@@ -803,6 +913,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Идеи',
       tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'Высокоуровневые'],
       popularity: 6
+    },
+    {
+      type: 'MindMapMermaid',
+      name: 'MindMap (Mermaid)',
+      description: 'Создает интеллект-карту с помощью Mermaid - визуализирует идеи и концепции в виде древовидной структуры',
+      standard: 'Mermaid',
+      purpose: 'Идеи',
+      tags: ['Mermaid', 'Идеи', 'Мозговой штурм', 'Концептуальные'],
+      popularity: 7
     },
     {
       type: 'Network',
@@ -1149,6 +1268,37 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     const timestamp = msg.timestamp || new Date();
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    
+                    if (msg.type === 'mermaid' && msg.mermaidCode) {
+                      return (
+                        <div key={index} className="flex flex-col items-start">
+                          <div className="text-base text-gray-500 mb-1 px-1">
+                            {dateStr} {timeStr}
+                          </div>
+                          <div className="max-w-full w-full">
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                              <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-medium text-lg">Mermaid диаграмма</h4>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      if (msg.mermaidCode) {
+                                        navigator.clipboard.writeText(msg.mermaidCode);
+                                        alert('Код скопирован в буфер обмена');
+                                      }
+                                    }}
+                                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                  >
+                                    Копировать код
+                                  </button>
+                                </div>
+                              </div>
+                              <MermaidDiagram code={msg.mermaidCode} index={index} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
                     
                     if (msg.type === 'code') {
                       const currentViewMode = viewModes.get(index) || 'diagram';

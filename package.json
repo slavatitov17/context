@@ -12,6 +12,7 @@
   "dependencies": {
     "@mistralai/mistralai": "^1.11.0",
     "mammoth": "^1.11.0",
+    "mermaid": "^11.12.2",
     "next": "^16.0.7",
     "pdf-lib": "^1.17.1",
     "pdf2json": "^4.0.0",
