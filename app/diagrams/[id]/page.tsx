@@ -486,25 +486,26 @@ function MermaidMessage({
                 </button>
               </div>
               <div className="flex space-x-2">
-              {mermaidSvg && (
+                {mermaidSvg && (
+                  <button
+                    onClick={downloadPNG}
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    Скачать PNG
+                  </button>
+                )}
                 <button
-                  onClick={downloadPNG}
+                  onClick={() => {
+                    if (msg.mermaidCode) {
+                      navigator.clipboard.writeText(msg.mermaidCode);
+                      alert('Код скопирован в буфер обмена');
+                    }
+                  }}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
-                  Скачать PNG
+                  Копировать код
                 </button>
-              )}
-              <button
-                onClick={() => {
-                  if (msg.mermaidCode) {
-                    navigator.clipboard.writeText(msg.mermaidCode);
-                    alert('Код скопирован в буфер обмена');
-                  }
-                }}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                Копировать код
-              </button>
+              </div>
             </div>
           </div>
           {/* Показываем диаграмму или код в зависимости от выбранного режима */}
