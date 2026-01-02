@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
       context = getContextFromDocuments(documents);
     }
 
+    // Проверяем, является ли это Mermaid диаграммой
+    const isMermaid = diagramType === 'MindMapMermaid';
+
     // Формируем промпт для генерации кода
     const systemPrompt = isMermaid 
       ? `Ты эксперт по созданию диаграмм в формате Mermaid. Твоя задача - создать корректный код Mermaid для MindMap диаграммы.
@@ -102,9 +105,6 @@ export async function POST(request: NextRequest) {
       'WBS': 'WBS диаграмма (Work Breakdown Structure)',
       'JSON': 'JSON диаграмма',
     };
-
-    // Проверяем, является ли это Mermaid диаграммой
-    const isMermaid = diagramType === 'MindMapMermaid';
 
     const typeDescription = diagramTypeDescriptions[diagramType] || diagramType;
 
