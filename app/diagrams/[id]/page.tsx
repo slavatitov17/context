@@ -92,39 +92,50 @@ function MermaidMessage({
         const svgDoc = parser.parseFromString(mermaidSvg, 'image/svg+xml');
         const svgElement = svgDoc.documentElement;
         
-        // Получаем размеры SVG
-        let svgWidth = parseInt(svgElement.getAttribute('width') || '800', 10);
-        let svgHeight = parseInt(svgElement.getAttribute('height') || '600', 10);
+        // Коэффициент масштабирования для высокого разрешения (3x для четкости)
+        const scale = 3;
         
-        // Если размеры не указаны, пытаемся получить из viewBox
-        if (!svgWidth || !svgHeight || isNaN(svgWidth) || isNaN(svgHeight)) {
-          const viewBox = svgElement.getAttribute('viewBox');
-          if (viewBox) {
-            const parts = viewBox.split(' ');
-            if (parts.length >= 4) {
-              svgWidth = parseInt(parts[2], 10) || 800;
-              svgHeight = parseInt(parts[3], 10) || 600;
-            }
+        // Получаем размеры SVG из viewBox (это более надежно)
+        let svgWidth = 800;
+        let svgHeight = 600;
+        
+        const viewBox = svgElement.getAttribute('viewBox');
+        if (viewBox) {
+          const parts = viewBox.split(/\s+/);
+          if (parts.length >= 4) {
+            svgWidth = parseFloat(parts[2]) || 800;
+            svgHeight = parseFloat(parts[3]) || 600;
+          }
+        } else {
+          // Если нет viewBox, пытаемся получить из width и height
+          const widthAttr = svgElement.getAttribute('width');
+          const heightAttr = svgElement.getAttribute('height');
+          if (widthAttr && heightAttr) {
+            svgWidth = parseFloat(widthAttr.replace('px', '')) || 800;
+            svgHeight = parseFloat(heightAttr.replace('px', '')) || 600;
           }
         }
         
-        // Устанавливаем размеры если они не заданы
-        if (!svgWidth || isNaN(svgWidth)) svgWidth = 800;
-        if (!svgHeight || isNaN(svgHeight)) svgHeight = 600;
-        
-        // Создаем canvas
+        // Создаем canvas с увеличенным разрешением
         const canvas = document.createElement('canvas');
-        canvas.width = svgWidth;
-        canvas.height = svgHeight;
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
         const ctx = canvas.getContext('2d');
         
         if (!ctx) {
           throw new Error('Не удалось получить контекст canvas');
         }
         
+        // Масштабируем контекст для высокого разрешения
+        ctx.scale(scale, scale);
+        
         // Заполняем белым фоном
         ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, svgWidth, svgHeight);
+        
+        // Убеждаемся, что SVG имеет правильные размеры
+        svgElement.setAttribute('width', svgWidth.toString());
+        svgElement.setAttribute('height', svgHeight.toString());
         
         // Создаем data URL из SVG (это избегает проблемы с CORS)
         const svgData = new XMLSerializer().serializeToString(svgElement);
@@ -136,8 +147,8 @@ function MermaidMessage({
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
             try {
-              // Рисуем изображение на canvas
-              ctx.drawImage(img, 0, 0);
+              // Рисуем изображение на canvas с правильными размерами
+              ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
               
               // Конвертируем в PNG и скачиваем
               canvas.toBlob((blob) => {
