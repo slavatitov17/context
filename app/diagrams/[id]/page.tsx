@@ -93,8 +93,24 @@ function MermaidMessage({
         const svgElement = svgDoc.documentElement;
         
         // Получаем размеры SVG
-        const svgWidth = parseInt(svgElement.getAttribute('width') || '800', 10);
-        const svgHeight = parseInt(svgElement.getAttribute('height') || '600', 10);
+        let svgWidth = parseInt(svgElement.getAttribute('width') || '800', 10);
+        let svgHeight = parseInt(svgElement.getAttribute('height') || '600', 10);
+        
+        // Если размеры не указаны, пытаемся получить из viewBox
+        if (!svgWidth || !svgHeight || isNaN(svgWidth) || isNaN(svgHeight)) {
+          const viewBox = svgElement.getAttribute('viewBox');
+          if (viewBox) {
+            const parts = viewBox.split(' ');
+            if (parts.length >= 4) {
+              svgWidth = parseInt(parts[2], 10) || 800;
+              svgHeight = parseInt(parts[3], 10) || 600;
+            }
+          }
+        }
+        
+        // Устанавливаем размеры если они не заданы
+        if (!svgWidth || isNaN(svgWidth)) svgWidth = 800;
+        if (!svgHeight || isNaN(svgHeight)) svgHeight = 600;
         
         // Создаем canvas
         const canvas = document.createElement('canvas');
@@ -110,11 +126,12 @@ function MermaidMessage({
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Создаем изображение из SVG
-        const svgBlob = new Blob([mermaidSvg], { type: 'image/svg+xml;charset=utf-8' });
-        const svgUrl = URL.createObjectURL(svgBlob);
+        // Создаем data URL из SVG (это избегает проблемы с CORS)
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
         
         const img = new Image();
+        img.crossOrigin = 'anonymous'; // Важно для избежания tainted canvas
         
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
@@ -133,25 +150,22 @@ function MermaidMessage({
                   a.click();
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
-                  URL.revokeObjectURL(svgUrl);
                   resolve();
                 } else {
-                  URL.revokeObjectURL(svgUrl);
                   reject(new Error('Не удалось создать PNG blob'));
                 }
               }, 'image/png');
             } catch (error) {
-              URL.revokeObjectURL(svgUrl);
               reject(error);
             }
           };
           
           img.onerror = () => {
-            URL.revokeObjectURL(svgUrl);
             reject(new Error('Ошибка загрузки SVG изображения'));
           };
           
-          img.src = svgUrl;
+          // Используем data URL вместо blob URL
+          img.src = svgDataUrl;
         });
       } catch (error) {
         console.error('Ошибка при создании PNG:', error);
