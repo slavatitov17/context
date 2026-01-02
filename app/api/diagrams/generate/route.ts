@@ -67,9 +67,18 @@ export async function POST(request: NextRequest) {
                       diagramType === 'ClassMermaid' ||
                       diagramType === 'StateMermaid' ||
                       diagramType === 'ActivityMermaid' ||
-                      diagramType === 'ComponentMermaid' ||
                       diagramType === 'GanttMermaid' ||
-                      diagramType === 'ERMermaid';
+                      diagramType === 'ERMermaid' ||
+                      diagramType === 'Architecture' ||
+                      diagramType === 'C4' ||
+                      diagramType === 'Git' ||
+                      diagramType === 'Kanban' ||
+                      diagramType === 'Pie' ||
+                      diagramType === 'Quadrant' ||
+                      diagramType === 'Radar' ||
+                      diagramType === 'Timeline' ||
+                      diagramType === 'UserJourney' ||
+                      diagramType === 'XY';
 
     // Определяем тип Mermaid диаграммы
     const getMermaidDiagramType = (type: string): string => {
@@ -78,9 +87,18 @@ export async function POST(request: NextRequest) {
       if (type === 'ClassMermaid') return 'classDiagram';
       if (type === 'StateMermaid') return 'stateDiagram-v2';
       if (type === 'ActivityMermaid') return 'flowchart';
-      if (type === 'ComponentMermaid') return 'graph';
       if (type === 'GanttMermaid') return 'gantt';
       if (type === 'ERMermaid') return 'erDiagram';
+      if (type === 'Architecture') return 'graph';
+      if (type === 'C4') return 'C4Context';
+      if (type === 'Git') return 'gitGraph';
+      if (type === 'Kanban') return 'kanban';
+      if (type === 'Pie') return 'pie';
+      if (type === 'Quadrant') return 'quadrantChart';
+      if (type === 'Radar') return 'radar';
+      if (type === 'Timeline') return 'timeline';
+      if (type === 'UserJourney') return 'journey';
+      if (type === 'XY') return 'xychart-beta';
       return 'mindmap';
     };
 
@@ -116,7 +134,6 @@ export async function POST(request: NextRequest) {
       'ClassMermaid': 'Class диаграмма (Mermaid)',
       'StateMermaid': 'State диаграмма (Mermaid)',
       'ActivityMermaid': 'Activity диаграмма (Mermaid)',
-      'ComponentMermaid': 'Component диаграмма (Mermaid)',
       'GanttMermaid': 'Gantt диаграмма (Mermaid)',
       'ERMermaid': 'ER диаграмма (Mermaid)',
       'MindMapMermaid': 'MindMap диаграмма (Mermaid)',
@@ -124,15 +141,19 @@ export async function POST(request: NextRequest) {
       'Class': 'UML диаграмма классов (Class Diagram)',
       'State': 'UML диаграмма состояний (State Diagram)',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
-      'Component': 'UML диаграмма компонентов (Component Diagram)',
       'Gantt': 'Диаграмма Ганта (Gantt Chart)',
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
       'MindMap': 'Интеллект-карта (Mind Map)',
-      'Network': 'Сетевая диаграмма (Network Diagram)',
-      'Archimate': 'ArchiMate диаграмма',
-      'Timing': 'Диаграмма временных зависимостей (Timing Diagram)',
-      'WBS': 'WBS диаграмма (Work Breakdown Structure)',
-      'JSON': 'JSON диаграмма',
+      'Architecture': 'Architecture диаграмма (Mermaid)',
+      'C4': 'C4 диаграмма (Mermaid)',
+      'Git': 'Git диаграмма (Mermaid)',
+      'Kanban': 'Kanban диаграмма (Mermaid)',
+      'Pie': 'Pie диаграмма (Mermaid)',
+      'Quadrant': 'Quadrant диаграмма (Mermaid)',
+      'Radar': 'Radar диаграмма (Mermaid)',
+      'Timeline': 'Timeline диаграмма (Mermaid)',
+      'UserJourney': 'User Journey диаграмма (Mermaid)',
+      'XY': 'XY диаграмма (Mermaid)',
     };
 
     const typeDescription = diagramTypeDescriptions[diagramType] || diagramType;
@@ -151,9 +172,18 @@ ${diagramType === 'SequenceMermaid' ? 'ДЛЯ MERMAID SEQUENCE: Использу
 ${diagramType === 'ClassMermaid' ? 'ДЛЯ MERMAID CLASS: Используй правильный синтаксис classDiagram:\n- Начинай с "classDiagram"\n- Определяй классы с русскими названиями\n- Используй отношения (-->, <|--, etc.)' : ''}
 ${diagramType === 'StateMermaid' ? 'ДЛЯ MERMAID STATE: Используй правильный синтаксис stateDiagram-v2:\n- Начинай с "stateDiagram-v2"\n- Определяй состояния с русскими названиями\n- Используй переходы (-->)' : ''}
 ${diagramType === 'ActivityMermaid' ? 'ДЛЯ MERMAID ACTIVITY: Используй правильный синтаксис flowchart:\n- Начинай с "flowchart TD" или "flowchart LR"\n- Используй узлы с русскими названиями\n- Используй стрелки (-->)' : ''}
-${diagramType === 'ComponentMermaid' ? 'ДЛЯ MERMAID COMPONENT: Используй правильный синтаксис graph:\n- Начинай с "graph TD" или "graph LR"\n- Используй узлы с русскими названиями\n- Используй стрелки (-->)' : ''}
 ${diagramType === 'GanttMermaid' ? 'ДЛЯ MERMAID GANTT: Используй правильный синтаксис gantt:\n- Начинай с "gantt"\n- Определяй задачи с русскими названиями\n- Используй даты и длительности' : ''}
-${diagramType === 'ERMermaid' ? 'ДЛЯ MERMAID ER: Используй правильный синтаксис erDiagram:\n- Начинай с "erDiagram"\n- Определяй сущности с русскими названиями\n- Используй отношения (||--||, }o--||, etc.)' : ''}`;
+${diagramType === 'ERMermaid' ? 'ДЛЯ MERMAID ER: Используй правильный синтаксис erDiagram:\n- Начинай с "erDiagram"\n- Определяй сущности с русскими названиями\n- Используй отношения (||--||, }o--||, etc.)' : ''}
+${diagramType === 'Architecture' ? 'ДЛЯ ARCHITECTURE: Используй правильный синтаксис graph:\n- Начинай с "graph TD" или "graph LR"\n- Используй узлы с русскими названиями для компонентов системы\n- Используй стрелки (-->) для связей' : ''}
+${diagramType === 'C4' ? 'ДЛЯ C4: Используй правильный синтаксис C4Context:\n- Начинай с "C4Context"\n- Используй контейнеры и компоненты с русскими названиями\n- Определяй связи между элементами' : ''}
+${diagramType === 'Git' ? 'ДЛЯ GIT: Используй правильный синтаксис gitGraph:\n- Начинай с "gitGraph"\n- Используй команды commit, branch, checkout с русскими названиями\n- Показывай историю коммитов' : ''}
+${diagramType === 'Kanban' ? 'ДЛЯ KANBAN: Используй правильный синтаксис kanban:\n- Начинай с "kanban"\n- Определяй колонки и задачи с русскими названиями\n- Используй правильную структуру канбан-доски' : ''}
+${diagramType === 'Pie' ? 'ДЛЯ PIE: Используй правильный синтаксис pie:\n- Начинай с "pie"\n- Используй формат "title Название"\n- Определяй доли с русскими названиями в формате "Название : значение"' : ''}
+${diagramType === 'Quadrant' ? 'ДЛЯ QUADRANT: Используй правильный синтаксис quadrantChart:\n- Начинай с "quadrantChart"\n- Определяй квадранты и элементы с русскими названиями\n- Используй правильную структуру квадрантной диаграммы' : ''}
+${diagramType === 'Radar' ? 'ДЛЯ RADAR: Используй правильный синтаксис radar:\n- Начинай с "radar"\n- Определяй оси и значения с русскими названиями\n- Используй правильную структуру радарной диаграммы' : ''}
+${diagramType === 'Timeline' ? 'ДЛЯ TIMELINE: Используй правильный синтаксис timeline:\n- Начинай с "timeline"\n- Определяй события с русскими названиями\n- Используй правильную структуру временной шкалы' : ''}
+${diagramType === 'UserJourney' ? 'ДЛЯ USER JOURNEY: Используй правильный синтаксис journey:\n- Начинай с "journey"\n- Определяй этапы и действия с русскими названиями\n- Используй правильную структуру пользовательского пути' : ''}
+${diagramType === 'XY' ? 'ДЛЯ XY: Используй правильный синтаксис xychart-beta:\n- Начинай с "xychart-beta"\n- Определяй оси и точки данных с русскими названиями\n- Используй правильную структуру XY диаграммы' : ''}`;
 
       if (context) {
         userPrompt += `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}`;
@@ -180,8 +210,6 @@ ${objectDescription}
 
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
-${diagramType === 'Timing' ? 'ДЛЯ TIMING: Используй синтаксис timing диаграммы: @startuml ... @enduml с clock, binary, analog сигналами. Пример: clock clk, binary "сигнал" as sig' : ''}
-${diagramType === 'JSON' ? 'ДЛЯ JSON: Используй синтаксис @startjson ... @endjson. Внутри должен быть валидный JSON код. Пример: @startjson\n{\n  "ключ": "значение"\n}\n@endjson' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
 
       if (context) {

@@ -449,39 +449,43 @@ function MermaidMessage({
       </div>
       <div className="max-w-full w-full">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            {/* Свитчер Диаграмма/Код */}
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => {
-                  const newModes = new Map(viewModes);
-                  newModes.set(index, 'diagram');
-                  setViewModes(newModes);
-                }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  currentViewMode === 'diagram'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Диаграмма
-              </button>
-              <button
-                onClick={() => {
-                  const newModes = new Map(viewModes);
-                  newModes.set(index, 'code');
-                  setViewModes(newModes);
-                }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  currentViewMode === 'code'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Код
-              </button>
-            </div>
-            <div className="flex space-x-2">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+            {/* Пустой блок слева для выравнивания */}
+            <div></div>
+            {/* Свитчер и кнопки справа */}
+            <div className="flex items-center gap-4">
+              {/* Свитчер Диаграмма/Код */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => {
+                    const newModes = new Map(viewModes);
+                    newModes.set(index, 'diagram');
+                    setViewModes(newModes);
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    currentViewMode === 'diagram'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Диаграмма
+                </button>
+                <button
+                  onClick={() => {
+                    const newModes = new Map(viewModes);
+                    newModes.set(index, 'code');
+                    setViewModes(newModes);
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    currentViewMode === 'code'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Код
+                </button>
+              </div>
+              <div className="flex space-x-2">
               {mermaidSvg && (
                 <button
                   onClick={downloadPNG}
@@ -1149,6 +1153,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         const generateData = await generateResponse.json();
         const isMermaid = false; // MindMapMermaid больше не используется
         const isDualFormat = diagramType.endsWith('2');
+        // Проверяем, является ли тип чисто Mermaid (новые типы)
+        const isPureMermaid = ['Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
         const glossary = generateData.glossary;
@@ -1163,7 +1169,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           if (type === 'Class2') return 'Class';
           if (type === 'State2') return 'State';
           if (type === 'Activity2') return 'Activity';
-          if (type === 'Component2') return 'Component';
           if (type === 'Gantt2') return 'Gantt';
           if (type === 'ER2') return 'ER';
           return type;
@@ -1176,7 +1181,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           if (type === 'Class2') return 'ClassMermaid';
           if (type === 'State2') return 'StateMermaid';
           if (type === 'Activity2') return 'ActivityMermaid';
-          if (type === 'Component2') return 'ComponentMermaid';
           if (type === 'Gantt2') return 'GanttMermaid';
           if (type === 'ER2') return 'ERMermaid';
           return type;
@@ -1274,8 +1278,38 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             }
           ]);
           setShowDiagram(true);
+        } else if (isPureMermaid && mermaidCode) {
+          // Для новых Mermaid диаграмм рендерим на клиенте
+          if (currentUser && diagramId) {
+            saveDiagram({
+              diagramType,
+              selectedObject: objectDescription,
+              plantUmlCode: mermaidCode, // Сохраняем как plantUmlCode для совместимости
+              glossary,
+            });
+          }
+
+          // Добавляем сообщения с результатами
+          setMessages(prev => [
+            ...prev,
+            {
+              text: mermaidCode,
+              isUser: false,
+              type: 'mermaid',
+              mermaidCode,
+              timestamp: new Date()
+            },
+            {
+              text: "Глоссарий элементов диаграммы:",
+              isUser: false,
+              type: 'table',
+              glossary,
+              timestamp: new Date()
+            }
+          ]);
+          setShowDiagram(true);
         } else if (isMermaid && mermaidCode) {
-          // Для Mermaid диаграмм рендерим на клиенте
+          // Для старых Mermaid диаграмм рендерим на клиенте
           if (currentUser && diagramId) {
             saveDiagram({
               diagramType,
@@ -1393,14 +1427,18 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Class2': 'Class (2)',
     'State2': 'State (2)',
     'Activity2': 'Activity (2)',
-    'Component2': 'Component (2)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
-    'Network': 'Сетевая диаграмма',
-    'Archimate': 'ArchiMate диаграмма',
-    'Timing': 'Диаграмма временных зависимостей',
-    'WBS': 'WBS диаграмма',
-    'JSON': 'JSON диаграмма',
+    'Architecture': 'Architecture диаграмма',
+    'C4': 'C4 диаграмма',
+    'Git': 'Git диаграмма',
+    'Kanban': 'Kanban диаграмма',
+    'Pie': 'Pie диаграмма',
+    'Quadrant': 'Quadrant диаграмма',
+    'Radar': 'Radar диаграмма',
+    'Timeline': 'Timeline диаграмма',
+    'UserJourney': 'User Journey диаграмма',
+    'XY': 'XY диаграмма',
   };
 
   // Расширенная информация о типах диаграмм
@@ -1479,15 +1517,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       popularity: 8
     },
     {
-      type: 'Component2',
-      name: 'Component (2)',
-      description: 'Диаграмма компонентов с возможностью выбора между PlantUML и Mermaid форматами',
-      standard: 'UML',
-      purpose: 'Архитектура',
-      tags: ['UML', 'Архитектура', 'Компоненты', 'PlantUML', 'Mermaid'],
-      popularity: 8
-    },
-    {
       type: 'Gantt2',
       name: 'Gantt (2)',
       description: 'Диаграмма Ганта с возможностью выбора между PlantUML и Mermaid форматами',
@@ -1506,49 +1535,94 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       popularity: 9
     },
     {
-      type: 'Network',
-      name: 'Network',
-      description: 'Отображает сетевую топологию, показывая узлы, соединения и маршруты',
-      standard: 'Общее',
-      purpose: 'Инфраструктура',
-      tags: ['Сеть', 'Инфраструктура', 'Топология'],
-      popularity: 5
+      type: 'Architecture',
+      name: 'Architecture',
+      description: 'Архитектурная диаграмма для визуализации структуры системы и компонентов',
+      standard: 'Mermaid',
+      purpose: 'Архитектура',
+      tags: ['Mermaid', 'Архитектура', 'Система'],
+      popularity: 8
     },
     {
-      type: 'Archimate',
-      name: 'Archimate',
-      description: 'Моделирует архитектуру предприятия, показывая бизнес-процессы, приложения и технологии',
-      standard: 'ArchiMate',
+      type: 'C4',
+      name: 'C4',
+      description: 'C4 модель для описания архитектуры программного обеспечения на разных уровнях абстракции',
+      standard: 'Mermaid',
       purpose: 'Архитектура',
-      tags: ['ArchiMate', 'Архитектура предприятия', 'EA'],
+      tags: ['Mermaid', 'C4', 'Архитектура', 'Софт'],
+      popularity: 9
+    },
+    {
+      type: 'Git',
+      name: 'Git',
+      description: 'Диаграмма Git для визуализации ветвления и истории коммитов в репозитории',
+      standard: 'Mermaid',
+      purpose: 'Разработка',
+      tags: ['Mermaid', 'Git', 'Версионирование', 'Разработка'],
+      popularity: 7
+    },
+    {
+      type: 'Kanban',
+      name: 'Kanban',
+      description: 'Канбан-доска для визуализации рабочих процессов и задач',
+      standard: 'Mermaid',
+      purpose: 'Управление проектами',
+      tags: ['Mermaid', 'Kanban', 'Управление', 'Задачи'],
+      popularity: 8
+    },
+    {
+      type: 'Pie',
+      name: 'Pie',
+      description: 'Круговая диаграмма для отображения пропорций и долей данных',
+      standard: 'Mermaid',
+      purpose: 'Визуализация данных',
+      tags: ['Mermaid', 'Pie', 'Данные', 'Статистика'],
+      popularity: 7
+    },
+    {
+      type: 'Quadrant',
+      name: 'Quadrant',
+      description: 'Квадрантная диаграмма для анализа и категоризации элементов по двум осям',
+      standard: 'Mermaid',
+      purpose: 'Анализ',
+      tags: ['Mermaid', 'Quadrant', 'Анализ', 'Категоризация'],
       popularity: 6
     },
     {
-      type: 'Timing',
-      name: 'Timing',
-      description: 'Показывает временные зависимости и изменения состояний объектов во времени',
-      standard: 'UML',
+      type: 'Radar',
+      name: 'Radar',
+      description: 'Радарная диаграмма для сравнения множественных метрик и характеристик',
+      standard: 'Mermaid',
+      purpose: 'Визуализация данных',
+      tags: ['Mermaid', 'Radar', 'Данные', 'Сравнение'],
+      popularity: 6
+    },
+    {
+      type: 'Timeline',
+      name: 'Timeline',
+      description: 'Временная шкала для отображения событий и процессов во времени',
+      standard: 'Mermaid',
       purpose: 'Временной анализ',
-      tags: ['UML', 'Время', 'Сигналы', 'Синхронизация'],
-      popularity: 4
+      tags: ['Mermaid', 'Timeline', 'Время', 'События'],
+      popularity: 8
     },
     {
-      type: 'WBS',
-      name: 'WBS',
-      description: 'Структурирует проект в виде иерархии работ и задач для управления проектом',
-      standard: 'PMI',
-      purpose: 'Управление проектами',
-      tags: ['Управление проектами', 'WBS', 'Планирование'],
-      popularity: 5
+      type: 'UserJourney',
+      name: 'User Journey',
+      description: 'Карта пользовательского пути для визуализации взаимодействия пользователя с продуктом',
+      standard: 'Mermaid',
+      purpose: 'UX/UI',
+      tags: ['Mermaid', 'User Journey', 'UX', 'Пользователь'],
+      popularity: 8
     },
     {
-      type: 'JSON',
-      name: 'JSON',
-      description: 'Визуализирует структуру JSON-данных в виде дерева для лучшего понимания',
-      standard: 'JSON',
-      purpose: 'Данные',
-      tags: ['JSON', 'Данные', 'Структура'],
-      popularity: 4
+      type: 'XY',
+      name: 'XY',
+      description: 'XY диаграмма для отображения зависимостей между двумя переменными',
+      standard: 'Mermaid',
+      purpose: 'Визуализация данных',
+      tags: ['Mermaid', 'XY', 'Данные', 'Зависимости'],
+      popularity: 7
     }
   ];
 
@@ -1890,39 +1964,43 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           </div>
                           <div className="max-w-full w-full">
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
-                              <div className="flex justify-between items-center mb-4">
-                                {/* Свитчер Диаграмма/Код */}
-                                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                                  <button
-                                    onClick={() => {
-                                      const newModes = new Map(viewModes);
-                                      newModes.set(index, 'diagram');
-                                      setViewModes(newModes);
-                                    }}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                      currentViewMode === 'diagram'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                    }`}
-                                  >
-                                    Диаграмма
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const newModes = new Map(viewModes);
-                                      newModes.set(index, 'code');
-                                      setViewModes(newModes);
-                                    }}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                      currentViewMode === 'code'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                    }`}
-                                  >
-                                    Код
-                                  </button>
-                                </div>
-                                <div className="flex space-x-2">
+                              <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                                {/* Пустой блок слева для выравнивания */}
+                                <div></div>
+                                {/* Свитчер и кнопки справа */}
+                                <div className="flex items-center gap-4">
+                                  {/* Свитчер Диаграмма/Код */}
+                                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                                    <button
+                                      onClick={() => {
+                                        const newModes = new Map(viewModes);
+                                        newModes.set(index, 'diagram');
+                                        setViewModes(newModes);
+                                      }}
+                                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        currentViewMode === 'diagram'
+                                          ? 'bg-white text-gray-900 shadow-sm'
+                                          : 'text-gray-600 hover:text-gray-900'
+                                      }`}
+                                    >
+                                      Диаграмма
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const newModes = new Map(viewModes);
+                                        newModes.set(index, 'code');
+                                        setViewModes(newModes);
+                                      }}
+                                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        currentViewMode === 'code'
+                                          ? 'bg-white text-gray-900 shadow-sm'
+                                          : 'text-gray-600 hover:text-gray-900'
+                                      }`}
+                                    >
+                                      Код
+                                    </button>
+                                  </div>
+                                  <div className="flex space-x-2">
                                   {msg.diagramImageUrl && (
                                     <>
                                       <a
@@ -1945,6 +2023,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   >
                                     Копировать код
                                   </button>
+                                  </div>
                                 </div>
                               </div>
                               {/* Показываем диаграмму или код в зависимости от выбранного режима */}

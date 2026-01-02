@@ -36,14 +36,18 @@ export type DiagramType =
   | 'Class2'
   | 'State2'
   | 'Activity2'
-  | 'Component2'
   | 'Gantt2'
   | 'ER2'
-  | 'Network' 
-  | 'Archimate' 
-  | 'Timing' 
-  | 'WBS' 
-  | 'JSON';
+  | 'Architecture'
+  | 'C4'
+  | 'Git'
+  | 'Kanban'
+  | 'Pie'
+  | 'Quadrant'
+  | 'Radar'
+  | 'Timeline'
+  | 'UserJourney'
+  | 'XY';
 
 export interface Diagram {
   id: string;
