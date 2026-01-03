@@ -1152,10 +1152,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         }
 
         const generateData = await generateResponse.json();
-        const isMermaid = false; // MindMapMermaid больше не используется
+        const isMermaid = diagramType === 'MindMapMax' || diagramType === 'MindMapMermaid';
         const isDualFormat = diagramType.endsWith('2');
         // Проверяем, является ли тип чисто Mermaid (новые типы)
-        const isPureMermaid = ['Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
+        const isPureMermaid = ['MindMapMax', 'Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
         const glossary = generateData.glossary;
@@ -1424,6 +1424,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'UseCase': 'UML диаграмма прецедентов',
     'Object': 'UML диаграмма объектов',
     'MindMap2': 'MindMap (2)',
+    'MindMapMax': 'MindMap (Max)',
     'Sequence2': 'Sequence (2)',
     'Class2': 'Class (2)',
     'State2': 'State (2)',
@@ -1480,6 +1481,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Идеи',
       tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'PlantUML', 'Mermaid'],
       popularity: 8
+    },
+    {
+      type: 'MindMapMax',
+      name: 'MindMap (Max)',
+      description: 'Интеллект-карта Mermaid с максимально детальными инструкциями для ИИ-модели - гарантирует отсутствие ошибок рендеринга',
+      standard: 'Mermaid',
+      purpose: 'Идеи',
+      tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'Mermaid', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'Sequence2',

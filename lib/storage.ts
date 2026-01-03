@@ -32,6 +32,7 @@ export type DiagramType =
   | 'UseCase' 
   | 'Object' 
   | 'MindMap2'
+  | 'MindMapMax'
   | 'Sequence2'
   | 'Class2'
   | 'State2'
