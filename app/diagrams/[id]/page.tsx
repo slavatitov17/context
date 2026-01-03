@@ -1152,7 +1152,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         }
 
         const generateData = await generateResponse.json();
-        const isMermaid = diagramType === 'MindMapMax' || diagramType === 'MindMapMermaid';
+        const isMermaid = diagramType === 'MindMapMax';
         const isDualFormat = diagramType.endsWith('2');
         // Проверяем, является ли тип чисто Mermaid (новые типы)
         const isPureMermaid = ['MindMapMax', 'Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
