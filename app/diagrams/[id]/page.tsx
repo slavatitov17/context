@@ -24,7 +24,6 @@ mermaid.initialize({
     textColor: '#000000',
     secondaryTextColor: '#333333',
     tertiaryTextColor: '#666666',
-    primaryBorderColor: '#000000',
     secondaryBorderColor: '#666666',
     tertiaryBorderColor: '#999999',
     noteBkgColor: '#f5f5f5',
