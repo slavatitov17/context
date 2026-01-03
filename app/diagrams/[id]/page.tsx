@@ -657,6 +657,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingStage, setLoadingStage] = useState<'processing' | 'generating' | 'creating'>('processing');
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [viewModes, setViewModes] = useState<Map<number, 'diagram' | 'code'>>(new Map());
   const [formatSelectors, setFormatSelectors] = useState<Map<number, 'plantuml' | 'mermaid'>>(new Map());
