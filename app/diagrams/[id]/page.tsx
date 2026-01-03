@@ -104,6 +104,47 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
       renderMermaid();
     }
   }, [code, index, onSvgReady]);
+
+  // Применяем строгие цвета к SVG после рендеринга
+  useEffect(() => {
+    if (mermaidSvg && mermaidRef.current) {
+      const svgElement = mermaidRef.current.querySelector('svg');
+      if (svgElement) {
+        // Применяем стили для строгих цветов
+        svgElement.style.setProperty('color', '#000000');
+        // Находим все элементы и применяем цвета
+        const allElements = svgElement.querySelectorAll('*');
+        allElements.forEach((el: Element) => {
+          const htmlEl = el as HTMLElement;
+          // Заменяем цветные заливки на серые оттенки
+          const fill = htmlEl.getAttribute('fill');
+          if (fill && fill !== 'none' && fill !== 'transparent' && fill !== '#ffffff' && fill !== '#f5f5f5' && fill !== '#e5e5e5' && fill !== '#cccccc' && fill !== '#000000') {
+            // Определяем цвет и заменяем на серый оттенок
+            const fillLower = fill.toLowerCase();
+            if (fillLower.includes('yellow') || fillLower.match(/^#(ff|ffff)/)) {
+              htmlEl.setAttribute('fill', '#e5e5e5');
+            } else if (fillLower.includes('green') || fillLower.match(/^#(00|0a)/)) {
+              htmlEl.setAttribute('fill', '#f5f5f5');
+            } else if (fillLower.includes('purple') || fillLower.includes('violet') || fillLower.match(/^#(ff00ff|f0f)/)) {
+              htmlEl.setAttribute('fill', '#cccccc');
+            } else if (fillLower.includes('blue') || fillLower.match(/^#(00f|0000ff)/)) {
+              htmlEl.setAttribute('fill', '#e5e5e5');
+            } else if (fill && fill !== '#000000') {
+              htmlEl.setAttribute('fill', '#e5e5e5');
+            }
+          }
+          // Заменяем цветные обводки на черные/серые
+          const stroke = htmlEl.getAttribute('stroke');
+          if (stroke && stroke !== 'none' && stroke !== 'transparent' && stroke !== '#000000' && stroke !== '#666666' && stroke !== '#999999') {
+            const strokeLower = stroke.toLowerCase();
+            if (strokeLower !== '#ffffff' && strokeLower !== '#f5f5f5' && strokeLower !== '#e5e5e5') {
+              htmlEl.setAttribute('stroke', '#000000');
+            }
+          }
+        });
+      }
+    }
+  }, [mermaidSvg]);
   
   if (mermaidError) {
     return (
@@ -118,47 +159,6 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   }
   
   if (mermaidSvg) {
-    // Применяем строгие цвета к SVG после рендеринга
-    useEffect(() => {
-      if (mermaidSvg && mermaidRef.current) {
-        const svgElement = mermaidRef.current.querySelector('svg');
-        if (svgElement) {
-          // Применяем стили для строгих цветов
-          svgElement.style.setProperty('color', '#000000');
-          // Находим все элементы и применяем цвета
-          const allElements = svgElement.querySelectorAll('*');
-          allElements.forEach((el: Element) => {
-            const htmlEl = el as HTMLElement;
-            // Заменяем цветные заливки на серые оттенки
-            const fill = htmlEl.getAttribute('fill');
-            if (fill && fill !== 'none' && fill !== 'transparent' && fill !== '#ffffff' && fill !== '#f5f5f5' && fill !== '#e5e5e5' && fill !== '#cccccc' && fill !== '#000000') {
-              // Определяем цвет и заменяем на серый оттенок
-              const fillLower = fill.toLowerCase();
-              if (fillLower.includes('yellow') || fillLower.match(/^#(ff|ffff)/)) {
-                htmlEl.setAttribute('fill', '#e5e5e5');
-              } else if (fillLower.includes('green') || fillLower.match(/^#(00|0a)/)) {
-                htmlEl.setAttribute('fill', '#f5f5f5');
-              } else if (fillLower.includes('purple') || fillLower.includes('violet') || fillLower.match(/^#(ff00ff|f0f)/)) {
-                htmlEl.setAttribute('fill', '#cccccc');
-              } else if (fillLower.includes('blue') || fillLower.match(/^#(00f|0000ff)/)) {
-                htmlEl.setAttribute('fill', '#e5e5e5');
-              } else if (fill && fill !== '#000000') {
-                htmlEl.setAttribute('fill', '#e5e5e5');
-              }
-            }
-            // Заменяем цветные обводки на черные/серые
-            const stroke = htmlEl.getAttribute('stroke');
-            if (stroke && stroke !== 'none' && stroke !== 'transparent' && stroke !== '#000000' && stroke !== '#666666' && stroke !== '#999999') {
-              const strokeLower = stroke.toLowerCase();
-              if (strokeLower !== '#ffffff' && strokeLower !== '#f5f5f5' && strokeLower !== '#e5e5e5') {
-                htmlEl.setAttribute('stroke', '#000000');
-              }
-            }
-          });
-        }
-      }
-    }, [mermaidSvg]);
-    
     return (
       <div ref={mermaidRef} className="bg-gray-50 border border-gray-200 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: mermaidSvg }} />
     );
