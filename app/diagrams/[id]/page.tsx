@@ -6,10 +6,76 @@ import { useParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
 import mermaid from 'mermaid';
 
-// Инициализация Mermaid
+// Инициализация Mermaid с кастомной темой для строгих цветов
 mermaid.initialize({ 
   startOnLoad: false,
-  theme: 'default',
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#ffffff',
+    primaryTextColor: '#000000',
+    primaryBorderColor: '#000000',
+    lineColor: '#666666',
+    secondaryColor: '#f5f5f5',
+    tertiaryColor: '#e5e5e5',
+    background: '#ffffff',
+    mainBkg: '#ffffff',
+    secondBkg: '#f5f5f5',
+    tertiaryBkg: '#e5e5e5',
+    textColor: '#000000',
+    secondaryTextColor: '#333333',
+    tertiaryTextColor: '#666666',
+    primaryBorderColor: '#000000',
+    secondaryBorderColor: '#666666',
+    tertiaryBorderColor: '#999999',
+    noteBkgColor: '#f5f5f5',
+    noteTextColor: '#000000',
+    noteBorderColor: '#666666',
+    actorBorder: '#000000',
+    actorBkg: '#ffffff',
+    actorTextColor: '#000000',
+    actorLineColor: '#666666',
+    signalColor: '#000000',
+    signalTextColor: '#000000',
+    labelBoxBkgColor: '#ffffff',
+    labelBoxBorderColor: '#000000',
+    labelTextColor: '#000000',
+    loopTextColor: '#000000',
+    activationBorderColor: '#000000',
+    activationBkgColor: '#f5f5f5',
+    sequenceNumberColor: '#000000',
+    sectionBkgColor: '#e5e5e5',
+    altBkgColor: '#f5f5f5',
+    clusterBkg: '#f5f5f5',
+    clusterBorder: '#666666',
+    defaultLinkColor: '#000000',
+    titleColor: '#000000',
+    edgeLabelBackground: '#ffffff',
+    compositeBackground: '#ffffff',
+    compositeTitleBackground: '#e5e5e5',
+    compositeBorder: '#000000',
+    compositeTitleColor: '#000000',
+    cScale0: '#ffffff',
+    cScale1: '#e5e5e5',
+    cScale2: '#cccccc',
+    pie1: '#ffffff',
+    pie2: '#e5e5e5',
+    pie3: '#cccccc',
+    pie4: '#b3b3b3',
+    pie5: '#999999',
+    pie6: '#808080',
+    pie7: '#666666',
+    pieTitleTextSize: '16px',
+    pieTitleTextColor: '#000000',
+    pieSectionTextSize: '14px',
+    pieSectionTextColor: '#000000',
+    pieLegendTextSize: '14px',
+    pieLegendTextColor: '#000000',
+    pieStrokeColor: '#000000',
+    pieStrokeWidth: '2px',
+    pieOuterStrokeWidth: '2px',
+    pieOuterStrokeColor: '#000000',
+    pieOpacity: '1',
+  },
   securityLevel: 'loose',
 });
 
@@ -52,8 +118,49 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   }
   
   if (mermaidSvg) {
+    // Применяем строгие цвета к SVG после рендеринга
+    useEffect(() => {
+      if (mermaidSvg && mermaidRef.current) {
+        const svgElement = mermaidRef.current.querySelector('svg');
+        if (svgElement) {
+          // Применяем стили для строгих цветов
+          svgElement.style.setProperty('color', '#000000');
+          // Находим все элементы и применяем цвета
+          const allElements = svgElement.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            const htmlEl = el as HTMLElement;
+            // Заменяем цветные заливки на серые оттенки
+            const fill = htmlEl.getAttribute('fill');
+            if (fill && fill !== 'none' && fill !== 'transparent' && fill !== '#ffffff' && fill !== '#f5f5f5' && fill !== '#e5e5e5' && fill !== '#cccccc' && fill !== '#000000') {
+              // Определяем цвет и заменяем на серый оттенок
+              const fillLower = fill.toLowerCase();
+              if (fillLower.includes('yellow') || fillLower.match(/^#(ff|ffff)/)) {
+                htmlEl.setAttribute('fill', '#e5e5e5');
+              } else if (fillLower.includes('green') || fillLower.match(/^#(00|0a)/)) {
+                htmlEl.setAttribute('fill', '#f5f5f5');
+              } else if (fillLower.includes('purple') || fillLower.includes('violet') || fillLower.match(/^#(ff00ff|f0f)/)) {
+                htmlEl.setAttribute('fill', '#cccccc');
+              } else if (fillLower.includes('blue') || fillLower.match(/^#(00f|0000ff)/)) {
+                htmlEl.setAttribute('fill', '#e5e5e5');
+              } else if (fill && fill !== '#000000') {
+                htmlEl.setAttribute('fill', '#e5e5e5');
+              }
+            }
+            // Заменяем цветные обводки на черные/серые
+            const stroke = htmlEl.getAttribute('stroke');
+            if (stroke && stroke !== 'none' && stroke !== 'transparent' && stroke !== '#000000' && stroke !== '#666666' && stroke !== '#999999') {
+              const strokeLower = stroke.toLowerCase();
+              if (strokeLower !== '#ffffff' && strokeLower !== '#f5f5f5' && strokeLower !== '#e5e5e5') {
+                htmlEl.setAttribute('stroke', '#000000');
+              }
+            }
+          });
+        }
+      }
+    }, [mermaidSvg]);
+    
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: mermaidSvg }} />
+      <div ref={mermaidRef} className="bg-gray-50 border border-gray-200 rounded-lg p-4" dangerouslySetInnerHTML={{ __html: mermaidSvg }} />
     );
   }
   
@@ -1083,33 +1190,62 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  // Управление этапами загрузки
+  // Управление этапами загрузки и таймером
   useEffect(() => {
     if (!isProcessing) {
       setLoadingStage('processing');
+      setLoadingStartTime(null);
+      setElapsedSeconds(0);
+      setLoadingMessages([]);
       return;
     }
 
-    // Этап 1: Обработка запроса (сразу)
-    setLoadingStage('processing');
+    // Запускаем таймер
+    const startTime = Date.now();
+    setLoadingStartTime(startTime);
+    setElapsedSeconds(0);
     
-    // Этап 2: Формирование кода (через 2 секунды)
-    const timer1 = setTimeout(() => {
+    // Список сообщений для ротации
+    const messages = [
+      'Обработка запроса',
+      'Анализ данных',
+      'Формирование структуры',
+      'Генерация кода',
+      'Проверка синтаксиса',
+      'Создание диаграммы',
+      'Финальная обработка',
+      'Проверка качества',
+    ];
+    setLoadingMessages(messages);
+    setLoadingStage('processing');
+
+    // Обновляем таймер каждую секунду
+    const timerInterval = setInterval(() => {
       if (isProcessing) {
-        setLoadingStage('generating');
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setElapsedSeconds(elapsed);
+      }
+    }, 1000);
+
+    // Меняем сообщение каждые 2 секунды
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+      if (isProcessing && messages.length > 0) {
+        messageIndex = (messageIndex + 1) % messages.length;
+        // Обновляем loadingStage для совместимости, но используем messages для отображения
+        if (messageIndex < 3) {
+          setLoadingStage('processing');
+        } else if (messageIndex < 5) {
+          setLoadingStage('generating');
+        } else {
+          setLoadingStage('creating');
+        }
       }
     }, 2000);
 
-    // Этап 3: Создание диаграммы (через 4 секунды)
-    const timer2 = setTimeout(() => {
-      if (isProcessing) {
-        setLoadingStage('creating');
-      }
-    }, 4000);
-
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      clearInterval(timerInterval);
+      clearInterval(messageInterval);
     };
   }, [isProcessing]);
 
@@ -2104,20 +2240,27 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       </div>
                     );
                   })}
-                  {/* Индикатор загрузки ответа */}
+                  {/* Индикатор загрузки ответа с таймером */}
                   {isProcessing && (
                     <div className="flex flex-col items-start">
                       <div className="max-w-[75%] rounded-2xl p-4 bg-white border border-gray-200 rounded-bl-none shadow-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="flex items-center gap-3">
+                          {/* Таймер */}
+                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm font-mono font-medium text-gray-700">
+                              {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-500 ml-2">
-                            {loadingStage === 'processing' && 'Обработка запроса'}
-                            {loadingStage === 'generating' && 'Формирование кода'}
-                            {loadingStage === 'creating' && 'Создание диаграммы'}
+                          {/* Текущее сообщение */}
+                          <span className="text-sm text-gray-600">
+                            {loadingMessages.length > 0 
+                              ? loadingMessages[Math.floor(elapsedSeconds / 2) % loadingMessages.length]
+                              : (loadingStage === 'processing' ? 'Обработка запроса' : 
+                                 loadingStage === 'generating' ? 'Формирование кода' : 
+                                 'Создание диаграммы')}
                           </span>
                         </div>
                       </div>
