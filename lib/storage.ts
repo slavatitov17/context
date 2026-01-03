@@ -37,6 +37,7 @@ export type DiagramType =
   | 'Class2'
   | 'State2'
   | 'Activity2'
+  | 'ActivityMax'
   | 'Gantt2'
   | 'ER2'
   | 'Architecture'

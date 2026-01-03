@@ -1290,10 +1290,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         }
 
         const generateData = await generateResponse.json();
-        const isMermaid = diagramType === 'MindMapMax';
+        const isMermaid = diagramType === 'MindMapMax' || diagramType === 'ActivityMax';
         const isDualFormat = diagramType.endsWith('2');
         // Проверяем, является ли тип чисто Mermaid (новые типы)
-        const isPureMermaid = ['MindMapMax', 'Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
+        const isPureMermaid = ['MindMapMax', 'ActivityMax', 'Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
         const glossary = generateData.glossary;
@@ -1567,6 +1567,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Class2': 'Class (2)',
     'State2': 'State (2)',
     'Activity2': 'Activity (2)',
+    'ActivityMax': 'Activity (Max)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
@@ -1664,6 +1665,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Бизнес-процессы',
       tags: ['UML', 'Бизнес-процессы', 'Workflow', 'PlantUML', 'Mermaid'],
       popularity: 8
+    },
+    {
+      type: 'ActivityMax',
+      name: 'Activity (Max)',
+      description: 'Диаграмма активности Mermaid с максимально детальными инструкциями для ИИ-модели - гарантирует отсутствие ошибок рендеринга',
+      standard: 'Mermaid',
+      purpose: 'Бизнес-процессы',
+      tags: ['Бизнес-процессы', 'Workflow', 'Mermaid', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'Gantt2',
