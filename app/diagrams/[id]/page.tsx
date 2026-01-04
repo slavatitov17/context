@@ -1838,6 +1838,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   // Определяем порядок шагов: тип диаграммы -> способ создания -> проект/чат
   const diagramTypeNames: Record<DiagramType, string> = {
     'UseCase': 'UML диаграмма прецедентов',
+    'UseCasePlantUML': 'Use Case (PlantUML)',
     'Object': 'UML диаграмма объектов',
     'MindMap2': 'MindMap (2)',
     'MindMapMax': 'MindMap (Max)',
