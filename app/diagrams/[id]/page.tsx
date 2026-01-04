@@ -174,21 +174,92 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
       setEmail('');
       setMessage('');
+      setAttachedFiles([]);
     }
   }, [isOpen]);
+
+  // Обработка Ctrl+V для вставки изображений из буфера обмена
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const id = `file-${Date.now()}-${Math.random()}`;
+              setAttachedFiles(prev => [...prev, {
+                id,
+                file: new File([file], `screenshot-${Date.now()}.png`, { type: file.type }),
+                preview: e.target?.result as string
+              }]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [isOpen]);
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const id = `file-${Date.now()}-${Math.random()}`;
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachedFiles(prev => [...prev, {
+            id,
+            file,
+            preview: e.target?.result as string
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachedFiles(prev => [...prev, { id, file }]);
+      }
+    });
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
+    const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
+    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
+    setAttachedFiles([]);
     onClose();
   };
 
@@ -243,6 +314,53 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               placeholder="Опишите вашу проблему или вопрос..."
             />
+            <div className="flex justify-end mt-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
+              >
+                <i className="fas fa-paperclip mr-2 text-lg"></i>
+                Прикрепить файл
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={(e) => handleFileSelect(e.target.files)}
+                className="hidden"
+              />
+            </div>
+            
+            {/* Список прикрепленных файлов */}
+            {attachedFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {attachedFiles.map((fileData) => (
+                  <div key={fileData.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    {fileData.preview ? (
+                      <img src={fileData.preview} alt={fileData.file.name} className="w-12 h-12 object-cover rounded" />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                        <i className="fas fa-file text-gray-400"></i>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{fileData.file.name}</div>
+                      <div className="text-xs text-gray-500">{formatFileSize(fileData.file.size)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(fileData.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <button
@@ -377,80 +495,82 @@ function DualFormatMessage({
       </div>
       <div className="max-w-full w-full">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          {/* Верхняя панель: информация о времени и поддержка слева, свитчер и кнопки справа */}
+          {/* Верхняя панель: таймер и кнопка слева, свитчер по центру, кнопки справа */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            {/* Левая часть: информация о времени и ссылка на поддержку */}
-            <div className="flex flex-col gap-1">
+            {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
+            <div className="flex items-center gap-3">
               {generationTime !== undefined && (
-                <div className="text-sm text-gray-600">
-                  Сформировано за {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-mono font-medium text-gray-700">
+                    {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+                  </span>
                 </div>
               )}
               <button
                 onClick={onOpenSupport}
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors text-left"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Обратиться в поддержку
+                Сообщить об ошибке
               </button>
             </div>
 
-            {/* Выпадающий список формата (по центру, если нужно) */}
-            <div className="relative hidden md:block">
-              <select
-                value={currentFormat}
-                onChange={(e) => {
-                  const newSelectors = new Map(formatSelectors);
-                  newSelectors.set(index, e.target.value as 'plantuml' | 'mermaid');
-                  setFormatSelectors(newSelectors);
+            {/* Свитчер Диаграмма/Код (по центру) */}
+            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mx-auto">
+              <button
+                onClick={() => {
+                  const newModes = new Map(viewModes);
+                  newModes.set(index, 'diagram');
+                  setViewModes(newModes);
                 }}
-                className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  currentViewMode === 'diagram'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                <option value="mermaid">Mermaid</option>
-                <option value="plantuml">PlantUML</option>
-              </select>
-              {/* Кастомная стрелочка */}
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </div>
+                Диаграмма
+              </button>
+              <button
+                onClick={() => {
+                  const newModes = new Map(viewModes);
+                  newModes.set(index, 'code');
+                  setViewModes(newModes);
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  currentViewMode === 'code'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Код
+              </button>
             </div>
 
-            {/* Свитчер и кнопки (справа) */}
+            {/* Кнопки действий (справа) */}
             <div className="flex items-center gap-4">
-              {/* Свитчер Диаграмма/Код */}
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => {
-                    const newModes = new Map(viewModes);
-                    newModes.set(index, 'diagram');
-                    setViewModes(newModes);
+              {/* Выпадающий список формата */}
+              <div className="relative">
+                <select
+                  value={currentFormat}
+                  onChange={(e) => {
+                    const newSelectors = new Map(formatSelectors);
+                    newSelectors.set(index, e.target.value as 'plantuml' | 'mermaid');
+                    setFormatSelectors(newSelectors);
                   }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    currentViewMode === 'diagram'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
                 >
-                  Диаграмма
-                </button>
-                <button
-                  onClick={() => {
-                    const newModes = new Map(viewModes);
-                    newModes.set(index, 'code');
-                    setViewModes(newModes);
-                  }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    currentViewMode === 'code'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Код
-                </button>
+                  <option value="mermaid">Mermaid</option>
+                  <option value="plantuml">PlantUML</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
               </div>
-
-              {/* Кнопки действий */}
               <div className="flex space-x-2">
                 {currentFormat === 'mermaid' && mermaidSvg && (
                   <button
@@ -671,74 +791,79 @@ function MermaidMessage({
       <div className="max-w-full w-full">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            {/* Левая часть: информация о времени и ссылка на поддержку */}
-            <div className="flex flex-col gap-1">
+            {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
+            <div className="flex items-center gap-3">
               {generationTime !== undefined && (
-                <div className="text-sm text-gray-600">
-                  Сформировано за {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-mono font-medium text-gray-700">
+                    {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+                  </span>
                 </div>
               )}
               <button
                 onClick={onOpenSupport}
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors text-left"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Обратиться в поддержку
+                Сообщить об ошибке
               </button>
             </div>
-            {/* Свитчер и кнопки справа */}
-            <div className="flex items-center gap-4">
-              {/* Свитчер Диаграмма/Код */}
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+
+            {/* Свитчер Диаграмма/Код (по центру) */}
+            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mx-auto">
+              <button
+                onClick={() => {
+                  const newModes = new Map(viewModes);
+                  newModes.set(index, 'diagram');
+                  setViewModes(newModes);
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  currentViewMode === 'diagram'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Диаграмма
+              </button>
+              <button
+                onClick={() => {
+                  const newModes = new Map(viewModes);
+                  newModes.set(index, 'code');
+                  setViewModes(newModes);
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  currentViewMode === 'code'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Код
+              </button>
+            </div>
+
+            {/* Кнопки действий (справа) */}
+            <div className="flex space-x-2">
+              {mermaidSvg && (
                 <button
-                  onClick={() => {
-                    const newModes = new Map(viewModes);
-                    newModes.set(index, 'diagram');
-                    setViewModes(newModes);
-                  }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    currentViewMode === 'diagram'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Диаграмма
-                </button>
-                <button
-                  onClick={() => {
-                    const newModes = new Map(viewModes);
-                    newModes.set(index, 'code');
-                    setViewModes(newModes);
-                  }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    currentViewMode === 'code'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Код
-                </button>
-              </div>
-              <div className="flex space-x-2">
-                {mermaidSvg && (
-                  <button
-                    onClick={downloadPNG}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                  >
-                    Скачать PNG
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    if (msg.mermaidCode) {
-                      navigator.clipboard.writeText(msg.mermaidCode);
-                      alert('Код скопирован в буфер обмена');
-                    }
-                  }}
+                  onClick={downloadPNG}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
-                  Копировать код
+                  Скачать PNG
                 </button>
-              </div>
+              )}
+              <button
+                onClick={() => {
+                  if (msg.mermaidCode) {
+                    navigator.clipboard.writeText(msg.mermaidCode);
+                    alert('Код скопирован в буфер обмена');
+                  }
+                }}
+                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                Копировать код
+              </button>
             </div>
           </div>
           {/* Показываем диаграмму или код в зависимости от выбранного режима */}
@@ -918,6 +1043,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               mermaidCode: msg.mermaidCode,
               diagramImageUrl: msg.diagramImageUrl,
               glossary: msg.glossary,
+              plantUmlGlossary: msg.plantUmlGlossary,
+              mermaidGlossary: msg.mermaidGlossary,
+              generationTime: msg.generationTime,
               timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             };
           }));
@@ -1410,6 +1538,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       };
       setMessages(prev => [...prev, newMessage]);
       setMessage('');
+      
+      // Сохраняем время начала генерации ПЕРЕД началом обработки
+      const generationStartTime = Date.now();
       setIsProcessing(true);
       setLoadingStage('processing');
 
@@ -1550,8 +1681,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Сохраняем время генерации
-          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          // Сохраняем время генерации (минимум 3 секунды)
+          const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
           
           // Добавляем единое сообщение с обоими форматами
           setMessages(prev => [
@@ -1581,8 +1712,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Сохраняем время генерации
-          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          // Сохраняем время генерации (минимум 3 секунды)
+          const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
           
           // Добавляем сообщение с результатами (объединяем диаграмму и глоссарий)
           setMessages(prev => [
@@ -1609,8 +1740,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Сохраняем время генерации
-          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          // Сохраняем время генерации (минимум 3 секунды)
+          const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
           
           // Добавляем сообщение с результатами (объединяем диаграмму и глоссарий)
           setMessages(prev => [
@@ -1654,8 +1785,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Сохраняем время генерации
-          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          // Сохраняем время генерации (минимум 3 секунды)
+          const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
           
           // Добавляем сообщение с результатами (объединяем диаграмму и глоссарий)
           setMessages(prev => [
@@ -2285,64 +2416,68 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           <div className="max-w-full w-full">
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
                               <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-                                {/* Левая часть: информация о времени и ссылка на поддержку */}
-                                <div className="flex flex-col gap-1">
+                                {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
+                                <div className="flex items-center gap-3">
                                   {msg.generationTime !== undefined && (
-                                    <div className="text-sm text-gray-600">
-                                      Сформировано за {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className="text-sm font-mono font-medium text-gray-700">
+                                        {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                      </span>
                                     </div>
                                   )}
                                   <button
                                     onClick={() => setShowSupportModal(true)}
-                                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors text-left"
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                                   >
-                                    Обратиться в поддержку
+                                    Сообщить об ошибке
                                   </button>
                                 </div>
-                                {/* Свитчер и кнопки справа */}
-                                <div className="flex items-center gap-4">
-                                  {/* Свитчер Диаграмма/Код */}
-                                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                                    <button
-                                      onClick={() => {
-                                        const newModes = new Map(viewModes);
-                                        newModes.set(index, 'diagram');
-                                        setViewModes(newModes);
-                                      }}
-                                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                        currentViewMode === 'diagram'
-                                          ? 'bg-white text-gray-900 shadow-sm'
-                                          : 'text-gray-600 hover:text-gray-900'
-                                      }`}
-                                    >
-                                      Диаграмма
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const newModes = new Map(viewModes);
-                                        newModes.set(index, 'code');
-                                        setViewModes(newModes);
-                                      }}
-                                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                        currentViewMode === 'code'
-                                          ? 'bg-white text-gray-900 shadow-sm'
-                                          : 'text-gray-600 hover:text-gray-900'
-                                      }`}
-                                    >
-                                      Код
-                                    </button>
-                                  </div>
-                                  <div className="flex space-x-2">
+
+                                {/* Свитчер Диаграмма/Код (по центру) */}
+                                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mx-auto">
+                                  <button
+                                    onClick={() => {
+                                      const newModes = new Map(viewModes);
+                                      newModes.set(index, 'diagram');
+                                      setViewModes(newModes);
+                                    }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                      currentViewMode === 'diagram'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                  >
+                                    Диаграмма
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const newModes = new Map(viewModes);
+                                      newModes.set(index, 'code');
+                                      setViewModes(newModes);
+                                    }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                      currentViewMode === 'code'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                  >
+                                    Код
+                                  </button>
+                                </div>
+
+                                {/* Кнопки действий (справа) */}
+                                <div className="flex space-x-2">
                                   {msg.diagramImageUrl && (
-                                    <>
-                                      <a
-                                        href={msg.diagramImageUrl}
-                                        download
-                                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                                      >
-                                        Скачать PNG
-                                      </a>
-                                    </>
+                                    <a
+                                      href={msg.diagramImageUrl}
+                                      download
+                                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                    >
+                                      Скачать PNG
+                                    </a>
                                   )}
                                   <button
                                     onClick={() => {
@@ -2355,7 +2490,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   >
                                     Копировать код
                                   </button>
-                                  </div>
                                 </div>
                               </div>
                               {/* Показываем диаграмму или код в зависимости от выбранного режима */}
