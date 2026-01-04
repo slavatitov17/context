@@ -752,6 +752,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для UseCasePlantUML:', error);
           plantUmlInstructions = 'ДЛЯ USE CASE PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Объявляй акторов с actor или :Название:. Используй круглые скобки () для вариантов использования. Используй стрелки --> для ассоциации, .> для включения, ..> для расширения. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam usecase, skinparam actor, skinparam rectangle, skinparam arrow!';
         }
+      } else if (diagramType === 'ActivityPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'activity-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для ActivityPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ ACTIVITY PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Используй start и stop. Действия: :действие;. Условия: if (условие?) then ... else ... endif. Параллельные процессы: fork ... fork again ... end fork. Циклы: repeat ... repeat while или while ... endwhile. Partition: partition Название { ... }. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam activity!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -760,7 +768,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;

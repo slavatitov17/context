@@ -41,6 +41,7 @@ export type DiagramType =
   | 'State2'
   | 'Activity2'
   | 'ActivityMax'
+  | 'ActivityPlantUML'
   | 'Gantt2'
   | 'ER2'
   | 'Architecture'

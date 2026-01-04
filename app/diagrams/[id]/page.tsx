@@ -1849,6 +1849,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'State2': 'State (2)',
     'Activity2': 'Activity (2)',
     'ActivityMax': 'Activity (Max)',
+    'ActivityPlantUML': 'Activity (PlantUML)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
@@ -1981,6 +1982,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       standard: 'Mermaid',
       purpose: 'Бизнес-процессы',
       tags: ['Бизнес-процессы', 'Workflow', 'Mermaid', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
+      type: 'ActivityPlantUML',
+      name: 'Activity (PlantUML)',
+      description: 'Диаграмма активности PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Бизнес-процессы',
+      tags: ['UML', 'Бизнес-процессы', 'Workflow', 'PlantUML', 'Максимальное качество'],
       popularity: 10
     },
     {
