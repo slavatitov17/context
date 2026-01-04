@@ -33,6 +33,7 @@ export type DiagramType =
   | 'Object' 
   | 'MindMap2'
   | 'MindMapMax'
+  | 'MindMapPlantUML'
   | 'Sequence2'
   | 'Class2'
   | 'State2'

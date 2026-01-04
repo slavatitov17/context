@@ -170,6 +170,98 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   );
 }
 
+// Компонент модального окна поддержки
+function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setMessage('');
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
+    setEmail('');
+    setMessage('');
+    onClose();
+  };
+
+  const isFormValid = email.trim() !== '' && message.trim() !== '';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Блюр фон */}
+      <div 
+        className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Модальное окно */}
+      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-900 font-medium mb-2">
+              Ваша электронная почта
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="example@mail.com"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-900 font-medium mb-2">
+              Ваше сообщение
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+              rows={4}
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="Опишите вашу проблему или вопрос..."
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!isFormValid}
+            className={`w-full py-3 rounded-lg font-medium transition-colors ${
+              isFormValid
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Отправить
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // Компонент для отображения унифицированного сообщения с двумя форматами (PlantUML и Mermaid)
 function DualFormatMessage({
   msg,
@@ -179,7 +271,9 @@ function DualFormatMessage({
   viewModes,
   setViewModes,
   formatSelectors,
-  setFormatSelectors
+  setFormatSelectors,
+  generationTime,
+  onOpenSupport
 }: {
   msg: { plantUmlCode?: string; mermaidCode?: string; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; diagramImageUrl?: string };
   index: number;
@@ -189,6 +283,8 @@ function DualFormatMessage({
   setViewModes: (modes: Map<number, 'diagram' | 'code'>) => void;
   formatSelectors: Map<number, 'plantuml' | 'mermaid'>;
   setFormatSelectors: (selectors: Map<number, 'plantuml' | 'mermaid'>) => void;
+  generationTime?: number;
+  onOpenSupport: () => void;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -281,10 +377,25 @@ function DualFormatMessage({
       </div>
       <div className="max-w-full w-full">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          {/* Верхняя панель: выпадающий список слева, свитчер и кнопки справа */}
+          {/* Верхняя панель: информация о времени и поддержка слева, свитчер и кнопки справа */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            {/* Выпадающий список формата (слева сверху) */}
-            <div className="relative">
+            {/* Левая часть: информация о времени и ссылка на поддержку */}
+            <div className="flex flex-col gap-1">
+              {generationTime !== undefined && (
+                <div className="text-sm text-gray-600">
+                  Сформировано за {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+                </div>
+              )}
+              <button
+                onClick={onOpenSupport}
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors text-left"
+              >
+                Обратиться в поддержку
+              </button>
+            </div>
+
+            {/* Выпадающий список формата (по центру, если нужно) */}
+            <div className="relative hidden md:block">
               <select
                 value={currentFormat}
                 onChange={(e) => {
@@ -434,14 +545,18 @@ function MermaidMessage({
   dateStr, 
   timeStr, 
   viewModes, 
-  setViewModes 
+  setViewModes,
+  generationTime,
+  onOpenSupport
 }: { 
-  msg: { mermaidCode?: string }; 
+  msg: { mermaidCode?: string; glossary?: Array<{ element: string; description: string }> }; 
   index: number; 
   dateStr: string; 
   timeStr: string;
   viewModes: Map<number, 'diagram' | 'code'>;
   setViewModes: (modes: Map<number, 'diagram' | 'code'>) => void;
+  generationTime?: number;
+  onOpenSupport: () => void;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -556,8 +671,20 @@ function MermaidMessage({
       <div className="max-w-full w-full">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            {/* Пустой блок слева для выравнивания */}
-            <div></div>
+            {/* Левая часть: информация о времени и ссылка на поддержку */}
+            <div className="flex flex-col gap-1">
+              {generationTime !== undefined && (
+                <div className="text-sm text-gray-600">
+                  Сформировано за {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+                </div>
+              )}
+              <button
+                onClick={onOpenSupport}
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors text-left"
+              >
+                Обратиться в поддержку
+              </button>
+            </div>
             {/* Свитчер и кнопки справа */}
             <div className="flex items-center gap-4">
               {/* Свитчер Диаграмма/Код */}
@@ -627,6 +754,29 @@ function MermaidMessage({
               <pre className="whitespace-pre-wrap">{msg.mermaidCode}</pre>
             </div>
           )}
+
+          {/* Глоссарий (внизу, в том же сообщении) */}
+          {msg.glossary && msg.glossary.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
+                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {msg.glossary.map((item, idx) => (
+                    <tr key={idx} className="border-b border-gray-100">
+                      <td className="py-3 text-gray-900 font-medium">{item.element}</td>
+                      <td className="py-3 text-gray-600">{item.description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -651,7 +801,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date; generationTime?: number }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -664,6 +814,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [viewModes, setViewModes] = useState<Map<number, 'diagram' | 'code'>>(new Map());
   const [formatSelectors, setFormatSelectors] = useState<Map<number, 'plantuml' | 'mermaid'>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   
   // Состояния для поиска, фильтров и сортировки типов диаграмм
   const [searchQuery, setSearchQuery] = useState('');
@@ -1207,18 +1358,16 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     setLoadingStartTime(startTime);
     setElapsedSeconds(0);
     
-    // Список сообщений для ротации
-    const messages = [
+    // Список статусов загрузки (каждый отображается 3 секунды)
+    const statusMessages = [
       'Обработка запроса',
-      'Анализ данных',
-      'Формирование структуры',
-      'Генерация кода',
-      'Проверка синтаксиса',
-      'Создание диаграммы',
-      'Финальная обработка',
+      'Определение требований',
+      'Формирование кода',
+      'Проверка кода',
+      'Рендеринг диаграммы',
       'Проверка качества',
     ];
-    setLoadingMessages(messages);
+    setLoadingMessages(statusMessages);
     setLoadingStage('processing');
 
     // Обновляем таймер каждую секунду
@@ -1229,25 +1378,25 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       }
     }, 1000);
 
-    // Меняем сообщение каждые 2 секунды
-    let messageIndex = 0;
-    const messageInterval = setInterval(() => {
-      if (isProcessing && messages.length > 0) {
-        messageIndex = (messageIndex + 1) % messages.length;
-        // Обновляем loadingStage для совместимости, но используем messages для отображения
-        if (messageIndex < 3) {
+    // Меняем статус каждые 3 секунды
+    let statusIndex = 0;
+    const statusInterval = setInterval(() => {
+      if (isProcessing && statusMessages.length > 0) {
+        statusIndex = (statusIndex + 1) % statusMessages.length;
+        // Обновляем loadingStage для совместимости
+        if (statusIndex < 2) {
           setLoadingStage('processing');
-        } else if (messageIndex < 5) {
+        } else if (statusIndex < 4) {
           setLoadingStage('generating');
         } else {
           setLoadingStage('creating');
         }
       }
-    }, 2000);
+    }, 3000);
 
     return () => {
       clearInterval(timerInterval);
-      clearInterval(messageInterval);
+      clearInterval(statusInterval);
     };
   }, [isProcessing]);
 
@@ -1401,6 +1550,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
+          // Сохраняем время генерации
+          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          
           // Добавляем единое сообщение с обоими форматами
           setMessages(prev => [
             ...prev,
@@ -1413,6 +1565,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               plantUmlGlossary,
               mermaidGlossary,
               diagramImageUrl: imageUrl,
+              generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
           ]);
@@ -1428,7 +1581,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Добавляем сообщения с результатами
+          // Сохраняем время генерации
+          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          
+          // Добавляем сообщение с результатами (объединяем диаграмму и глоссарий)
           setMessages(prev => [
             ...prev,
             {
@@ -1436,13 +1592,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               isUser: false,
               type: 'mermaid',
               mermaidCode,
-              timestamp: new Date()
-            },
-            {
-              text: "Глоссарий элементов диаграммы:",
-              isUser: false,
-              type: 'table',
               glossary,
+              generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
           ]);
@@ -1458,7 +1609,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Добавляем сообщения с результатами
+          // Сохраняем время генерации
+          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          
+          // Добавляем сообщение с результатами (объединяем диаграмму и глоссарий)
           setMessages(prev => [
             ...prev,
             {
@@ -1466,13 +1620,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               isUser: false,
               type: 'mermaid',
               mermaidCode,
-              timestamp: new Date()
-            },
-            {
-              text: "Глоссарий элементов диаграммы:",
-              isUser: false,
-              type: 'table',
               glossary,
+              generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
           ]);
@@ -1505,7 +1654,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             });
           }
 
-          // Добавляем сообщения с результатами
+          // Сохраняем время генерации
+          const finalElapsedSeconds = Math.floor((Date.now() - (loadingStartTime || Date.now())) / 1000);
+          
+          // Добавляем сообщение с результатами (объединяем диаграмму и глоссарий)
           setMessages(prev => [
             ...prev,
             {
@@ -1514,13 +1666,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               type: 'code',
               plantUmlCode,
               diagramImageUrl: imageUrl,
-              timestamp: new Date()
-            },
-            {
-              text: "Глоссарий элементов диаграммы:",
-              isUser: false,
-              type: 'table',
               glossary,
+              generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
           ]);
@@ -1563,6 +1710,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Object': 'UML диаграмма объектов',
     'MindMap2': 'MindMap (2)',
     'MindMapMax': 'MindMap (Max)',
+    'MindMapPlantUML': 'MindMap (PlantUML)',
     'Sequence2': 'Sequence (2)',
     'Class2': 'Class (2)',
     'State2': 'State (2)',
@@ -1628,6 +1776,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       standard: 'Mermaid',
       purpose: 'Идеи',
       tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'Mermaid', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
+      type: 'MindMapPlantUML',
+      name: 'MindMap (PlantUML)',
+      description: 'Интеллект-карта PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Идеи',
+      tags: ['Идеи', 'Мозговой штурм', 'Концептуальные', 'PlantUML', 'Максимальное качество'],
       popularity: 10
     },
     {
@@ -2096,6 +2253,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           setViewModes={setViewModes}
                           formatSelectors={formatSelectors}
                           setFormatSelectors={setFormatSelectors}
+                          generationTime={msg.generationTime}
+                          onOpenSupport={() => setShowSupportModal(true)}
                         />
                       );
                     }
@@ -2110,6 +2269,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           timeStr={timeStr}
                           viewModes={viewModes}
                           setViewModes={setViewModes}
+                          generationTime={msg.generationTime}
+                          onOpenSupport={() => setShowSupportModal(true)}
                         />
                       );
                     }
@@ -2124,8 +2285,20 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           <div className="max-w-full w-full">
                             <div className="bg-white border border-gray-200 rounded-lg p-6">
                               <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-                                {/* Пустой блок слева для выравнивания */}
-                                <div></div>
+                                {/* Левая часть: информация о времени и ссылка на поддержку */}
+                                <div className="flex flex-col gap-1">
+                                  {msg.generationTime !== undefined && (
+                                    <div className="text-sm text-gray-600">
+                                      Сформировано за {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => setShowSupportModal(true)}
+                                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors text-left"
+                                  >
+                                    Обратиться в поддержку
+                                  </button>
+                                </div>
                                 {/* Свитчер и кнопки справа */}
                                 <div className="flex items-center gap-4">
                                   {/* Свитчер Диаграмма/Код */}
@@ -2200,37 +2373,29 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   <pre className="whitespace-pre-wrap">{msg.plantUmlCode || msg.text}</pre>
                                 </div>
                               )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    
-                    if (msg.type === 'table' && msg.glossary) {
-                      return (
-                        <div key={index} className="flex flex-col items-start">
-                          <div className="text-base text-gray-500 mb-1 px-1">
-                            {dateStr} {timeStr}
-                          </div>
-                          <div className="max-w-full w-full">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                              <h4 className="font-medium text-lg mb-4">{msg.text || 'Глоссарий элементов диаграммы'}</h4>
-                              <table className="w-full">
-                                <thead>
-                                  <tr className="border-b border-gray-200">
-                                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
-                                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {msg.glossary.map((item, idx) => (
-                                    <tr key={idx} className="border-b border-gray-100">
-                                      <td className="py-3 text-gray-900 font-medium">{item.element}</td>
-                                      <td className="py-3 text-gray-600">{item.description}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+
+                              {/* Глоссарий (внизу, в том же сообщении) */}
+                              {msg.glossary && msg.glossary.length > 0 && (
+                                <div className="mt-6 pt-6 border-t border-gray-200">
+                                  <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className="border-b border-gray-200">
+                                        <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
+                                        <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {msg.glossary.map((item, idx) => (
+                                        <tr key={idx} className="border-b border-gray-100">
+                                          <td className="py-3 text-gray-900 font-medium">{item.element}</td>
+                                          <td className="py-3 text-gray-600">{item.description}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2269,7 +2434,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           {/* Текущее сообщение */}
                           <span className="text-sm text-gray-600">
                             {loadingMessages.length > 0 
-                              ? loadingMessages[Math.floor(elapsedSeconds / 2) % loadingMessages.length]
+                              ? loadingMessages[Math.floor(elapsedSeconds / 3) % loadingMessages.length]
                               : (loadingStage === 'processing' ? 'Обработка запроса' : 
                                  loadingStage === 'generating' ? 'Формирование кода' : 
                                  'Создание диаграммы')}
@@ -2321,6 +2486,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         )}
         </>
       )}
+      <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Mistral } from '@mistralai/mistralai';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 // Инициализация Mistral AI клиента
 function getMistralClient(): Mistral | null {
@@ -566,7 +568,7 @@ mindmap
 
 КРИТИЧЕСКИ ВАЖНО:
 1. Генерируй только валидный код PlantUML, без дополнительных объяснений
-2. Код должен начинаться с @startuml и заканчиваться @enduml
+2. Код должен начинаться с ${diagramType === 'MindMapPlantUML' ? '@startmindmap' : '@startuml'} и заканчиваться ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 3. Используй правильный синтаксис для указанного типа диаграммы (английские ключевые слова: class, interface, component, etc.)
 4. ВСЕ НАЗВАНИЯ ОБЪЕКТОВ, КЛАССОВ, МЕТОДОВ, АТРИБУТОВ И ДРУГИХ ЭЛЕМЕНТОВ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ
 5. Используй русские названия для всех сущностей в диаграмме (например: "Институт" вместо "Institute", "Студент" вместо "Student")
@@ -584,6 +586,7 @@ mindmap
       'ERMermaid': 'ER диаграмма (Mermaid)',
       'MindMapMermaid': 'MindMap диаграмма (Mermaid)',
       'MindMapMax': 'MindMap диаграмма (Mermaid) - Максимально качественная версия',
+      'MindMapPlantUML': 'MindMap диаграмма (PlantUML) - Максимально качественная версия',
       'ActivityMax': 'Activity диаграмма (Mermaid) - Максимально качественная версия',
       'Sequence': 'UML диаграмма последовательности (Sequence Diagram)',
       'Class': 'UML диаграмма классов (Class Diagram)',
@@ -721,12 +724,25 @@ mindmap
 ]
 \`\`\``;
     } else {
+      // Загружаем инструкции для MindMapPlantUML из файла
+      let plantUmlInstructions = '';
+      if (diagramType === 'MindMapPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'mindmap-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для MindMapPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ MINDMAP PLANTUML: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый)!';
+        }
+      }
+
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
 
 ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
+${diagramType === 'MindMapPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -737,9 +753,9 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-@startuml
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
-@enduml
+${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 \`\`\`
 
 \`\`\`json
@@ -1026,7 +1042,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
       } else {
         // Извлекаем код PlantUML
         // Для разных типов диаграмм нужны разные теги
-        const isMindMap = diagramType === 'MindMap';
+        const isMindMap = diagramType === 'MindMap' || diagramType === 'MindMapPlantUML';
         const isJSON = diagramType === 'JSON';
         
         const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
@@ -1050,6 +1066,41 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
           plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
           plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
           plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
+          
+          // Для MindMapPlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'MindMapPlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('<style>')) {
+              const styleBlock = `<style>
+mindmapDiagram {
+  node {
+    BackgroundColor white
+    FontColor black
+    LineColor #000000
+    BorderColor #000000
+  }
+  rootNode {
+    BackgroundColor white
+    FontColor black
+    LineColor #000000
+    BorderColor #000000
+  }
+  leafNode {
+    BackgroundColor white
+    FontColor black
+    LineColor #666666
+    BorderColor #666666
+  }
+  arrow {
+    LineColor #000000
+  }
+}
+</style>
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
+          }
           
           // Для Class: исправляем длинные названия классов без пробелов
           if (diagramType === 'Class') {
