@@ -1846,6 +1846,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Sequence2': 'Sequence (2)',
     'SequencePlantUML': 'Sequence (PlantUML)',
     'Class2': 'Class (2)',
+    'ClassPlantUML': 'Class (PlantUML)',
     'State2': 'State (2)',
     'Activity2': 'Activity (2)',
     'ActivityMax': 'Activity (Max)',
@@ -1956,6 +1957,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Архитектура',
       tags: ['UML', 'Архитектура', 'PlantUML', 'Mermaid'],
       popularity: 9
+    },
+    {
+      type: 'ClassPlantUML',
+      name: 'Class (PlantUML)',
+      description: 'Диаграмма классов PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'Классы', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'State2',
