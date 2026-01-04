@@ -597,6 +597,7 @@ mindmap
       'ComponentPlantUML': 'Component диаграмма (PlantUML) - Максимально качественная версия',
       'DeploymentPlantUML': 'Deployment диаграмма (PlantUML) - Максимально качественная версия',
       'State': 'UML диаграмма состояний (State Diagram)',
+      'StatechartPlantUML': 'Statechart диаграмма (PlantUML) - Максимально качественная версия',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
       'Gantt': 'Диаграмма Ганта (Gantt Chart)',
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
@@ -796,6 +797,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для DeploymentPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ DEPLOYMENT PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Узлы: node "Название" { [компоненты] }. Базы данных: database "Название" { [компоненты] }. Облака: cloud "Название" { [компоненты] }. Связи: --> (ассоциация), ..> (зависимость). ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam node, skinparam database, skinparam component, skinparam arrow!';
         }
+      } else if (diagramType === 'StatechartPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'statechart-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для StatechartPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ STATECHART PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Начальное и конечное состояния: [*] --> State1, State1 --> [*]. Переходы: --> или ->. Составные состояния: state Name { ... } с отступами +2 ПРОБЕЛА для содержимого. История: [H] (недавняя), [H*] (глубокая). Ветвление/слияние: <<fork>>, <<join>>. Условия: <<choice>>. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam state, skinparam stateArrow, skinparam arrow!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -804,7 +813,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -815,7 +824,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' ? '@startuml' : '@startuml'}
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' ? '@startuml' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
 ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 \`\`\`
@@ -1108,6 +1117,7 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
         const isSequencePlantUML = diagramType === 'SequencePlantUML';
         const isUseCasePlantUML = diagramType === 'UseCasePlantUML';
         const isClassPlantUML = diagramType === 'ClassPlantUML';
+        const isStatechartPlantUML = diagramType === 'StatechartPlantUML';
         const isJSON = diagramType === 'JSON';
         
         const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
@@ -1433,6 +1443,39 @@ skinparam note {
             }
           }
           
+          // Для StatechartPlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'StatechartPlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('skinparam state') || !plantUmlCode.includes('BackgroundColor')) {
+              const styleBlock = `skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  ArrowColor #000000
+}
+skinparam stateBody {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam stateArrow {
+  Color #000000
+}
+skinparam arrow {
+  Color #000000
+  FontColor #000000
+}
+skinparam note {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
+          }
+          
           // Добавляем правильные теги
           if (!plantUmlCode.includes(startTag)) {
             plantUmlCode = `${startTag}\n` + plantUmlCode;
@@ -1517,6 +1560,32 @@ class "${objectDescription.split(' ')[0]}" {
   +атрибут: String
   +метод(): void
 }
+${endTag}`;
+            } else if (isStatechartPlantUML) {
+              plantUmlCode = `${startTag}
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  ArrowColor #000000
+}
+skinparam stateBody {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam stateArrow {
+  Color #000000
+}
+skinparam arrow {
+  Color #000000
+  FontColor #000000
+}
+
+[*] --> НачальноеСостояние
+НачальноеСостояние : Описание начального состояния
+НачальноеСостояние --> ПромежуточноеСостояние : Событие1
+ПромежуточноеСостояние --> КонечноеСостояние : Событие2
+КонечноеСостояние --> [*]
 ${endTag}`;
             } else if (diagramType === 'ComponentPlantUML') {
               plantUmlCode = `${startTag}
