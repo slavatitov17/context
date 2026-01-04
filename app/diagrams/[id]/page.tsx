@@ -1884,6 +1884,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       popularity: 8
     },
     {
+      type: 'UseCasePlantUML',
+      name: 'Use Case (PlantUML)',
+      description: 'Диаграмма вариантов использования PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Требования',
+      tags: ['UML', 'Требования', 'Прецеденты', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
       type: 'Object',
       name: 'Object',
       description: 'Показывает конкретные экземпляры классов и их связи в определенный момент времени',
