@@ -1849,6 +1849,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'State2': 'State (2)',
     'Activity2': 'Activity (2)',
     'ActivityMax': 'Activity (Max)',
+    'ActivityPlantUML': 'Activity (PlantUML)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
