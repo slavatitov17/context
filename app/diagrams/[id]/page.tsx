@@ -1852,6 +1852,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Activity2': 'Activity (2)',
     'ActivityMax': 'Activity (Max)',
     'ActivityPlantUML': 'Activity (PlantUML)',
+    'ComponentPlantUML': 'Component (PlantUML)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
@@ -2011,6 +2012,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       standard: 'PlantUML',
       purpose: 'Бизнес-процессы',
       tags: ['UML', 'Бизнес-процессы', 'Workflow', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
+      type: 'ComponentPlantUML',
+      name: 'Component (PlantUML)',
+      description: 'Диаграмма компонентов PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'Компоненты', 'PlantUML', 'Максимальное качество'],
       popularity: 10
     },
     {
