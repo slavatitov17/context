@@ -595,6 +595,7 @@ mindmap
       'Class': 'UML диаграмма классов (Class Diagram)',
       'ClassPlantUML': 'Class диаграмма (PlantUML) - Максимально качественная версия',
       'ComponentPlantUML': 'Component диаграмма (PlantUML) - Максимально качественная версия',
+      'DeploymentPlantUML': 'Deployment диаграмма (PlantUML) - Максимально качественная версия',
       'State': 'UML диаграмма состояний (State Diagram)',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
       'Gantt': 'Диаграмма Ганта (Gantt Chart)',
@@ -787,6 +788,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для ComponentPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ COMPONENT PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Компоненты: [Название] или component Название. Интерфейсы: () "Название" или interface Название. Связи: --> (ассоциация), ..> (зависимость), ..|> (реализация). Группировка: package, node, folder, frame, cloud, database. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam component, skinparam interface, skinparam package, skinparam arrow!';
         }
+      } else if (diagramType === 'DeploymentPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'deployment-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для DeploymentPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ DEPLOYMENT PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Узлы: node "Название" { [компоненты] }. Базы данных: database "Название" { [компоненты] }. Облака: cloud "Название" { [компоненты] }. Связи: --> (ассоциация), ..> (зависимость). ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam node, skinparam database, skinparam component, skinparam arrow!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -795,7 +804,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -806,7 +815,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' ? '@startuml' : '@startuml'}
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' ? '@startuml' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
 ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 \`\`\`
@@ -1358,6 +1367,72 @@ skinparam note {
             }
           }
           
+          // Для DeploymentPlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'DeploymentPlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('skinparam node') || !plantUmlCode.includes('skinparam backgroundColor')) {
+              const styleBlock = `skinparam backgroundColor white
+skinparam node {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam component {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam artifact {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam cloud {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+skinparam folder {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+skinparam frame {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+skinparam storage {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+skinparam arrow {
+  Color #000000
+  Thickness 1
+}
+skinparam note {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
+          }
+          
           // Добавляем правильные теги
           if (!plantUmlCode.includes(startTag)) {
             plantUmlCode = `${startTag}\n` + plantUmlCode;
@@ -1466,6 +1541,37 @@ skinparam arrow {
 () "Интерфейс" as Interf1
 [${objectDescription.split(' ')[0]}] --> [Компонент 2]
 [${objectDescription.split(' ')[0]}] ..> Interf1 : use
+${endTag}`;
+            } else if (diagramType === 'DeploymentPlantUML') {
+              plantUmlCode = `${startTag}
+skinparam backgroundColor white
+skinparam node {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam component {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam arrow {
+  Color #000000
+  Thickness 1
+}
+
+node "Сервер приложений" {
+  [${objectDescription.split(' ')[0]}] as App
+}
+database "База данных" {
+  [PostgreSQL] as DB
+}
+App --> DB
 ${endTag}`;
             } else {
               plantUmlCode = `${startTag}
