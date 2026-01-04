@@ -32,6 +32,7 @@ export type DiagramType =
   | 'UseCase' 
   | 'UseCasePlantUML'
   | 'Object' 
+  | 'ObjectPlantUML'
   | 'MindMap2'
   | 'MindMapMax'
   | 'MindMapPlantUML'
