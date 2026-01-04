@@ -592,6 +592,7 @@ mindmap
       'Sequence': 'UML диаграмма последовательности (Sequence Diagram)',
       'SequencePlantUML': 'Sequence диаграмма (PlantUML) - Максимально качественная версия',
       'Class': 'UML диаграмма классов (Class Diagram)',
+      'ClassPlantUML': 'Class диаграмма (PlantUML) - Максимально качественная версия',
       'State': 'UML диаграмма состояний (State Diagram)',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
       'Gantt': 'Диаграмма Ганта (Gantt Chart)',
@@ -760,6 +761,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для ActivityPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ ACTIVITY PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Используй start и stop. Действия: :действие;. Условия: if (условие?) then ... else ... endif. Параллельные процессы: fork ... fork again ... end fork. Циклы: repeat ... repeat while или while ... endwhile. Partition: partition Название { ... }. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam activity!';
         }
+      } else if (diagramType === 'ClassPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'class-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для ClassPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ CLASS PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Объявляй классы с class НазваниеКласса { ... }. Атрибуты и методы внутри классов должны иметь отступ +2 ПРОБЕЛА. Используй модификаторы доступа: + (публичный), - (приватный), # (защищенный), ~ (пакетный). Отношения: --> (ассоциация), <|-- (наследование), *-- (композиция), o-- (агрегация), ..|> (реализация интерфейса). ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam class, skinparam package, skinparam interface, skinparam arrow!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -768,7 +777,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -779,7 +788,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' ? '@startuml' : '@startuml'}
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' ? '@startuml' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
 ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 \`\`\`
@@ -1071,6 +1080,7 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
         const isMindMap = diagramType === 'MindMap' || diagramType === 'MindMapPlantUML';
         const isSequencePlantUML = diagramType === 'SequencePlantUML';
         const isUseCasePlantUML = diagramType === 'UseCasePlantUML';
+        const isClassPlantUML = diagramType === 'ClassPlantUML';
         const isJSON = diagramType === 'JSON';
         
         const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
@@ -1191,8 +1201,8 @@ skinparam note {
             }
           }
           
-          // Для Class: исправляем длинные названия классов без пробелов
-          if (diagramType === 'Class') {
+          // Для Class и ClassPlantUML: исправляем длинные названия классов без пробелов
+          if (diagramType === 'Class' || diagramType === 'ClassPlantUML') {
             // Заменяем длинные слитные русские слова на слова с пробелами в кавычках
             plantUmlCode = plantUmlCode.replace(/class\s+([А-ЯЁ][а-яё]{20,})\s+as\s+(\w+)/gi, (match, className, alias) => {
               // Разбиваем длинное слово на части (каждые 15-20 символов)
@@ -1206,6 +1216,47 @@ skinparam note {
               const spacedName = words ? words.join(' ') : className;
               return `class "${spacedName}" {`;
             });
+          }
+          
+          // Для ClassPlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'ClassPlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('skinparam class')) {
+              const styleBlock = `skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  ArrowColor #000000
+  AttributeFontColor #000000
+  MethodFontColor #000000
+  StereotypeFontColor #000000
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+  TitleFontColor #000000
+}
+skinparam interface {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  StereotypeFontColor #000000
+}
+skinparam arrow {
+  Color #000000
+  Thickness 1
+}
+skinparam note {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontColor #000000
+}
+
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
           }
           
           // Добавляем правильные теги
@@ -1273,6 +1324,25 @@ skinparam arrow {
 actor "Пользователь" as User
 (Вариант использования)
 User --> (Вариант использования)
+${endTag}`;
+            } else if (isClassPlantUML) {
+              plantUmlCode = `${startTag}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  ArrowColor #000000
+  AttributeFontColor #000000
+  MethodFontColor #000000
+}
+skinparam arrow {
+  Color #000000
+}
+
+class "${objectDescription.split(' ')[0]}" {
+  +атрибут: String
+  +метод(): void
+}
 ${endTag}`;
             } else {
               plantUmlCode = `${startTag}

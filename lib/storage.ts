@@ -38,6 +38,7 @@ export type DiagramType =
   | 'Sequence2'
   | 'SequencePlantUML'
   | 'Class2'
+  | 'ClassPlantUML'
   | 'State2'
   | 'Activity2'
   | 'ActivityMax'
