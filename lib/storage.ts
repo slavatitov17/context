@@ -30,6 +30,7 @@ export interface User {
 
 export type DiagramType = 
   | 'UseCase' 
+  | 'UseCasePlantUML'
   | 'Object' 
   | 'MindMap2'
   | 'MindMapMax'
