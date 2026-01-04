@@ -41,6 +41,7 @@ export type DiagramType =
   | 'Class2'
   | 'ClassPlantUML'
   | 'State2'
+  | 'StatechartPlantUML'
   | 'Activity2'
   | 'ActivityMax'
   | 'ActivityPlantUML'

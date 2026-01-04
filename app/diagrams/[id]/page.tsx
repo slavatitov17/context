@@ -1849,6 +1849,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Class2': 'Class (2)',
     'ClassPlantUML': 'Class (PlantUML)',
     'State2': 'State (2)',
+    'StatechartPlantUML': 'Statechart (PlantUML)',
     'Activity2': 'Activity (2)',
     'ActivityMax': 'Activity (Max)',
     'ActivityPlantUML': 'Activity (PlantUML)',
@@ -1987,6 +1988,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Моделирование состояний',
       tags: ['UML', 'Состояния', 'Жизненный цикл', 'PlantUML', 'Mermaid'],
       popularity: 7
+    },
+    {
+      type: 'StatechartPlantUML',
+      name: 'Statechart (PlantUML)',
+      description: 'Диаграмма состояний PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Моделирование состояний',
+      tags: ['UML', 'Состояния', 'Жизненный цикл', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'Activity2',
