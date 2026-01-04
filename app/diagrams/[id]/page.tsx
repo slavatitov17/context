@@ -1840,6 +1840,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'UseCase': 'UML диаграмма прецедентов',
     'UseCasePlantUML': 'Use Case (PlantUML)',
     'Object': 'UML диаграмма объектов',
+    'ObjectPlantUML': 'Object (PlantUML)',
     'MindMap2': 'MindMap (2)',
     'MindMapMax': 'MindMap (Max)',
     'MindMapPlantUML': 'MindMap (PlantUML)',
@@ -1903,6 +1904,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Моделирование',
       tags: ['UML', 'Объекты', 'Экземпляры'],
       popularity: 5
+    },
+    {
+      type: 'ObjectPlantUML',
+      name: 'Object (PlantUML)',
+      description: 'Диаграмма объектов PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Моделирование',
+      tags: ['UML', 'Объекты', 'Экземпляры', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'MindMap2',
