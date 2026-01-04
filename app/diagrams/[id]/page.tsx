@@ -1853,6 +1853,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'ActivityMax': 'Activity (Max)',
     'ActivityPlantUML': 'Activity (PlantUML)',
     'ComponentPlantUML': 'Component (PlantUML)',
+    'DeploymentPlantUML': 'Deployment (PlantUML)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
@@ -2021,6 +2022,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       standard: 'PlantUML',
       purpose: 'Архитектура',
       tags: ['UML', 'Архитектура', 'Компоненты', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
+      type: 'DeploymentPlantUML',
+      name: 'Deployment (PlantUML)',
+      description: 'Диаграмма развертывания PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Архитектура',
+      tags: ['UML', 'Архитектура', 'Развертывание', 'PlantUML', 'Максимальное качество'],
       popularity: 10
     },
     {

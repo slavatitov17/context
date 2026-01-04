@@ -45,6 +45,7 @@ export type DiagramType =
   | 'ActivityMax'
   | 'ActivityPlantUML'
   | 'ComponentPlantUML'
+  | 'DeploymentPlantUML'
   | 'Gantt2'
   | 'ER2'
   | 'Architecture'
