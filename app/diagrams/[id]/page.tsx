@@ -1984,6 +1984,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       popularity: 10
     },
     {
+      type: 'ActivityPlantUML',
+      name: 'Activity (PlantUML)',
+      description: 'Диаграмма активности PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Бизнес-процессы',
+      tags: ['UML', 'Бизнес-процессы', 'Workflow', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
       type: 'Gantt2',
       name: 'Gantt (2)',
       description: 'Диаграмма Ганта с возможностью выбора между PlantUML и Mermaid форматами',
