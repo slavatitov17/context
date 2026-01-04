@@ -500,7 +500,7 @@ function DualFormatMessage({
             {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
             <div className="flex items-center gap-3">
               {generationTime !== undefined && (
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
                   <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -597,7 +597,7 @@ function DualFormatMessage({
                   }}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
-                  Копировать код
+                  Скопировать код
                 </button>
               </div>
             </div>
@@ -794,7 +794,7 @@ function MermaidMessage({
             {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
             <div className="flex items-center gap-3">
               {generationTime !== undefined && (
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
                   <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -862,7 +862,7 @@ function MermaidMessage({
                 }}
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
-                Копировать код
+                Скопировать код
               </button>
             </div>
           </div>
@@ -2419,7 +2419,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                 {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
                                 <div className="flex items-center gap-3">
                                   {msg.generationTime !== undefined && (
-                                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
                                       <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
@@ -2488,7 +2488,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     }}
                                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                                   >
-                                    Копировать код
+                                    Скопировать код
                                   </button>
                                 </div>
                               </div>
@@ -2557,7 +2557,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       <div className="max-w-[75%] rounded-2xl p-4 bg-white border border-gray-200 rounded-bl-none shadow-sm">
                         <div className="flex items-center gap-3">
                           {/* Таймер */}
-                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
                             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
