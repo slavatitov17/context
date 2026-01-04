@@ -1843,6 +1843,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'MindMapMax': 'MindMap (Max)',
     'MindMapPlantUML': 'MindMap (PlantUML)',
     'Sequence2': 'Sequence (2)',
+    'SequencePlantUML': 'Sequence (PlantUML)',
     'Class2': 'Class (2)',
     'State2': 'State (2)',
     'Activity2': 'Activity (2)',
@@ -1926,6 +1927,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Взаимодействие',
       tags: ['UML', 'Взаимодействие', 'Временные последовательности', 'PlantUML', 'Mermaid'],
       popularity: 8
+    },
+    {
+      type: 'SequencePlantUML',
+      name: 'Sequence (PlantUML)',
+      description: 'Диаграмма последовательности PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Взаимодействие',
+      tags: ['UML', 'Взаимодействие', 'Временные последовательности', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'Class2',

@@ -589,6 +589,7 @@ mindmap
       'MindMapPlantUML': 'MindMap диаграмма (PlantUML) - Максимально качественная версия',
       'ActivityMax': 'Activity диаграмма (Mermaid) - Максимально качественная версия',
       'Sequence': 'UML диаграмма последовательности (Sequence Diagram)',
+      'SequencePlantUML': 'Sequence диаграмма (PlantUML) - Максимально качественная версия',
       'Class': 'UML диаграмма классов (Class Diagram)',
       'State': 'UML диаграмма состояний (State Diagram)',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
@@ -724,7 +725,7 @@ mindmap
 ]
 \`\`\``;
     } else {
-      // Загружаем инструкции для MindMapPlantUML из файла
+      // Загружаем инструкции для MindMapPlantUML и SequencePlantUML из файлов
       let plantUmlInstructions = '';
       if (diagramType === 'MindMapPlantUML') {
         try {
@@ -734,6 +735,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для MindMapPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ MINDMAP PLANTUML: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый)!';
         }
+      } else if (diagramType === 'SequencePlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'sequence-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для SequencePlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ SEQUENCE PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Объявляй участников с participant, actor, etc. Используй стрелки -> и --> для сообщений. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam sequence!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -742,7 +751,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -753,7 +762,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-${diagramType === 'MindMapPlantUML' ? '@startmindmap' : '@startuml'}
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' ? '@startuml' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
 ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 \`\`\`
@@ -1043,6 +1052,7 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
         // Извлекаем код PlantUML
         // Для разных типов диаграмм нужны разные теги
         const isMindMap = diagramType === 'MindMap' || diagramType === 'MindMapPlantUML';
+        const isSequencePlantUML = diagramType === 'SequencePlantUML';
         const isJSON = diagramType === 'JSON';
         
         const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
@@ -1102,6 +1112,33 @@ mindmapDiagram {
             }
           }
           
+          // Для SequencePlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'SequencePlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('skinparam sequence')) {
+              const styleBlock = `skinparam sequence {
+  ArrowColor #000000
+  ActorBorderColor #000000
+  ActorBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  ParticipantBackgroundColor #FFFFFF
+  LifeLineBorderColor #666666
+  LifeLineBackgroundColor #FFFFFF
+  NoteBorderColor #666666
+  NoteBackgroundColor #F5F5F5
+  NoteTextColor #000000
+  BoxBorderColor #000000
+  BoxBackgroundColor #FFFFFF
+  TextAlignmentMessage #000000
+  TextAlignmentLifeLine #000000
+}
+
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
+          }
+          
           // Для Class: исправляем длинные названия классов без пробелов
           if (diagramType === 'Class') {
             // Заменяем длинные слитные русские слова на слова с пробелами в кавычках
@@ -1140,6 +1177,25 @@ mindmapDiagram {
 ** Подтема 1
 *** Деталь 1.1
 ** Подтема 2
+${endTag}`;
+            } else if (isSequencePlantUML) {
+              plantUmlCode = `${startTag}
+skinparam sequence {
+  ArrowColor #000000
+  ActorBorderColor #000000
+  ActorBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  ParticipantBackgroundColor #FFFFFF
+  LifeLineBorderColor #666666
+  LifeLineBackgroundColor #FFFFFF
+  NoteBorderColor #666666
+  NoteBackgroundColor #F5F5F5
+  NoteTextColor #000000
+}
+
+participant "Участник 1" as P1
+participant "Участник 2" as P2
+P1 -> P2: Сообщение
 ${endTag}`;
             } else {
               plantUmlCode = `${startTag}
