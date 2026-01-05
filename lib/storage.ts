@@ -48,6 +48,7 @@ export type DiagramType =
   | 'ComponentPlantUML'
   | 'DeploymentPlantUML'
   | 'Gantt2'
+  | 'GanttPlantUML'
   | 'ER2'
   | 'Architecture'
   | 'C4'
@@ -56,7 +57,6 @@ export type DiagramType =
   | 'Pie'
   | 'Quadrant'
   | 'Radar'
-  | 'Timeline'
   | 'UserJourney'
   | 'XY';
 
