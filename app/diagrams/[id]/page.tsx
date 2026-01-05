@@ -1887,7 +1887,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'SequencePlantUML',
       name: 'Sequence',
-      description: 'Диаграмма последовательности отображает взаимодействие объектов во времени',
+      description: 'Диаграмма последовательности отображает взаимодействие объектов во времени через обмен сообщениями между участниками системы',
       standard: 'UML',
       purpose: 'Взаимодействие',
       tags: ['UML', 'Взаимодействие', 'Поведение'],
@@ -1896,7 +1896,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'UseCasePlantUML',
       name: 'Use Case',
-      description: 'Диаграмма вариантов использования описывает функциональные требования системы',
+      description: 'Диаграмма вариантов использования описывает функциональные требования системы через взаимодействие актеров и прецедентов использования',
       standard: 'UML',
       purpose: 'Требования',
       tags: ['UML', 'Функции', 'Требования'],
@@ -1905,7 +1905,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'ClassPlantUML',
       name: 'Class',
-      description: 'Диаграмма классов показывает структуру системы через классы и их связи',
+      description: 'Диаграмма классов показывает структуру системы через классы их атрибуты методы и связи между ними',
       standard: 'UML',
       purpose: 'Архитектура',
       tags: ['UML', 'Структура', 'Классы'],
@@ -1914,7 +1914,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'ObjectPlantUML',
       name: 'Object',
-      description: 'Диаграмма объектов отображает конкретные экземпляры классов в момент времени',
+      description: 'Диаграмма объектов отображает конкретные экземпляры классов и их связи в определенный момент времени выполнения системы',
       standard: 'UML',
       purpose: 'Моделирование',
       tags: ['UML', 'Структура', 'Объекты'],
@@ -1923,7 +1923,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'ActivityPlantUML',
       name: 'Activity',
-      description: 'Диаграмма активности моделирует бизнес-процессы и потоки работ',
+      description: 'Диаграмма активности моделирует бизнес-процессы и потоки работ показывая последовательность действий и принятие решений',
       standard: 'UML',
       purpose: 'Бизнес-процессы',
       tags: ['UML', 'Поведение', 'Динамика'],
@@ -1932,7 +1932,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'ComponentPlantUML',
       name: 'Component',
-      description: 'Диаграмма компонентов показывает архитектуру системы и её компоненты',
+      description: 'Диаграмма компонентов показывает архитектуру системы и её компоненты с указанием интерфейсов и зависимостей между ними',
       standard: 'UML',
       purpose: 'Архитектура',
       tags: ['UML', 'Архитектура', 'Требования'],
@@ -1941,7 +1941,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'DeploymentPlantUML',
       name: 'Deployment',
-      description: 'Диаграмма развертывания отображает физическую архитектуру системы',
+      description: 'Диаграмма развертывания отображает физическую архитектуру системы показывая размещение компонентов на узлах развертывания',
       standard: 'UML',
       purpose: 'Архитектура',
       tags: ['UML', 'Архитектура', 'Требования'],
@@ -1950,7 +1950,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'StatechartPlantUML',
       name: 'Statechart',
-      description: 'Диаграмма состояний моделирует жизненный цикл объектов и их состояния',
+      description: 'Диаграмма состояний моделирует жизненный цикл объектов и их состояния показывая переходы между состояниями и условия перехода',
       standard: 'UML',
       purpose: 'Моделирование состояний',
       tags: ['UML', 'Поведение', 'Состояние'],
@@ -1959,7 +1959,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'GanttPlantUML',
       name: 'Gantt',
-      description: 'Диаграмма Ганта визуализирует временные рамки проекта и задачи',
+      description: 'Диаграмма Ганта визуализирует временные рамки проекта и задачи показывая длительность зависимость и последовательность выполнения работ',
       standard: 'Управление проектами',
       purpose: 'Управление проектами',
       tags: ['Время', 'Проект', 'Планирование'],
@@ -1968,7 +1968,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'MindMapPlantUML',
       name: 'MindMap',
-      description: 'Интеллект-карта представляет идеи и концепции в иерархической структуре',
+      description: 'Интеллект-карта представляет идеи и концепции в иерархической структуре показывая связи между понятиями и их взаимное расположение',
       standard: 'Идеи',
       purpose: 'Идеи',
       tags: ['Иерархия', 'Структура', 'Связи'],
@@ -1977,7 +1977,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'ERPlantUML',
       name: 'Entity-Relationships',
-      description: 'ER диаграмма моделирует структуру базы данных и связи между сущностями',
+      description: 'Диаграмма сущность-связь моделирует структуру базы данных показывая сущности их атрибуты и связи между ними с указанием типов отношений',
       standard: 'База данных',
       purpose: 'База данных',
       tags: ['Базы данных', 'Структура', 'Связи'],
@@ -1986,7 +1986,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'WBSPlantUML',
       name: 'WBS',
-      description: 'Диаграмма структуры разбиения работ декомпозирует проект на задачи',
+      description: 'Диаграмма структуры разбиения работ декомпозирует проект на задачи показывая иерархию работ и их взаимосвязи в структуре проекта',
       standard: 'Управление проектами',
       purpose: 'Управление проектами',
       tags: ['Иерархия', 'Проект', 'Планирование'],
@@ -1995,7 +1995,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'JSONPlantUML',
       name: 'JSON',
-      description: 'Диаграмма JSON визуализирует структуру данных в формате JSON',
+      description: 'Диаграмма JSON визуализирует структуру данных в формате JSON показывая объекты массивы и их вложенность с указанием типов данных',
       standard: 'Данные',
       purpose: 'Данные',
       tags: ['Структура', 'Данные', 'Формат'],
