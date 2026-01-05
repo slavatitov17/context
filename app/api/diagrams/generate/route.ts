@@ -596,6 +596,7 @@ mindmap
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
       'ERPlantUML': 'ER диаграмма (PlantUML) - Максимально качественная версия',
       'WBSPlantUML': 'WBS диаграмма (PlantUML) - Максимально качественная версия',
+      'JSONPlantUML': 'JSON диаграмма (PlantUML) - Максимально качественная версия',
       'MindMap': 'Интеллект-карта (Mind Map)',
       'Architecture': 'Architecture диаграмма (Mermaid)',
       'C4': 'C4 диаграмма (Mermaid)',
@@ -823,6 +824,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для WBSPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ WBS PLANTUML: Используй правильный синтаксис @startwbs ... @endwbs. Структура: * Проект ** Фаза 1 *** Задача 1.1 **** Подзадача 1.1.1. Звездочки определяют уровень иерархии. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через <style> блок!';
         }
+      } else if (diagramType === 'JSONPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'json-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для JSONPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ JSON PLANTUML: Используй правильный синтаксис @startjson ... @endjson. JSON должен быть валидным с правильными отступами (2 пробела на уровень вложенности). Все ключи и строки в двойных кавычках. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через <style> блок!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -831,7 +840,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'GanttPlantUML' || diagramType === 'ERPlantUML' || diagramType === 'WBSPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'GanttPlantUML' || diagramType === 'ERPlantUML' || diagramType === 'WBSPlantUML' || diagramType === 'JSONPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -842,9 +851,9 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'GanttPlantUML' ? '@startgantt' : diagramType === 'WBSPlantUML' ? '@startwbs' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' ? '@startuml' : '@startuml'}
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'GanttPlantUML' ? '@startgantt' : diagramType === 'WBSPlantUML' ? '@startwbs' : diagramType === 'JSONPlantUML' ? '@startjson' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' ? '@startuml' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
-${diagramType === 'MindMapPlantUML' ? '@endmindmap' : diagramType === 'GanttPlantUML' ? '@endgantt' : diagramType === 'WBSPlantUML' ? '@endwbs' : '@enduml'}
+${diagramType === 'MindMapPlantUML' ? '@endmindmap' : diagramType === 'GanttPlantUML' ? '@endgantt' : diagramType === 'WBSPlantUML' ? '@endwbs' : diagramType === 'JSONPlantUML' ? '@endjson' : '@enduml'}
 \`\`\`
 
 \`\`\`json
@@ -1134,14 +1143,15 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : diagramType === 'GanttPlan
         const isMindMap = diagramType === 'MindMap' || diagramType === 'MindMapPlantUML';
         const isGanttPlantUML = diagramType === 'GanttPlantUML';
         const isWBSPlantUML = diagramType === 'WBSPlantUML';
+        const isJSONPlantUML = diagramType === 'JSONPlantUML';
         const isSequencePlantUML = diagramType === 'SequencePlantUML';
         const isUseCasePlantUML = diagramType === 'UseCasePlantUML';
         const isClassPlantUML = diagramType === 'ClassPlantUML';
         const isStatechartPlantUML = diagramType === 'StatechartPlantUML';
         const isJSON = diagramType === 'JSON';
         
-        const startTag = isMindMap ? '@startmindmap' : (isGanttPlantUML ? '@startgantt' : (isWBSPlantUML ? '@startwbs' : (isJSON ? '@startjson' : '@startuml')));
-        const endTag = isMindMap ? '@endmindmap' : (isGanttPlantUML ? '@endgantt' : (isWBSPlantUML ? '@endwbs' : (isJSON ? '@endjson' : '@enduml')));
+        const startTag = isMindMap ? '@startmindmap' : (isGanttPlantUML ? '@startgantt' : (isWBSPlantUML ? '@startwbs' : (isJSONPlantUML ? '@startjson' : (isJSON ? '@startjson' : '@startuml'))));
+        const endTag = isMindMap ? '@endmindmap' : (isGanttPlantUML ? '@endgantt' : (isWBSPlantUML ? '@endwbs' : (isJSONPlantUML ? '@endjson' : (isJSON ? '@endjson' : '@enduml'))));
         
         const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
                              responseText.match(new RegExp(`${startTag}\\s*\\n([\\s\\S]*?)${endTag}`, 'i')) ||
@@ -1162,6 +1172,8 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : diagramType === 'GanttPlan
           plantUmlCode = plantUmlCode.replace(/@endgantt\s*/gi, '');
           plantUmlCode = plantUmlCode.replace(/@startwbs\s*/gi, '');
           plantUmlCode = plantUmlCode.replace(/@endwbs\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@startjson\s*/gi, '');
+          plantUmlCode = plantUmlCode.replace(/@endjson\s*/gi, '');
           plantUmlCode = plantUmlCode.replace(/mindmap\s*/gi, ''); // Удаляем просто "mindmap" если есть
           plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
           plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
@@ -1607,6 +1619,48 @@ arrow {
             }
           }
           
+          // Для JSONPlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'JSONPlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('<style>')) {
+              const styleBlock = `<style>
+jsonDiagram {
+  node {
+    BackGroundColor white
+    FontColor black
+    LineColor #000000
+    BorderColor #000000
+    FontName Helvetica
+    FontSize 12
+    FontStyle normal
+    RoundCorner 0
+    LineThickness 1
+    LineStyle 1-0
+    separator {
+      LineThickness 0.5
+      LineColor #666666
+      LineStyle 1-0
+    }
+  }
+  arrow {
+    BackGroundColor #F5F5F5
+    LineColor #000000
+    LineThickness 1
+    LineStyle 1-0
+  }
+  highlight {
+    BackGroundColor #E5E5E5
+    FontColor black
+    FontStyle normal
+  }
+}
+</style>
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
+          }
+          
           // Добавляем правильные теги
           if (!plantUmlCode.includes(startTag)) {
             plantUmlCode = `${startTag}\n` + plantUmlCode;
@@ -1880,6 +1934,55 @@ arrow {
 *** Задача 1.1
 ** Фаза 2
 *** Задача 2.1
+${endTag}`;
+            } else if (diagramType === 'JSONPlantUML') {
+              plantUmlCode = `${startTag}
+<style>
+jsonDiagram {
+  node {
+    BackGroundColor white
+    FontColor black
+    LineColor #000000
+    BorderColor #000000
+    FontName Helvetica
+    FontSize 12
+    FontStyle normal
+    RoundCorner 0
+    LineThickness 1
+    LineStyle 1-0
+    separator {
+      LineThickness 0.5
+      LineColor #666666
+      LineStyle 1-0
+    }
+  }
+  arrow {
+    BackGroundColor #F5F5F5
+    LineColor #000000
+    LineThickness 1
+    LineStyle 1-0
+  }
+  highlight {
+    BackGroundColor #E5E5E5
+    FontColor black
+    FontStyle normal
+  }
+}
+</style>
+{
+  "название": "${objectDescription.split(' ')[0]}",
+  "описание": "${objectDescription.substring(0, 50)}",
+  "тип": "объект",
+  "свойства": {
+    "свойство1": "значение1",
+    "свойство2": "значение2"
+  },
+  "массив": [
+    "элемент1",
+    "элемент2",
+    "элемент3"
+  ]
+}
 ${endTag}`;
             } else {
               plantUmlCode = `${startTag}

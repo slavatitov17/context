@@ -52,6 +52,7 @@ export type DiagramType =
   | 'ER2'
   | 'ERPlantUML'
   | 'WBSPlantUML'
+  | 'JSONPlantUML'
   | 'Architecture'
   | 'C4'
   | 'Git'
