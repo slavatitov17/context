@@ -12,6 +12,215 @@ interface UploadedFile {
   progress: number;
 }
 
+function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setMessage('');
+      setAttachedFiles([]);
+    }
+  }, [isOpen]);
+
+  // Обработка Ctrl+V для вставки изображений из буфера обмена
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const id = `file-${Date.now()}-${Math.random()}`;
+              setAttachedFiles(prev => [...prev, {
+                id,
+                file: new File([file], `screenshot-${Date.now()}.png`, { type: file.type }),
+                preview: e.target?.result as string
+              }]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [isOpen]);
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const id = `file-${Date.now()}-${Math.random()}`;
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachedFiles(prev => [...prev, {
+            id,
+            file,
+            preview: e.target?.result as string
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachedFiles(prev => [...prev, { id, file }]);
+      }
+    });
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
+    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
+    setEmail('');
+    setMessage('');
+    setAttachedFiles([]);
+    onClose();
+  };
+
+  const isFormValid = email.trim() !== '' && message.trim() !== '';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Блюр фон */}
+      <div 
+        className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Модальное окно */}
+      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-900 font-medium mb-2">
+              Ваша электронная почта
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="example@mail.com"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-900 font-medium mb-2">
+              Ваше сообщение
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+              rows={4}
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="Опишите вашу проблему или вопрос..."
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
+              >
+                <i className="fas fa-paperclip mr-2 text-lg"></i>
+                Прикрепить файл
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={(e) => handleFileSelect(e.target.files)}
+                className="hidden"
+              />
+            </div>
+            
+            {/* Список прикрепленных файлов */}
+            {attachedFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {attachedFiles.map((fileData) => (
+                  <div key={fileData.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    {fileData.preview ? (
+                      <img src={fileData.preview} alt={fileData.file.name} className="w-12 h-12 object-cover rounded" />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                        <i className="fas fa-file text-gray-400"></i>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{fileData.file.name}</div>
+                      <div className="text-xs text-gray-500">{formatFileSize(fileData.file.size)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(fileData.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={!isFormValid}
+            className={`w-full py-3 rounded-lg font-medium transition-colors ${
+              isFormValid
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Отправить
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params?.id as string;
@@ -19,10 +228,14 @@ export default function ProjectDetailPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp?: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp?: Date; generationTime?: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingStage, setLoadingStage] = useState<'processing' | 'generating' | 'creating'>('processing');
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -74,6 +287,7 @@ export default function ProjectDetailPage() {
             text: msg.text || '',
             isUser: msg.isUser || false,
             timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            generationTime: msg.generationTime,
           })));
         }
       } catch (error) {
@@ -130,33 +344,63 @@ export default function ProjectDetailPage() {
     }
   }, [messages, loading, projectData, saveProject]);
 
-  // Управление этапами загрузки
+  // Управление этапами загрузки и таймером (только для чата, не для загрузки файлов)
   useEffect(() => {
+    // Проверяем, что это обработка запроса в чате, а не загрузка файлов
+    // isProcessing может быть true и при загрузке файлов, поэтому проверяем наличие сообщений в процессе
     if (!isProcessing) {
       setLoadingStage('processing');
+      setLoadingStartTime(null);
+      setElapsedSeconds(0);
+      setLoadingMessages([]);
       return;
     }
 
-    // Этап 1: Обработка запроса (сразу)
-    setLoadingStage('processing');
+    // Запускаем таймер только если это обработка запроса в чате
+    // (не загрузка файлов - там isProcessing используется для другого)
+    const startTime = Date.now();
+    setLoadingStartTime(startTime);
+    setElapsedSeconds(0);
     
-    // Этап 2: Формирование кода (через 2 секунды)
-    const timer1 = setTimeout(() => {
-      if (isProcessing) {
-        setLoadingStage('generating');
-      }
-    }, 2000);
+    // Список статусов загрузки (каждый отображается 3 секунды, последний до конца)
+    const statusMessages = [
+      'Обработка запроса...',
+      'Поиск информации...',
+      'Формирование ответа...',
+      'Проверка ответа...',
+    ];
+    setLoadingMessages(statusMessages);
+    setLoadingStage('processing');
 
-    // Этап 3: Создание диаграммы (через 4 секунды)
-    const timer2 = setTimeout(() => {
+    // Обновляем таймер каждую секунду
+    const timerInterval = setInterval(() => {
       if (isProcessing) {
-        setLoadingStage('creating');
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setElapsedSeconds(elapsed);
       }
-    }, 4000);
+    }, 1000);
+
+    // Меняем статус каждые 3 секунды (последний остается до конца)
+    let statusIndex = 0;
+    const statusInterval = setInterval(() => {
+      if (isProcessing && statusMessages.length > 0) {
+        if (statusIndex < statusMessages.length - 1) {
+          statusIndex++;
+          // Обновляем loadingStage для совместимости
+          if (statusIndex < 2) {
+            setLoadingStage('processing');
+          } else if (statusIndex < 3) {
+            setLoadingStage('generating');
+          } else {
+            setLoadingStage('creating');
+          }
+        }
+      }
+    }, 3000);
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      clearInterval(timerInterval);
+      clearInterval(statusInterval);
     };
   }, [isProcessing]);
 
@@ -384,6 +628,9 @@ export default function ProjectDetailPage() {
       };
       setMessages(prev => [...prev, newMessage]);
       setMessage('');
+      
+      // Сохраняем время начала генерации ПЕРЕД началом обработки
+      const generationStartTime = Date.now();
       setIsProcessing(true);
       setLoadingStage('processing');
 
@@ -419,17 +666,23 @@ export default function ProjectDetailPage() {
 
         const data = await response.json();
         
+        // Сохраняем время генерации (минимум 3 секунды)
+        const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
+        
         setMessages(prev => [...prev, {
           text: data.answer || 'Не удалось получить ответ.',
           isUser: false,
           timestamp: new Date(),
+          generationTime: finalElapsedSeconds,
         }]);
       } catch (error) {
         console.error('Ошибка при отправке сообщения:', error);
+        const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
         setMessages(prev => [...prev, {
           text: `Ошибка при обработке запроса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
           isUser: false,
           timestamp: new Date(),
+          generationTime: finalElapsedSeconds,
         }]);
       } finally {
         setIsProcessing(false);
@@ -602,6 +855,46 @@ export default function ProjectDetailPage() {
                     const timestamp = msg.timestamp || new Date();
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    
+                    // Если это ответ системы с generationTime, показываем таймер, кнопку, девайдер и ответ
+                    if (!msg.isUser && msg.generationTime !== undefined) {
+                      return (
+                        <div key={index} className="flex flex-col items-start w-full">
+                          <div className="text-base text-gray-500 mb-1 px-1">
+                            {dateStr} {timeStr}
+                          </div>
+                          <div className="max-w-[75%] w-full">
+                            {/* Таймер и кнопка "Сообщить об ошибке" */}
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="text-sm font-mono font-medium text-gray-700">
+                                  {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => setShowSupportModal(true)}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                              >
+                                Сообщить об ошибке
+                              </button>
+                            </div>
+                            
+                            {/* Девайдер */}
+                            <div className="border-t border-gray-200 mb-4"></div>
+                            
+                            {/* Ответ системы */}
+                            <div className="bg-white border border-gray-200 rounded-2xl p-4 rounded-bl-none shadow-sm">
+                              <p className="text-base break-words text-gray-900">{msg.text}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Обычные сообщения (пользователь и старые сообщения системы)
                     return (
                       <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
                         <div className="text-base text-gray-500 mb-1 px-1">
@@ -617,20 +910,27 @@ export default function ProjectDetailPage() {
                       </div>
                     );
                   })}
-                  {/* Индикатор загрузки ответа */}
+                  {/* Индикатор загрузки ответа с таймером */}
                   {isProcessing && (
                     <div className="flex flex-col items-start">
                       <div className="max-w-[75%] rounded-2xl p-4 bg-white border border-gray-200 rounded-bl-none shadow-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="flex items-center gap-3">
+                          {/* Таймер */}
+                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm font-mono font-medium text-gray-700">
+                              {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-500 ml-2">
-                            {loadingStage === 'processing' && 'Обработка запроса'}
-                            {loadingStage === 'generating' && 'Формирование кода'}
-                            {loadingStage === 'creating' && 'Создание диаграммы'}
+                          {/* Текущее сообщение */}
+                          <span className="text-sm text-gray-600">
+                            {loadingMessages.length > 0 
+                              ? loadingMessages[Math.min(Math.floor(elapsedSeconds / 3), loadingMessages.length - 1)]
+                              : (loadingStage === 'processing' ? 'Обработка запроса...' : 
+                                 loadingStage === 'generating' ? 'Формирование ответа...' : 
+                                 'Проверка ответа...')}
                           </span>
                         </div>
                       </div>
@@ -677,6 +977,7 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
+      <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
     </div>
   );
 }
