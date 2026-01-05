@@ -2229,8 +2229,36 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   // Определяем, показывается ли чат (когда selectedOption установлен и либо это 'scratch', либо выбран проект)
   const isChatVisible = diagramType && selectedOption && (selectedOption === 'scratch' || selectedProject);
   
+  // Отключаем скролл страницы, когда показывается чат
+  useEffect(() => {
+    if (isChatVisible) {
+      // Находим main элемент и отключаем скролл
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.style.overflow = 'hidden';
+        mainElement.style.height = '100vh';
+      }
+    } else {
+      // Восстанавливаем скролл, когда чат не виден
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.style.overflow = '';
+        mainElement.style.height = '';
+      }
+    }
+    
+    // Cleanup при размонтировании
+    return () => {
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.style.overflow = '';
+        mainElement.style.height = '';
+      }
+    };
+  }, [isChatVisible]);
+  
   return (
-    <div className={`flex flex-col ${isChatVisible ? '' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 2rem)', overflow: 'hidden' } : {}}>
+    <div className={`flex flex-col ${isChatVisible ? '' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 2rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 2rem)' } : {}}>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
