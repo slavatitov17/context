@@ -2230,7 +2230,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const isChatVisible = diagramType && selectedOption && (selectedOption === 'scratch' || selectedProject);
   
   return (
-    <div className={`flex flex-col ${isChatVisible ? '' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 2rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 2rem)' } : {}}>
+    <div className={`flex flex-col ${isChatVisible ? 'h-full' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 3.5rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 3.5rem)' } : {}}>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
@@ -2382,9 +2382,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           )}
         </div>
       ) : (
-        <>
-          <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
-          <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+        <div className="flex flex-col h-full min-h-0">
+          <div className="flex-shrink-0">
+            <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
+            <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+          </div>
           {!selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">
@@ -2473,7 +2475,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
         ) : (
           /* Область чата */
-          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ position: 'relative', height: 'calc(100vh - 10rem)' }}>
+          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
             {/* Чат */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
               {/* История сообщений */}
@@ -2729,7 +2731,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
           </div>
         )}
-        </>
+        </div>
       )}
       <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
     </div>
