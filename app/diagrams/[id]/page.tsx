@@ -2231,26 +2231,29 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   
   // Отключаем скролл страницы, когда показывается чат
   useEffect(() => {
-    if (isChatVisible) {
-      // Находим main элемент и отключаем скролл
-      const mainElement = document.querySelector('main');
-      if (mainElement) {
-        mainElement.style.overflow = 'hidden';
-        mainElement.style.height = '100vh';
-      }
-    } else {
-      // Восстанавливаем скролл, когда чат не виден
-      const mainElement = document.querySelector('main');
-      if (mainElement) {
-        mainElement.style.overflow = '';
-        mainElement.style.height = '';
-      }
-    }
+    if (typeof window === 'undefined') return;
     
-    // Cleanup при размонтировании
-    return () => {
+    const updateMainOverflow = () => {
       const mainElement = document.querySelector('main');
       if (mainElement) {
+        if (isChatVisible) {
+          mainElement.style.overflow = 'hidden';
+          mainElement.style.height = '100vh';
+        } else {
+          mainElement.style.overflow = '';
+          mainElement.style.height = '';
+        }
+      }
+    };
+    
+    // Используем requestAnimationFrame для безопасного обновления DOM
+    const rafId = requestAnimationFrame(updateMainOverflow);
+    
+    // Cleanup при размонтировании или изменении состояния
+    return () => {
+      cancelAnimationFrame(rafId);
+      const mainElement = document.querySelector('main');
+      if (mainElement && !isChatVisible) {
         mainElement.style.overflow = '';
         mainElement.style.height = '';
       }
