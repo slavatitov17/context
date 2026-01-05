@@ -594,6 +594,7 @@ mindmap
       'Gantt': 'Диаграмма Ганта (Gantt Chart)',
       'GanttPlantUML': 'Gantt диаграмма (PlantUML) - Максимально качественная версия',
       'ER': 'ER диаграмма (Entity-Relationship Diagram)',
+      'ERPlantUML': 'ER диаграмма (PlantUML) - Максимально качественная версия',
       'MindMap': 'Интеллект-карта (Mind Map)',
       'Architecture': 'Architecture диаграмма (Mermaid)',
       'C4': 'C4 диаграмма (Mermaid)',
@@ -805,6 +806,14 @@ mindmap
           console.error('Ошибка при чтении инструкций для GanttPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ GANTT PLANTUML: Используй правильный синтаксис @startgantt ... @endgantt. Задачи: [Название задачи] requires X days. Даты начала: [Название задачи] starts YYYY-MM-DD. Зависимости: [Задача 1] -> [Задача 2]. Вехи: [Веха] happens YYYY-MM-DD. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam task, skinparam timeline, skinparam arrow!';
         }
+      } else if (diagramType === 'ERPlantUML') {
+        try {
+          const instructionsPath = join(process.cwd(), 'prompts', 'er-plantuml-instructions.md');
+          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
+        } catch (error) {
+          console.error('Ошибка при чтении инструкций для ERPlantUML:', error);
+          plantUmlInstructions = 'ДЛЯ ER PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Сущности: entity "Название" as Алиас { * id : тип -- атрибут : тип }. Связи: E1 ||--o{ E2 (один к одному или ко многим), E1 }o--|| E2 (многие к одному). ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam entity, skinparam arrow! ОБЯЗАТЕЛЬНО добавляй skinparam linetype ortho!';
+        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -813,7 +822,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'GanttPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'GanttPlantUML' || diagramType === 'ERPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -1517,6 +1526,29 @@ skinparam title {
             }
           }
           
+          // Для ERPlantUML: добавляем стили для строгих цветов, если их нет
+          if (diagramType === 'ERPlantUML') {
+            // Проверяем, есть ли уже стили
+            if (!plantUmlCode.includes('skinparam entity') || !plantUmlCode.includes('BackgroundColor')) {
+              const styleBlock = `skinparam linetype ortho
+skinparam backgroundColor white
+skinparam entity {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam arrow {
+  Color #000000
+  Thickness 1
+}
+skinparam arrowFontColor #000000
+
+`;
+              // Вставляем стили в начало кода (перед содержимым)
+              plantUmlCode = styleBlock + plantUmlCode;
+            }
+          }
+          
           // Добавляем правильные теги
           if (!plantUmlCode.includes(startTag)) {
             plantUmlCode = `${startTag}\n` + plantUmlCode;
@@ -1715,6 +1747,37 @@ database "База данных" {
   [PostgreSQL] as DB
 }
 App --> DB
+${endTag}`;
+            } else if (diagramType === 'ERPlantUML') {
+              plantUmlCode = `${startTag}
+skinparam linetype ortho
+skinparam backgroundColor white
+skinparam entity {
+  BackgroundColor white
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam arrow {
+  Color #000000
+  Thickness 1
+}
+skinparam arrowFontColor #000000
+
+entity "${objectDescription.split(' ')[0]}" as E1 {
+  * id : INT
+  --
+  название : STRING
+  описание : TEXT
+}
+
+entity "Сущность2" as E2 {
+  * id : INT
+  e1_id : INT
+  --
+  название : STRING
+}
+
+E1 ||--o{ E2 : "имеет"
 ${endTag}`;
             } else {
               plantUmlCode = `${startTag}

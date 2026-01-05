@@ -1858,6 +1858,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Gantt2': 'Gantt (2)',
     'GanttPlantUML': 'Gantt (PlantUML)',
     'ER2': 'ER (2)',
+    'ERPlantUML': 'ER (PlantUML)',
     'Architecture': 'Architecture диаграмма',
     'C4': 'C4 диаграмма',
     'Git': 'Git диаграмма',
@@ -2069,6 +2070,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'База данных',
       tags: ['База данных', 'Сущности', 'Схема данных', 'PlantUML', 'Mermaid'],
       popularity: 9
+    },
+    {
+      type: 'ERPlantUML',
+      name: 'ER (PlantUML)',
+      description: 'ER диаграмма PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'База данных',
+      tags: ['База данных', 'Сущности', 'Схема данных', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'Architecture',
