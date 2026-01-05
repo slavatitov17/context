@@ -2226,8 +2226,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       }
     });
 
+  // Определяем, показывается ли чат (когда selectedOption установлен и либо это 'scratch', либо выбран проект)
+  const isChatVisible = diagramType && selectedOption && (selectedOption === 'scratch' || selectedProject);
+  
   return (
-    <div className="h-full flex flex-col">
+    <div className={`flex flex-col ${isChatVisible ? '' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 2rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 2rem)' } : {}}>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
@@ -2470,12 +2473,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
         ) : (
           /* Область чата */
-          <div className="flex flex-col h-full">
-          <div className="flex-1 flex gap-4 min-h-0">
+          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ position: 'relative', height: 'calc(100vh - 2.5rem - 1rem - 2rem)' }}>
             {/* Чат */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0">
-              {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+              {/* История сообщений - прокручиваемая область */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0" style={{ paddingBottom: '1.5rem' }}>
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
@@ -2690,43 +2692,44 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 </div>
               </div>
 
-              {/* Поле ввода */}
-              <div className="relative flex-shrink-0 bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all">
-                {/* Textarea */}
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
-                  disabled={isProcessing || !diagramType}
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
-                  style={{
-                    minHeight: '6.5rem',
-                    maxHeight: '6.5rem',
-                    lineHeight: '1.5',
-                  }}
-                />
+              {/* Поле ввода - фиксировано внизу с размытым фоном */}
+              <div className="relative flex-shrink-0 border-t border-gray-200" style={{ backgroundColor: '#f9fafb', backdropFilter: 'blur(8px)', position: 'sticky', bottom: 0, zIndex: 10 }}>
+                <div className="relative bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all m-4">
+                  {/* Textarea */}
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
+                    disabled={isProcessing || !diagramType}
+                    className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
+                    style={{
+                      minHeight: '6.5rem',
+                      maxHeight: '6.5rem',
+                      lineHeight: '1.5',
+                    }}
+                  />
 
-                {/* Кнопка отправки */}
-                <div className="absolute right-3 bottom-3 z-10">
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!message.trim() || isProcessing || !diagramType}
-                    className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
-                    title="Отправить"
-                  >
-                    <i className="fas fa-paper-plane text-xs"></i>
-                  </button>
+                  {/* Кнопка отправки */}
+                  <div className="absolute right-3 bottom-3 z-10">
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!message.trim() || isProcessing || !diagramType}
+                      className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
+                      title="Отправить"
+                    >
+                      <i className="fas fa-paper-plane text-xs"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         )}
         </>
       )}
