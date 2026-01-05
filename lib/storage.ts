@@ -50,6 +50,7 @@ export type DiagramType =
   | 'Gantt2'
   | 'GanttPlantUML'
   | 'ER2'
+  | 'ERPlantUML'
   | 'Architecture'
   | 'C4'
   | 'Git'
