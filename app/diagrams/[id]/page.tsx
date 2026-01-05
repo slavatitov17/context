@@ -2229,37 +2229,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   // Определяем, показывается ли чат (когда selectedOption установлен и либо это 'scratch', либо выбран проект)
   const isChatVisible = diagramType && selectedOption && (selectedOption === 'scratch' || selectedProject);
   
-  // Отключаем скролл страницы, когда показывается чат
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const updateMainOverflow = () => {
-      const mainElement = document.querySelector('main');
-      if (mainElement) {
-        if (isChatVisible) {
-          mainElement.style.overflow = 'hidden';
-          mainElement.style.height = '100vh';
-        } else {
-          mainElement.style.overflow = '';
-          mainElement.style.height = '';
-        }
-      }
-    };
-    
-    // Используем requestAnimationFrame для безопасного обновления DOM
-    const rafId = requestAnimationFrame(updateMainOverflow);
-    
-    // Cleanup при размонтировании или изменении состояния
-    return () => {
-      cancelAnimationFrame(rafId);
-      const mainElement = document.querySelector('main');
-      if (mainElement && !isChatVisible) {
-        mainElement.style.overflow = '';
-        mainElement.style.height = '';
-      }
-    };
-  }, [isChatVisible]);
-  
   return (
     <div className={`flex flex-col ${isChatVisible ? '' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 2rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 2rem)' } : {}}>
       {!diagramType ? (
@@ -2504,7 +2473,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
         ) : (
           /* Область чата */
-          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ position: 'relative', height: 'calc(100vh - 2.5rem - 1rem - 2rem)' }}>
             {/* Чат */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               {/* История сообщений - прокручиваемая область */}
