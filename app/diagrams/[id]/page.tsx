@@ -2227,7 +2227,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     });
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 2rem)', overflow: 'hidden' }}>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
@@ -2470,12 +2470,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
         ) : (
           /* Область чата */
-          <div className="flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
-          <div className="flex-1 flex gap-4 min-h-0">
+          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
             {/* Чат */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               {/* История сообщений - прокручиваемая область */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0" style={{ paddingBottom: '1.5rem' }}>
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
@@ -2691,7 +2690,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
 
               {/* Поле ввода - фиксировано внизу с размытым фоном */}
-              <div className="relative flex-shrink-0 border-t border-gray-200" style={{ backgroundColor: '#f9fafb', backdropFilter: 'blur(8px)' }}>
+              <div className="relative flex-shrink-0 border-t border-gray-200" style={{ backgroundColor: '#f9fafb', backdropFilter: 'blur(8px)', position: 'sticky', bottom: 0, zIndex: 10 }}>
                 <div className="relative bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all m-4">
                   {/* Textarea */}
                   <textarea
@@ -2728,7 +2727,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
             </div>
           </div>
-        </div>
         )}
         </>
       )}
