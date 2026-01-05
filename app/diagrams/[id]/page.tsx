@@ -1856,6 +1856,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'ComponentPlantUML': 'Component (PlantUML)',
     'DeploymentPlantUML': 'Deployment (PlantUML)',
     'Gantt2': 'Gantt (2)',
+    'GanttPlantUML': 'Gantt (PlantUML)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
     'C4': 'C4 диаграмма',
@@ -2050,6 +2051,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Управление проектами',
       tags: ['Управление проектами', 'Планирование', 'График', 'PlantUML', 'Mermaid'],
       popularity: 7
+    },
+    {
+      type: 'GanttPlantUML',
+      name: 'Gantt (PlantUML)',
+      description: 'Диаграмма Ганта PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Управление проектами',
+      tags: ['Управление проектами', 'Планирование', 'График', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
     },
     {
       type: 'ER2',
