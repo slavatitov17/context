@@ -2226,8 +2226,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       }
     });
 
+  // Определяем, показывается ли чат (когда selectedOption установлен и либо это 'scratch', либо выбран проект)
+  const isChatVisible = diagramType && selectedOption && (selectedOption === 'scratch' || selectedProject);
+  
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 2rem)', overflow: 'hidden' }}>
+    <div className={`flex flex-col ${isChatVisible ? '' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 2rem)', overflow: 'hidden' } : {}}>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
