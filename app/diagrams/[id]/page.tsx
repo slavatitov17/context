@@ -1573,7 +1573,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         const isMermaid = diagramType === 'MindMapMax' || diagramType === 'ActivityMax';
         const isDualFormat = diagramType.endsWith('2');
         // Проверяем, является ли тип чисто Mermaid (новые типы)
-        const isPureMermaid = ['MindMapMax', 'ActivityMax', 'Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'Timeline', 'UserJourney', 'XY'].includes(diagramType);
+        const isPureMermaid = ['MindMapMax', 'ActivityMax', 'Architecture', 'C4', 'Git', 'Kanban', 'Pie', 'Quadrant', 'Radar', 'UserJourney', 'XY'].includes(diagramType);
         const plantUmlCode = generateData.plantUmlCode;
         const mermaidCode = generateData.mermaidCode;
         const glossary = generateData.glossary;
@@ -1855,7 +1855,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'ActivityPlantUML': 'Activity (PlantUML)',
     'ComponentPlantUML': 'Component (PlantUML)',
     'DeploymentPlantUML': 'Deployment (PlantUML)',
-    'TimingPlantUML': 'Timeline (PlantUML)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
@@ -1865,7 +1864,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Pie': 'Pie диаграмма',
     'Quadrant': 'Quadrant диаграмма',
     'Radar': 'Radar диаграмма',
-    'Timeline': 'Timeline диаграмма',
     'UserJourney': 'User Journey диаграмма',
     'XY': 'XY диаграмма',
   };
@@ -2045,15 +2043,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       popularity: 10
     },
     {
-      type: 'TimingPlantUML',
-      name: 'Timeline (PlantUML)',
-      description: 'Диаграмма временных ограничений PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
-      standard: 'PlantUML',
-      purpose: 'Временной анализ',
-      tags: ['UML', 'Временной анализ', 'Timing', 'События', 'PlantUML', 'Максимальное качество'],
-      popularity: 10
-    },
-    {
       type: 'Gantt2',
       name: 'Gantt (2)',
       description: 'Диаграмма Ганта с возможностью выбора между PlantUML и Mermaid форматами',
@@ -2133,15 +2122,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Визуализация данных',
       tags: ['Mermaid', 'Radar', 'Данные', 'Сравнение'],
       popularity: 6
-    },
-    {
-      type: 'Timeline',
-      name: 'Timeline',
-      description: 'Временная шкала для отображения событий и процессов во времени',
-      standard: 'Mermaid',
-      purpose: 'Временной анализ',
-      tags: ['Mermaid', 'Timeline', 'Время', 'События'],
-      popularity: 8
     },
     {
       type: 'UserJourney',

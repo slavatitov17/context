@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
                       diagramType === 'Pie' ||
                       diagramType === 'Quadrant' ||
                       diagramType === 'Radar' ||
-                      diagramType === 'Timeline' ||
                       diagramType === 'UserJourney' ||
                       diagramType === 'XY';
 
@@ -100,7 +99,6 @@ export async function POST(request: NextRequest) {
       if (type === 'Pie') return 'pie';
       if (type === 'Quadrant') return 'quadrantChart';
       if (type === 'Radar') return 'radar';
-      if (type === 'Timeline') return 'timeline';
       if (type === 'UserJourney') return 'journey';
       if (type === 'XY') return 'xychart-beta';
       return 'mindmap';
@@ -523,12 +521,6 @@ mindmap
 - Количество значений должно соответствовать количеству осей
 - Пример: radar\\n    x-axis Ось1, Ось2, Ось3\\n    Серия1 --> 5, 3, 4\\n    Серия2 --> 2, 4, 3`,
 
-        'Timeline': `ДЛЯ TIMELINE (${diagramType}):
-- Начинай с "timeline"
-- Определяй события: title Название события
-- Можно группировать по периодам: section Период\\n    Событие1 : Событие2
-- Пример: timeline\\n    title История\\n    section Период1\\n    Событие1 : Событие2\\n    section Период2\\n    Событие3`,
-
         'UserJourney': `ДЛЯ USER JOURNEY (${diagramType}):
 - Начинай с "journey"
 - Определяй этапы: title Название этапа : оценка
@@ -596,7 +588,6 @@ mindmap
       'ClassPlantUML': 'Class диаграмма (PlantUML) - Максимально качественная версия',
       'ComponentPlantUML': 'Component диаграмма (PlantUML) - Максимально качественная версия',
       'DeploymentPlantUML': 'Deployment диаграмма (PlantUML) - Максимально качественная версия',
-      'TimingPlantUML': 'Timeline диаграмма (PlantUML) - Максимально качественная версия',
       'State': 'UML диаграмма состояний (State Diagram)',
       'StatechartPlantUML': 'Statechart диаграмма (PlantUML) - Максимально качественная версия',
       'Activity': 'UML диаграмма активности (Activity Diagram)',
@@ -610,7 +601,6 @@ mindmap
       'Pie': 'Pie диаграмма (Mermaid)',
       'Quadrant': 'Quadrant диаграмма (Mermaid)',
       'Radar': 'Radar диаграмма (Mermaid)',
-      'Timeline': 'Timeline диаграмма (Mermaid)',
       'UserJourney': 'User Journey диаграмма (Mermaid)',
       'XY': 'XY диаграмма (Mermaid)',
     };
@@ -806,14 +796,6 @@ mindmap
           console.error('Ошибка при чтении инструкций для StatechartPlantUML:', error);
           plantUmlInstructions = 'ДЛЯ STATECHART PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Начальное и конечное состояния: [*] --> State1, State1 --> [*]. Переходы: --> или ->. Составные состояния: state Name { ... } с отступами +2 ПРОБЕЛА для содержимого. История: [H] (недавняя), [H*] (глубокая). Ветвление/слияние: <<fork>>, <<join>>. Условия: <<choice>>. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam state, skinparam stateArrow, skinparam arrow!';
         }
-      } else if (diagramType === 'TimingPlantUML') {
-        try {
-          const instructionsPath = join(process.cwd(), 'prompts', 'timing-plantuml-instructions.md');
-          plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
-        } catch (error) {
-          console.error('Ошибка при чтении инструкций для TimingPlantUML:', error);
-          plantUmlInstructions = 'ДЛЯ TIMING PLANTUML: Используй правильный синтаксис @startuml ... @enduml. Объявляй участников: robust "Название" as Алиас, concise "Название" as Алиас, binary "Название" as Алиас, clock "Название" as Алиас with period ПЕРИОД, analog "Название" as Алиас, rectangle "Название" as Алиас. Маркеры времени: @ВРЕМЯ с ПУСТОЙ СТРОКОЙ после, затем изменения состояний с отступом РОВНО 2 ПРОБЕЛА: Алиас is Состояние. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam timing!';
-        }
       }
 
       userPrompt = `Создай ${typeDescription} для следующего объекта/процесса:
@@ -822,7 +804,7 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
-${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'TimingPlantUML' ? plantUmlInstructions : ''}
+${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
@@ -833,7 +815,7 @@ ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских 
 
       userPrompt += `\n\nСгенерируй код PlantUML и глоссарий. Формат ответа:
 \`\`\`plantuml
-${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'TimingPlantUML' ? '@startuml' : '@startuml'}
+${diagramType === 'MindMapPlantUML' ? '@startmindmap' : diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' ? '@startuml' : '@startuml'}
 [код диаграммы с русскими названиями объектов]
 ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
 \`\`\`
@@ -1011,7 +993,7 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
           // Убеждаемся, что код начинается с правильного типа диаграммы
           if (!fixed.startsWith(diagramType)) {
             // Удаляем возможные префиксы и добавляем правильный
-            fixed = fixed.replace(/^(flowchart|graph|mindmap|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|quadrantChart|radar|timeline|journey|xychart|gitGraph|kanban|C4Context|C4Container)\s*/i, '');
+            fixed = fixed.replace(/^(flowchart|graph|mindmap|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|quadrantChart|radar|journey|xychart|gitGraph|kanban|C4Context|C4Container)\s*/i, '');
             fixed = `${diagramType}\n${fixed}`;
           }
           
@@ -1127,7 +1109,6 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : '@enduml'}
         const isUseCasePlantUML = diagramType === 'UseCasePlantUML';
         const isClassPlantUML = diagramType === 'ClassPlantUML';
         const isStatechartPlantUML = diagramType === 'StatechartPlantUML';
-        const isTimingPlantUML = diagramType === 'TimingPlantUML';
         const isJSON = diagramType === 'JSON';
         
         const startTag = isMindMap ? '@startmindmap' : (isJSON ? '@startjson' : '@startuml');
@@ -1486,36 +1467,6 @@ skinparam note {
             }
           }
           
-          // Для TimingPlantUML: добавляем стили для строгих цветов, если их нет
-          if (diagramType === 'TimingPlantUML') {
-            // Проверяем, есть ли уже стили
-            if (!plantUmlCode.includes('skinparam backgroundColor') || !plantUmlCode.includes('skinparam timing')) {
-              const styleBlock = `skinparam backgroundColor white
-skinparam defaultTextColor black
-skinparam defaultLineColor #000000
-skinparam timingArrowColor #000000
-skinparam timingArrowFontColor #000000
-skinparam timingLifeLineBorderColor #666666
-skinparam timingLifeLineBackgroundColor #FFFFFF
-skinparam timingStateBorderColor #000000
-skinparam timingStateBackgroundColor #FFFFFF
-skinparam timingStateFontColor #000000
-skinparam timingDividerBorderColor #666666
-skinparam timingDividerBackgroundColor #FFFFFF
-skinparam timingDividerFontColor #000000
-skinparam timingConstraintBackgroundColor #FFFFFF
-skinparam timingConstraintBorderColor #666666
-skinparam timingConstraintFontColor #000000
-skinparam timingNoteBackgroundColor #F5F5F5
-skinparam timingNoteBorderColor #666666
-skinparam timingNoteFontColor #000000
-
-`;
-              // Вставляем стили в начало кода (перед содержимым)
-              plantUmlCode = styleBlock + plantUmlCode;
-            }
-          }
-          
           // Добавляем правильные теги
           if (!plantUmlCode.includes(startTag)) {
             plantUmlCode = `${startTag}\n` + plantUmlCode;
@@ -1681,35 +1632,6 @@ database "База данных" {
   [PostgreSQL] as DB
 }
 App --> DB
-${endTag}`;
-            } else if (diagramType === 'TimingPlantUML') {
-              plantUmlCode = `${startTag}
-skinparam backgroundColor white
-skinparam defaultTextColor black
-skinparam defaultLineColor #000000
-skinparam timingArrowColor #000000
-skinparam timingArrowFontColor #000000
-skinparam timingLifeLineBorderColor #666666
-skinparam timingLifeLineBackgroundColor #FFFFFF
-skinparam timingStateBorderColor #000000
-skinparam timingStateBackgroundColor #FFFFFF
-skinparam timingStateFontColor #000000
-
-robust "Участник_1" as У1
-concise "Участник_2" as У2
-
-@0
-  У1 is Состояние1
-  У2 is Состояние2
-
-@100
-  У1 -> У2 : Сообщение
-  У1 is Состояние3
-  У2 is Состояние4
-
-@300
-  У1 is Состояние5
-
 ${endTag}`;
             } else {
               plantUmlCode = `${startTag}
