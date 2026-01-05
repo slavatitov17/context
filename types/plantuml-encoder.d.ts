@@ -17,3 +17,10 @@ declare module 'plantuml-encoder' {
 
 
 
+
+
+
+
+
+
+

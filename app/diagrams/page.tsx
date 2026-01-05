@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth, diagrams as diagramsStorage, type Diagram } from '@/lib/storage';
+import { auth, diagrams as diagramsStorage, type Diagram, type DiagramType } from '@/lib/storage';
 
 export default function DiagramsPage() {
   const [diagrams, setDiagrams] = useState<Diagram[]>([]);
@@ -178,6 +178,49 @@ export default function DiagramsPage() {
     return `${day}.${month}.${year}`;
   };
 
+  // Функция для получения названия типа диаграммы
+  const getDiagramTypeName = (diagramType: DiagramType | null | undefined): string => {
+    if (!diagramType) return '—';
+    
+    const typeNames: Record<DiagramType, string> = {
+      'UseCase': 'Use Case',
+      'UseCasePlantUML': 'Use Case',
+      'Object': 'Object',
+      'ObjectPlantUML': 'Object',
+      'MindMap2': 'MindMap',
+      'MindMapMax': 'MindMap',
+      'MindMapPlantUML': 'MindMap',
+      'Sequence2': 'Sequence',
+      'SequencePlantUML': 'Sequence',
+      'Class2': 'Class',
+      'ClassPlantUML': 'Class',
+      'State2': 'Statechart',
+      'StatechartPlantUML': 'Statechart',
+      'Activity2': 'Activity',
+      'ActivityMax': 'Activity',
+      'ActivityPlantUML': 'Activity',
+      'ComponentPlantUML': 'Component',
+      'DeploymentPlantUML': 'Deployment',
+      'Gantt2': 'Gantt',
+      'GanttPlantUML': 'Gantt',
+      'ER2': 'Entity-Relationships',
+      'ERPlantUML': 'Entity-Relationships',
+      'WBSPlantUML': 'WBS',
+      'JSONPlantUML': 'JSON',
+      'Architecture': 'Architecture',
+      'C4': 'C4',
+      'Git': 'Git',
+      'Kanban': 'Kanban',
+      'Pie': 'Pie',
+      'Quadrant': 'Quadrant',
+      'Radar': 'Radar',
+      'UserJourney': 'User Journey',
+      'XY': 'XY',
+    };
+    
+    return typeNames[diagramType] || '—';
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -294,7 +337,7 @@ export default function DiagramsPage() {
                       />
                     </th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">Тип диаграммы</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
                   </tr>
@@ -321,7 +364,7 @@ export default function DiagramsPage() {
                       </td>
                       <td className="py-4 px-6 text-gray-600">
                         <Link href={`/diagrams/${diagram.id}`} className="block w-full h-full">
-                          {diagram.description || ''}
+                          {getDiagramTypeName(diagram.diagramType)}
                         </Link>
                       </td>
                       <td className="py-4 px-6 text-gray-500">
