@@ -2475,9 +2475,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           /* Область чата */
           <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ position: 'relative', height: 'calc(100vh - 2.5rem - 1rem - 2rem - 1.5rem)' }}>
             {/* Чат */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-              {/* История сообщений - прокручиваемая область */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0" style={{ paddingBottom: '1.5rem' }}>
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
+              {/* История сообщений */}
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
@@ -2692,9 +2692,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 </div>
               </div>
 
-              {/* Поле ввода - фиксировано внизу с размытым фоном */}
-              <div className="relative flex-shrink-0 border-t border-gray-200" style={{ backgroundColor: '#f9fafb', backdropFilter: 'blur(8px)', position: 'sticky', bottom: 0, zIndex: 10 }}>
-                <div className="relative bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all m-4">
+              {/* Поле ввода */}
+              <div className="relative flex-shrink-0 bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all">
                   {/* Textarea */}
                   <textarea
                     value={message}
@@ -2726,7 +2725,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       <i className="fas fa-paper-plane text-xs"></i>
                     </button>
                   </div>
-                </div>
               </div>
             </div>
           </div>
