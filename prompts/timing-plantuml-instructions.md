@@ -714,11 +714,13 @@ concise "Веб-пользователь" as WU
 binary "Включение" as EN
 
 @0
+
   WB is Idle
   WU is "Ожидание"
   EN is low
 
 @100
+
   WB is "Обработка данных"
   WU is Waiting
   EN is high
