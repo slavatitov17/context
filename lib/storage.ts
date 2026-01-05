@@ -47,6 +47,7 @@ export type DiagramType =
   | 'ActivityPlantUML'
   | 'ComponentPlantUML'
   | 'DeploymentPlantUML'
+  | 'TimingPlantUML'
   | 'Gantt2'
   | 'ER2'
   | 'Architecture'

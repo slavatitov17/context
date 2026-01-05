@@ -1855,6 +1855,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'ActivityPlantUML': 'Activity (PlantUML)',
     'ComponentPlantUML': 'Component (PlantUML)',
     'DeploymentPlantUML': 'Deployment (PlantUML)',
+    'TimingPlantUML': 'Timeline (PlantUML)',
     'Gantt2': 'Gantt (2)',
     'ER2': 'ER (2)',
     'Architecture': 'Architecture диаграмма',
@@ -2041,6 +2042,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       standard: 'PlantUML',
       purpose: 'Архитектура',
       tags: ['UML', 'Архитектура', 'Развертывание', 'PlantUML', 'Максимальное качество'],
+      popularity: 10
+    },
+    {
+      type: 'TimingPlantUML',
+      name: 'Timeline (PlantUML)',
+      description: 'Диаграмма временных ограничений PlantUML с максимально детальными инструкциями для ИИ-модели и строгими цветами (белый, черный, серый) - гарантирует отсутствие ошибок рендеринга',
+      standard: 'PlantUML',
+      purpose: 'Временной анализ',
+      tags: ['UML', 'Временной анализ', 'Timing', 'События', 'PlantUML', 'Максимальное качество'],
       popularity: 10
     },
     {
