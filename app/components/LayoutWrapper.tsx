@@ -90,8 +90,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return (
       <body className="flex h-screen bg-white font-sans tracking-tight overflow-hidden" style={{ backgroundColor: '#ffffff', overflow: 'hidden' }}>
         <main className={`flex-1 bg-white text-gray-900 ${isAuthPage ? 'overflow-hidden flex items-center justify-center' : 'overflow-auto p-8'}`} style={isAuthPage ? { height: '100vh', overflow: 'hidden' } : {}}>
-          {/* Хлебные крошки для страницы privacy (для неавторизованных) */}
-          {isPrivacyPage && !isAuthenticated && <Breadcrumbs />}
           {children}
         </main>
       </body>
