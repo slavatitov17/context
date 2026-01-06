@@ -69,10 +69,84 @@ export default function Breadcrumbs() {
                 } else if (segments[0] === 'diagrams') {
                   const diagram = diagramsStorage.getById(id, currentUser.id);
                   if (diagram) {
+                    // Определяем этап создания диаграммы
+                    const hasDiagramType = !!diagram.diagramType;
+                    const hasSelectedOption = !!diagram.selectedOption;
+                    
+                    // Всегда добавляем "Создание диаграммы" как кликабельный элемент
+                    // При клике пользователь вернется на страницу создания, но данные уже сохранены в диаграмме
                     items.push({ 
-                      label: diagram.name || 'Диаграмма', 
+                      label: 'Создание диаграммы', 
                       href: `/diagrams/${id}` 
                     });
+                    
+                    // Если нет типа диаграммы - этап "Тип диаграммы"
+                    if (!hasDiagramType) {
+                      items.push({ 
+                        label: 'Тип диаграммы', 
+                        href: `/diagrams/${id}` 
+                      });
+                    } else {
+                      // Получаем название типа диаграммы
+                      const diagramTypeNames: Record<string, string> = {
+                        'UseCase': 'Use Case',
+                        'UseCasePlantUML': 'Use Case',
+                        'Object': 'Object',
+                        'ObjectPlantUML': 'Object',
+                        'MindMap2': 'MindMap',
+                        'MindMapMax': 'MindMap',
+                        'MindMapPlantUML': 'MindMap',
+                        'Sequence2': 'Sequence',
+                        'SequencePlantUML': 'Sequence',
+                        'Class2': 'Class',
+                        'ClassPlantUML': 'Class',
+                        'State2': 'Statechart',
+                        'StatechartPlantUML': 'Statechart',
+                        'Activity2': 'Activity',
+                        'ActivityMax': 'Activity',
+                        'ActivityPlantUML': 'Activity',
+                        'ComponentPlantUML': 'Component',
+                        'DeploymentPlantUML': 'Deployment',
+                        'Gantt2': 'Gantt',
+                        'GanttPlantUML': 'Gantt',
+                        'ER2': 'Entity-Relationships',
+                        'ERPlantUML': 'Entity-Relationships',
+                        'WBSPlantUML': 'WBS',
+                        'JSONPlantUML': 'JSON',
+                        'Architecture': 'Architecture',
+                        'C4': 'C4',
+                        'Git': 'Git',
+                        'Kanban': 'Kanban',
+                        'Pie': 'Pie',
+                        'Quadrant': 'Quadrant',
+                        'Radar': 'Radar',
+                        'UserJourney': 'User Journey',
+                        'XY': 'XY',
+                      };
+                      const typeName = diagramTypeNames[diagram.diagramType] || 'Диаграмма';
+                      
+                      // Если есть тип, но нет способа создания - этап "Способ создания"
+                      if (!hasSelectedOption) {
+                        items.push({ 
+                          label: typeName, 
+                          href: `/diagrams/${id}` 
+                        });
+                        items.push({ 
+                          label: 'Способ создания', 
+                          href: `/diagrams/${id}` 
+                        });
+                      } else {
+                        // Если есть и тип, и способ - показываем полную цепочку до "Способ создания"
+                        items.push({ 
+                          label: typeName, 
+                          href: `/diagrams/${id}` 
+                        });
+                        items.push({ 
+                          label: 'Способ создания', 
+                          href: `/diagrams/${id}` 
+                        });
+                      }
+                    }
                   } else {
                     items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
                   }

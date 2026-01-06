@@ -2235,10 +2235,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
       ) : (
         <div className="flex flex-col h-full min-h-0">
-          <div className="flex-shrink-0">
-            <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
-            <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
-          </div>
+          {/* Убираем заголовок и описание, когда чат виден */}
+          {!isChatVisible && (
+            <div className="flex-shrink-0">
+              <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
+              <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+            </div>
+          )}
           {!selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">

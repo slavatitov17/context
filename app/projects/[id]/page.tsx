@@ -705,15 +705,19 @@ export default function ProjectDetailPage() {
 
   const hasFiles = uploadedFiles.length > 0;
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
+  // Убираем заголовок и описание, когда пользователь уже в чате (есть успешно загруженные файлы)
+  const showHeader = !hasSuccessfulFiles;
 
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-4 flex-shrink-0">
-        <h1 className="text-2xl font-medium mb-2">{projectData.name}</h1>
-        {projectData.description && (
-          <p className="text-gray-600">{projectData.description}</p>
-        )}
-      </div>
+      {showHeader && (
+        <div className="mb-4 flex-shrink-0">
+          <h1 className="text-2xl font-medium mb-2">{projectData.name}</h1>
+          {projectData.description && (
+            <p className="text-gray-600">{projectData.description}</p>
+          )}
+        </div>
+      )}
       
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Левая колонка: Боковое меню с файлами */}
