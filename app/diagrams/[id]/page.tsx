@@ -2238,8 +2238,18 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           {/* Убираем заголовок и описание, когда чат виден */}
           {!isChatVisible && (
             <div className="flex-shrink-0">
-              <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
-              <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+              {/* Если есть тип диаграммы, но еще не выбран способ создания - показываем заголовок "Способ создания диаграммы" */}
+              {diagramType && !selectedOption ? (
+                <>
+                  <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
+                  <p className="text-gray-600 mb-8 text-base">Выберите способ создания диаграммы</p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>
+                  <p className="text-gray-600 mb-8 text-base">{diagramData.description || ''}</p>
+                </>
+              )}
             </div>
           )}
           {!selectedOption ? (
