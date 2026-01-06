@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { auth, type User } from '@/lib/storage';
 import Breadcrumbs from './Breadcrumbs';
+import ProfileModal from './ProfileModal';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,6 +15,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
     // Управляем overflow на html для страниц авторизации
@@ -40,10 +43,24 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         setUser(currentUser);
         setUserEmail(currentUser.email || '');
         setIsAuthenticated(true);
+        
+        // Загружаем фото профиля
+        const savedProfile = localStorage.getItem(`userProfile_${currentUser.id}`);
+        if (savedProfile) {
+          try {
+            const profile = JSON.parse(savedProfile);
+            setProfilePhoto(profile.photo || null);
+          } catch {
+            setProfilePhoto(null);
+          }
+        } else {
+          setProfilePhoto(null);
+        }
       } else {
         setUser(null);
         setUserEmail('');
         setIsAuthenticated(false);
+        setProfilePhoto(null);
         if (!isAuthPage && !isPrivacyPage) {
           router.push('/login');
         }
@@ -56,6 +73,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'context_user' || e.key === 'context_session') {
         checkUser();
+      } else if (e.key && e.key.startsWith('userProfile_')) {
+        // Обновляем фото профиля при изменении
+        const currentUser = auth.getCurrentUser();
+        if (currentUser && e.key === `userProfile_${currentUser.id}`) {
+          try {
+            const profile = JSON.parse(e.newValue || '{}');
+            setProfilePhoto(profile.photo || null);
+          } catch {
+            setProfilePhoto(null);
+          }
+        }
       }
     };
 
@@ -163,16 +191,24 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
           {/* Блок профиля внизу */}
           <div className="mt-auto pt-6">
-            <Link 
-              href="/profile" 
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+            <button 
+              onClick={() => setShowProfileModal(true)}
+              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
               title={userEmail}
             >
-              <i className="fas fa-user-circle mr-3 text-gray-600 group-hover:text-white transition-colors text-xl flex-shrink-0"></i>
-              <span className="flex-1 font-medium min-w-0 truncate">
+              {profilePhoto ? (
+                <img 
+                  src={profilePhoto} 
+                  alt="Фото профиля" 
+                  className="mr-3 w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-gray-300 group-hover:border-white transition-colors"
+                />
+              ) : (
+                <i className="fas fa-user-circle mr-3 text-gray-600 group-hover:text-white transition-colors text-xl flex-shrink-0"></i>
+              )}
+              <span className="flex-1 font-medium min-w-0 truncate text-left">
                 {getDisplayName(userEmail)}
               </span>
-            </Link>
+            </button>
           </div>
         </aside>
       )}
@@ -183,6 +219,31 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         {!isAuthPage && isAuthenticated && <Breadcrumbs />}
         {children}
       </main>
+      
+      {/* Модальное окно профиля */}
+      {isAuthenticated && (
+        <ProfileModal 
+          isOpen={showProfileModal} 
+          onClose={() => {
+            setShowProfileModal(false);
+            // Обновляем фото профиля после закрытия модального окна
+            const currentUser = auth.getCurrentUser();
+            if (currentUser) {
+              const savedProfile = localStorage.getItem(`userProfile_${currentUser.id}`);
+              if (savedProfile) {
+                try {
+                  const profile = JSON.parse(savedProfile);
+                  setProfilePhoto(profile.photo || null);
+                } catch {
+                  setProfilePhoto(null);
+                }
+              } else {
+                setProfilePhoto(null);
+              }
+            }
+          }} 
+        />
+      )}
     </body>
   );
 }
