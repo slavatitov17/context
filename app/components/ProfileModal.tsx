@@ -200,22 +200,11 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           <div className="flex items-center gap-6 pb-6 border-b border-gray-200">
             <div className="flex-shrink-0">
               {profilePhoto ? (
-                <div className="relative">
-                  <img 
-                    src={profilePhoto} 
-                    alt="Фото профиля" 
-                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                  />
-                  <button
-                    onClick={handleRemovePhoto}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
-                    title="Удалить фото"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                <img 
+                  src={profilePhoto} 
+                  alt="Фото профиля" 
+                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
                   <i className="fas fa-user-circle text-4xl text-gray-400"></i>
@@ -227,7 +216,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 Фото профиля
               </label>
               <p className="text-sm text-gray-500 mb-3">
-                Загрузите ваше фото. Рекомендуемый размер: 200x200 пикселей. Максимальный размер файла: 5 МБ.
+                Загрузите ваше фото. Рекомендуемый масштаб фото: 200x200. Максимальный размер фото: 5 МБ.
               </p>
               <div className="flex gap-3">
                 <input
@@ -242,7 +231,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   htmlFor="profile-photo-input"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer font-medium"
                 >
-                  <i className="fas fa-upload"></i>
+                  <i className="fas fa-pencil-alt"></i>
                   {profilePhoto ? 'Изменить фото' : 'Загрузить фото'}
                 </label>
                 {profilePhoto && (
@@ -259,8 +248,6 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
           {/* Личные данные */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Личные данные</h3>
-            
             <div className="space-y-4">
               {/* Фамилия, Имя, Отчество в одну строку */}
               <div className="grid grid-cols-3 gap-4">
@@ -273,7 +260,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Иванов"
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -286,7 +273,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="Иван"
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -299,7 +286,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
                     placeholder="Иванович"
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -313,7 +300,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -340,14 +327,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={phone}
                   onChange={handlePhoneChange}
                   placeholder="+7 (999) 123-45-67"
-                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
           </div>
 
           {/* Кнопки сохранения и выхода */}
-          <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
               disabled={!hasChanges}
