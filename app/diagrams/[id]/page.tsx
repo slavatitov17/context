@@ -2480,7 +2480,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                             ? 'bg-blue-600 text-white rounded-br-none'
                             : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
                         }`}>
-                          <p className={`text-base break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
+                          <p className={`text-base break-words ${msg.isUser ? 'text-white whitespace-pre-wrap' : 'text-gray-900'}`}>{msg.text}</p>
                         </div>
                       </div>
                     );
