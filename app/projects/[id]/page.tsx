@@ -707,11 +707,11 @@ export default function ProjectDetailPage() {
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 2rem - 2.5rem - 1rem - 4rem)', maxHeight: 'calc(100vh - 2rem - 2.5rem - 1rem - 4rem)' }}>
       
-      <div className="flex-1 flex gap-4 min-h-0">
+      <div className="flex-1 flex gap-4 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
         {/* Левая колонка: Боковое меню с файлами */}
-        <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+        <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200" style={{ height: '100%', maxHeight: '100%' }}>
           {/* Заголовок с бордером */}
           <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-medium text-gray-900">
@@ -829,7 +829,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Правая колонка: Чат */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <div className="flex-1 flex flex-col min-w-0" style={{ height: '100%', maxHeight: '100%' }}>
           {!hasSuccessfulFiles ? (
             /* Пустое состояние чата */
             <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 min-h-0">
