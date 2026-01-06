@@ -707,7 +707,7 @@ export default function ProjectDetailPage() {
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 1rem - 2.5rem - 3.5rem + 0.5rem)', maxHeight: 'calc(100vh - 1rem - 2.5rem - 3.5rem + 0.5rem)' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 1rem - 2.5rem - 4rem)', maxHeight: 'calc(100vh - 1rem - 2.5rem - 4rem)' }}>
       
       <div className="flex-1 flex gap-4 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
         {/* Левая колонка: Боковое меню с файлами */}
