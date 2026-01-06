@@ -27,6 +27,9 @@ export default function Breadcrumbs() {
         setIsLoading(false);
         return;
       }
+      
+      // Небольшая задержка для того, чтобы данные успели сохраниться
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const segments = pathname.split('/').filter(Boolean);
       const items: BreadcrumbItem[] = [];
@@ -141,6 +144,15 @@ export default function Breadcrumbs() {
     };
 
     generateBreadcrumbs();
+    
+    // Для страниц диаграмм обновляем хлебные крошки периодически, чтобы учесть изменения в storage
+    if (pathname.startsWith('/diagrams/') && !pathname.includes('/edit')) {
+      const interval = setInterval(() => {
+        generateBreadcrumbs();
+      }, 500);
+      
+      return () => clearInterval(interval);
+    }
   }, [pathname]);
 
   // Не показываем хлебные крошки на страницах первого уровня или если они пустые
