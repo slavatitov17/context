@@ -162,10 +162,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           </nav>
 
           {/* Блок профиля внизу */}
-          <div className="mt-auto pt-6 space-y-2">
+          <div className="mt-auto pt-6 flex gap-2">
             <Link 
               href="/profile" 
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group flex-[3]"
               title={userEmail}
             >
               <i className="fas fa-user-circle mr-3 text-gray-600 group-hover:text-white transition-colors text-xl flex-shrink-0"></i>
@@ -175,7 +175,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             </Link>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200 group"
+              className="flex items-center justify-center py-3.5 px-4 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200 group flex-1"
               title="Выйти из аккаунта"
             >
               <i className="fas fa-sign-out-alt text-red-500"></i>
