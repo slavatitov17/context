@@ -162,7 +162,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           </nav>
 
           {/* Блок профиля внизу */}
-          <div className="mt-auto pt-6">
+          <div className="mt-auto pt-6 space-y-2">
             <Link 
               href="/profile" 
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
@@ -172,17 +172,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               <span className="flex-1 font-medium min-w-0 truncate">
                 {getDisplayName(userEmail)}
               </span>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLogout();
-                }}
-                className="ml-2 text-red-500 group-hover:text-white transition-colors flex-shrink-0"
-                title="Выйти из аккаунта"
-              >
-                <i className="fas fa-sign-out-alt"></i>
-              </button>
             </Link>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200 group"
+              title="Выйти из аккаунта"
+            >
+              <i className="fas fa-sign-out-alt text-red-500"></i>
+            </button>
           </div>
         </aside>
       )}
