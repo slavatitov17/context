@@ -15,6 +15,23 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Управляем overflow на html для страниц авторизации
+    if (isAuthPage) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      // Восстанавливаем overflow при размонтировании
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, [isAuthPage]);
+
+  useEffect(() => {
     // Проверяем текущего пользователя
     const checkUser = () => {
       const currentUser = auth.getCurrentUser();
@@ -70,8 +87,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   // На страницах авторизации и privacy (для неавторизованных) всегда показываем контент
   if (isAuthPage || (isPrivacyPage && isAuthenticated === false)) {
     return (
-      <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
-        <main className="flex-1 p-8 overflow-auto bg-white text-gray-900">
+      <body className="flex h-screen bg-white font-sans tracking-tight overflow-hidden" style={{ backgroundColor: '#ffffff', overflow: 'hidden' }}>
+        <main className={`flex-1 bg-white text-gray-900 ${isAuthPage ? 'overflow-hidden flex items-center justify-center' : 'overflow-auto p-8'}`} style={isAuthPage ? { height: '100vh', overflow: 'hidden' } : {}}>
           {children}
         </main>
       </body>
