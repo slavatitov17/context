@@ -2078,14 +2078,22 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               {/* Сортировка */}
               <div className="md:w-64">
                 <label className="block text-xl font-medium text-gray-900 mb-2">Сортировка</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                >
-                  <option value="alphabet">По алфавиту</option>
-                  <option value="popularity">По популярности</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
+                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                  >
+                    <option value="alphabet">По алфавиту</option>
+                    <option value="popularity">По популярности</option>
+                  </select>
+                  {/* Кастомная стрелочка */}
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
