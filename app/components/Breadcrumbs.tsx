@@ -123,7 +123,9 @@ export default function Breadcrumbs() {
                         'UserJourney': 'User Journey',
                         'XY': 'XY',
                       };
-                      const typeName = diagramTypeNames[diagram.diagramType] || 'Диаграмма';
+                      const typeName = diagram.diagramType && diagramTypeNames[diagram.diagramType] 
+                        ? diagramTypeNames[diagram.diagramType] 
+                        : 'Диаграмма';
                       
                       // Если есть тип, но нет способа создания - этап "Способ создания"
                       if (!hasSelectedOption) {
