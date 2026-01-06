@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 
 interface UploadedFile {
@@ -886,8 +887,27 @@ export default function ProjectDetailPage() {
                             <div className="border-t border-gray-200 mb-4"></div>
                             
                             {/* Ответ системы */}
-                            <div className="bg-white border border-gray-200 rounded-2xl p-4 rounded-bl-none shadow-sm">
-                              <p className="text-base break-words text-gray-900">{msg.text}</p>
+                            <div className="bg-white border border-gray-200 rounded-2xl p-4 rounded-bl-none shadow-sm prose prose-sm max-w-none">
+                              <ReactMarkdown
+                                className="text-base break-words text-gray-900 markdown-content"
+                                components={{
+                                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
+                                  h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                  h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                  h4: ({node, ...props}) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
+                                  p: ({node, ...props}) => <p className="mb-2 text-gray-900" {...props} />,
+                                  ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                  ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                  li: ({node, ...props}) => <li className="text-gray-900" {...props} />,
+                                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
+                                  em: ({node, ...props}) => <em className="italic text-gray-900" {...props} />,
+                                  code: ({node, ...props}) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
+                                  pre: ({node, ...props}) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
+                                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
+                                }}
+                              >
+                                {msg.text}
+                              </ReactMarkdown>
                             </div>
                           </div>
                         </div>
@@ -905,7 +925,32 @@ export default function ProjectDetailPage() {
                             ? 'bg-blue-600 text-white rounded-br-none'
                             : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
                         }`}>
-                          <p className={`text-base break-words ${msg.isUser ? 'text-white' : 'text-gray-900'}`}>{msg.text}</p>
+                          {msg.isUser ? (
+                            <p className="text-base break-words text-white whitespace-pre-wrap">{msg.text}</p>
+                          ) : (
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown
+                                className="text-base break-words text-gray-900 markdown-content"
+                                components={{
+                                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
+                                  h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                  h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                  h4: ({node, ...props}) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
+                                  p: ({node, ...props}) => <p className="mb-2 text-gray-900" {...props} />,
+                                  ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                  ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                  li: ({node, ...props}) => <li className="text-gray-900" {...props} />,
+                                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
+                                  em: ({node, ...props}) => <em className="italic text-gray-900" {...props} />,
+                                  code: ({node, ...props}) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
+                                  pre: ({node, ...props}) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
+                                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
+                                }}
+                              >
+                                {msg.text}
+                              </ReactMarkdown>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
