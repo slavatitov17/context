@@ -82,32 +82,45 @@ export default function Breadcrumbs() {
                     // Определяем этап создания диаграммы
                     const hasDiagramType = !!diagram.diagramType;
                     const hasSelectedOption = !!diagram.selectedOption;
+                    const hasSelectedProject = !!diagram.selectedProject;
                     
-                    // Всегда добавляем "Создание диаграммы" как кликабельный элемент
-                    items.push({ 
-                      label: 'Создание диаграммы', 
-                      href: `/diagrams/${id}` 
-                    });
+                    // Определяем, виден ли чат (когда selectedOption установлен и либо это 'scratch', либо выбран проект)
+                    const isChatVisible = hasDiagramType && hasSelectedOption && 
+                      (diagram.selectedOption === 'scratch' || hasSelectedProject);
                     
-                    // Если нет типа диаграммы - этап "Тип диаграммы"
-                    if (!hasDiagramType) {
+                    // Если чат виден, показываем только Диаграммы - Название диаграммы
+                    if (isChatVisible) {
                       items.push({ 
-                        label: 'Тип диаграммы', 
+                        label: diagram.name || 'Диаграмма', 
                         href: `/diagrams/${id}` 
                       });
                     } else {
-                      // Всегда показываем "Тип диаграммы" как отдельную крошку
+                      // Всегда добавляем "Создание диаграммы" как кликабельный элемент
                       items.push({ 
-                        label: 'Тип диаграммы', 
+                        label: 'Создание диаграммы', 
                         href: `/diagrams/${id}` 
                       });
                       
-                      // ВСЕГДА показываем "Способ создания" если есть тип диаграммы
-                      // (независимо от того, выбран способ или нет)
-                      items.push({ 
-                        label: 'Способ создания', 
-                        href: `/diagrams/${id}` 
-                      });
+                      // Если нет типа диаграммы - этап "Тип диаграммы"
+                      if (!hasDiagramType) {
+                        items.push({ 
+                          label: 'Тип диаграммы', 
+                          href: `/diagrams/${id}` 
+                        });
+                      } else {
+                        // Всегда показываем "Тип диаграммы" как отдельную крошку
+                        items.push({ 
+                          label: 'Тип диаграммы', 
+                          href: `/diagrams/${id}` 
+                        });
+                        
+                        // ВСЕГДА показываем "Способ создания" если есть тип диаграммы
+                        // (независимо от того, выбран способ или нет)
+                        items.push({ 
+                          label: 'Способ создания', 
+                          href: `/diagrams/${id}` 
+                        });
+                      }
                     }
                   } else {
                     items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
