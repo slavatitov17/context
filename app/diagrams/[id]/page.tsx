@@ -2108,16 +2108,24 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   <label className="block text-base font-medium text-gray-900 mb-2">
                     Стандарт или нотация
                   </label>
-                  <select
-                    value={selectedStandard}
-                    onChange={(e) => setSelectedStandard(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  >
-                    <option value="Все">Все</option>
-                    {allStandards.map(standard => (
-                      <option key={standard} value={standard}>{standard}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedStandard}
+                      onChange={(e) => setSelectedStandard(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                    >
+                      <option value="Все">Все</option>
+                      {allStandards.map(standard => (
+                        <option key={standard} value={standard}>{standard}</option>
+                      ))}
+                    </select>
+                    {/* Кастомная стрелочка */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Фильтр по цели использования */}
@@ -2125,16 +2133,24 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   <label className="block text-base font-medium text-gray-900 mb-2">
                     Цель использования
                   </label>
-                  <select
-                    value={selectedPurpose}
-                    onChange={(e) => setSelectedPurpose(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  >
-                    <option value="Все">Все</option>
-                    {allPurposes.map(purpose => (
-                      <option key={purpose} value={purpose}>{purpose}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedPurpose}
+                      onChange={(e) => setSelectedPurpose(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                    >
+                      <option value="Все">Все</option>
+                      {allPurposes.map(purpose => (
+                        <option key={purpose} value={purpose}>{purpose}</option>
+                      ))}
+                    </select>
+                    {/* Кастомная стрелочка */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Фильтр по тегам */}
@@ -2142,16 +2158,24 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   <label className="block text-base font-medium text-gray-900 mb-2">
                     Теги
                   </label>
-                  <select
-                    value={selectedTag}
-                    onChange={(e) => setSelectedTag(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  >
-                    <option value="Все">Все</option>
-                    {allTags.map(tag => (
-                      <option key={tag} value={tag}>{tag}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedTag}
+                      onChange={(e) => setSelectedTag(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                    >
+                      <option value="Все">Все</option>
+                      {allTags.map(tag => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
+                    </select>
+                    {/* Кастомная стрелочка */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
