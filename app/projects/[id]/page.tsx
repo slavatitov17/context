@@ -888,26 +888,27 @@ export default function ProjectDetailPage() {
                             
                             {/* Ответ системы */}
                             <div className="bg-white border border-gray-200 rounded-2xl p-4 rounded-bl-none shadow-sm prose prose-sm max-w-none">
-                              <ReactMarkdown
-                                className="text-base break-words text-gray-900 markdown-content"
-                                components={{
-                                  h1: (props) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
-                                  h2: (props) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                  h3: (props) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                  h4: (props) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
-                                  p: (props) => <p className="mb-2 text-gray-900" {...props} />,
-                                  ul: (props) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                  ol: (props) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                  li: (props) => <li className="text-gray-900" {...props} />,
-                                  strong: (props) => <strong className="font-bold text-gray-900" {...props} />,
-                                  em: (props) => <em className="italic text-gray-900" {...props} />,
-                                  code: (props) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
-                                  pre: (props) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
-                                  blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
-                                }}
-                              >
-                                {msg.text}
-                              </ReactMarkdown>
+                              <div className="text-base break-words text-gray-900 markdown-content">
+                                <ReactMarkdown
+                                  components={{
+                                    h1: (props) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
+                                    h2: (props) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                    h3: (props) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                    h4: (props) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
+                                    p: (props) => <p className="mb-2 text-gray-900" {...props} />,
+                                    ul: (props) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                    ol: (props) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                    li: (props) => <li className="text-gray-900" {...props} />,
+                                    strong: (props) => <strong className="font-bold text-gray-900" {...props} />,
+                                    em: (props) => <em className="italic text-gray-900" {...props} />,
+                                    code: (props) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
+                                    pre: (props) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
+                                    blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
+                                  }}
+                                >
+                                  {msg.text}
+                                </ReactMarkdown>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -929,26 +930,27 @@ export default function ProjectDetailPage() {
                             <p className="text-base break-words text-white whitespace-pre-wrap">{msg.text}</p>
                           ) : (
                             <div className="prose prose-sm max-w-none">
-                              <ReactMarkdown
-                                className="text-base break-words text-gray-900 markdown-content"
-                                components={{
-                                  h1: (props) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
-                                  h2: (props) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                  h3: (props) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                  h4: (props) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
-                                  p: (props) => <p className="mb-2 text-gray-900" {...props} />,
-                                  ul: (props) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                  ol: (props) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                  li: (props) => <li className="text-gray-900" {...props} />,
-                                  strong: (props) => <strong className="font-bold text-gray-900" {...props} />,
-                                  em: (props) => <em className="italic text-gray-900" {...props} />,
-                                  code: (props) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
-                                  pre: (props) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
-                                  blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
-                                }}
-                              >
-                                {msg.text}
-                              </ReactMarkdown>
+                              <div className="text-base break-words text-gray-900 markdown-content">
+                                <ReactMarkdown
+                                  components={{
+                                    h1: (props) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
+                                    h2: (props) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                    h3: (props) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
+                                    h4: (props) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
+                                    p: (props) => <p className="mb-2 text-gray-900" {...props} />,
+                                    ul: (props) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                    ol: (props) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
+                                    li: (props) => <li className="text-gray-900" {...props} />,
+                                    strong: (props) => <strong className="font-bold text-gray-900" {...props} />,
+                                    em: (props) => <em className="italic text-gray-900" {...props} />,
+                                    code: (props) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
+                                    pre: (props) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
+                                    blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
+                                  }}
+                                >
+                                  {msg.text}
+                                </ReactMarkdown>
+                              </div>
                             </div>
                           )}
                         </div>
