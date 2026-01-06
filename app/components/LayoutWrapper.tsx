@@ -90,6 +90,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return (
       <body className="flex h-screen bg-white font-sans tracking-tight overflow-hidden" style={{ backgroundColor: '#ffffff', overflow: 'hidden' }}>
         <main className={`flex-1 bg-white text-gray-900 ${isAuthPage ? 'overflow-hidden flex items-center justify-center' : 'overflow-auto p-8'}`} style={isAuthPage ? { height: '100vh', overflow: 'hidden' } : {}}>
+          {/* Хлебные крошки для страницы privacy (для неавторизованных) */}
+          {isPrivacyPage && !isAuthenticated && <Breadcrumbs />}
           {children}
         </main>
       </body>
@@ -189,7 +191,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
       <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage ? 'ml-[calc(16rem+1rem)]' : ''}`} style={{ paddingTop: '2.5rem', paddingBottom: '1rem', paddingLeft: '2rem', paddingRight: '2rem', height: '100vh', overflowY: 'auto' }}>
-        {/* Хлебные крошки - показываются только на страницах не первого уровня */}
+        {/* Хлебные крошки - показываются только на страницах не первого уровня, включая privacy для авторизованных */}
         {!isAuthPage && isAuthenticated && <Breadcrumbs />}
         {children}
       </main>
