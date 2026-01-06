@@ -2050,7 +2050,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const isChatVisible = diagramType && selectedOption && (selectedOption === 'scratch' || selectedProject);
   
   return (
-    <div className={`flex flex-col ${isChatVisible ? 'h-full' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 3.5rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 3.5rem)' } : {}}>
+    <div className={`flex flex-col ${isChatVisible ? 'h-full' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 1rem - 2.5rem - 4rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 1rem - 2.5rem - 4rem)' } : {}}>
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
@@ -2340,11 +2340,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         </div>
         ) : (
           /* Область чата */
-          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ height: '100%', maxHeight: '100%' }}>
             {/* Чат */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
               {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0">
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
