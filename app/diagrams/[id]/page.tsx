@@ -2241,8 +2241,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               {/* Если есть тип диаграммы, но еще не выбран способ создания - показываем заголовок "Способ создания диаграммы" */}
               {diagramType && !selectedOption ? (
                 <>
-                  <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
-                  <p className="text-gray-600 mb-8 text-base">Выберите способ создания диаграммы</p>
+                  <div className="mb-8 pb-6 border-b border-gray-200">
+                    <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
+                    <p className="text-gray-600 text-base">Выберите способ создания диаграммы</p>
+                  </div>
                 </>
               ) : (
                 <>

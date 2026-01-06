@@ -33,11 +33,18 @@ export default function Breadcrumbs() {
 
       // Добавляем корневой элемент (если не на главной)
       if (segments.length > 0) {
-        // Определяем тип страницы (projects или diagrams)
+        // Определяем тип страницы (projects, diagrams или privacy)
         if (segments[0] === 'projects') {
           items.push({ label: 'Проекты', href: '/projects' });
         } else if (segments[0] === 'diagrams') {
           items.push({ label: 'Диаграммы', href: '/diagrams' });
+        } else if (segments[0] === 'privacy') {
+          // Для страницы privacy добавляем ссылку на "О системе"
+          items.push({ label: 'О системе', href: '/about' });
+          items.push({ label: 'Политика конфиденциальности', href: '/privacy' });
+          setBreadcrumbs(items);
+          setIsLoading(false);
+          return;
         }
 
         // Обрабатываем остальные сегменты
@@ -87,62 +94,20 @@ export default function Breadcrumbs() {
                         href: `/diagrams/${id}` 
                       });
                     } else {
-                      // Получаем название типа диаграммы
-                      const diagramTypeNames: Record<string, string> = {
-                        'UseCase': 'Use Case',
-                        'UseCasePlantUML': 'Use Case',
-                        'Object': 'Object',
-                        'ObjectPlantUML': 'Object',
-                        'MindMap2': 'MindMap',
-                        'MindMapMax': 'MindMap',
-                        'MindMapPlantUML': 'MindMap',
-                        'Sequence2': 'Sequence',
-                        'SequencePlantUML': 'Sequence',
-                        'Class2': 'Class',
-                        'ClassPlantUML': 'Class',
-                        'State2': 'Statechart',
-                        'StatechartPlantUML': 'Statechart',
-                        'Activity2': 'Activity',
-                        'ActivityMax': 'Activity',
-                        'ActivityPlantUML': 'Activity',
-                        'ComponentPlantUML': 'Component',
-                        'DeploymentPlantUML': 'Deployment',
-                        'Gantt2': 'Gantt',
-                        'GanttPlantUML': 'Gantt',
-                        'ER2': 'Entity-Relationships',
-                        'ERPlantUML': 'Entity-Relationships',
-                        'WBSPlantUML': 'WBS',
-                        'JSONPlantUML': 'JSON',
-                        'Architecture': 'Architecture',
-                        'C4': 'C4',
-                        'Git': 'Git',
-                        'Kanban': 'Kanban',
-                        'Pie': 'Pie',
-                        'Quadrant': 'Quadrant',
-                        'Radar': 'Radar',
-                        'UserJourney': 'User Journey',
-                        'XY': 'XY',
-                      };
-                      const typeName = diagram.diagramType && diagramTypeNames[diagram.diagramType] 
-                        ? diagramTypeNames[diagram.diagramType] 
-                        : 'Диаграмма';
+                      // Всегда показываем "Тип диаграммы" как отдельную крошку
+                      items.push({ 
+                        label: 'Тип диаграммы', 
+                        href: `/diagrams/${id}` 
+                      });
                       
                       // Если есть тип, но нет способа создания - этап "Способ создания"
                       if (!hasSelectedOption) {
-                        items.push({ 
-                          label: typeName, 
-                          href: `/diagrams/${id}` 
-                        });
                         items.push({ 
                           label: 'Способ создания', 
                           href: `/diagrams/${id}` 
                         });
                       } else {
                         // Если есть и тип, и способ - показываем полную цепочку до "Способ создания"
-                        items.push({ 
-                          label: typeName, 
-                          href: `/diagrams/${id}` 
-                        });
                         items.push({ 
                           label: 'Способ создания', 
                           href: `/diagrams/${id}` 
