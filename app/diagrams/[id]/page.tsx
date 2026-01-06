@@ -2240,12 +2240,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             <div className="flex-shrink-0">
               {/* Если есть тип диаграммы, но еще не выбран способ создания - показываем заголовок "Способ создания диаграммы" */}
               {diagramType && !selectedOption ? (
-                <>
-                  <div className="mb-8 pb-6 border-b border-gray-200">
-                    <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
-                    <p className="text-gray-600 text-base">Выберите способ создания диаграммы</p>
-                  </div>
-                </>
+                <div className="mb-8 pb-6 border-b border-gray-200 max-w-2xl">
+                  <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
+                  <p className="text-gray-600 text-base">Выберите способ создания диаграммы</p>
+                </div>
               ) : (
                 <>
                   <h1 className="text-3xl font-medium mb-2">{diagramData.name}</h1>

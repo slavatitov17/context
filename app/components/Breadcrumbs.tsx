@@ -81,7 +81,6 @@ export default function Breadcrumbs() {
                     const hasSelectedOption = !!diagram.selectedOption;
                     
                     // Всегда добавляем "Создание диаграммы" как кликабельный элемент
-                    // При клике пользователь вернется на страницу создания, но данные уже сохранены в диаграмме
                     items.push({ 
                       label: 'Создание диаграммы', 
                       href: `/diagrams/${id}` 
@@ -100,19 +99,12 @@ export default function Breadcrumbs() {
                         href: `/diagrams/${id}` 
                       });
                       
-                      // Если есть тип, но нет способа создания - этап "Способ создания"
-                      if (!hasSelectedOption) {
-                        items.push({ 
-                          label: 'Способ создания', 
-                          href: `/diagrams/${id}` 
-                        });
-                      } else {
-                        // Если есть и тип, и способ - показываем полную цепочку до "Способ создания"
-                        items.push({ 
-                          label: 'Способ создания', 
-                          href: `/diagrams/${id}` 
-                        });
-                      }
+                      // ВСЕГДА показываем "Способ создания" если есть тип диаграммы
+                      // (независимо от того, выбран способ или нет)
+                      items.push({ 
+                        label: 'Способ создания', 
+                        href: `/diagrams/${id}` 
+                      });
                     }
                   } else {
                     items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
