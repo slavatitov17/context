@@ -707,7 +707,7 @@ export default function ProjectDetailPage() {
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 1rem - 2.5rem - 3.5rem)', maxHeight: 'calc(100vh - 1rem - 2.5rem - 3.5rem)' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 1rem - 2.5rem - 3.5rem + 0.5rem)', maxHeight: 'calc(100vh - 1rem - 2.5rem - 3.5rem + 0.5rem)' }}>
       
       <div className="flex-1 flex gap-4 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
         {/* Левая колонка: Боковое меню с файлами */}
@@ -844,7 +844,7 @@ export default function ProjectDetailPage() {
             /* Чат с сообщениями */
             <div className="flex-1 flex flex-col min-h-0">
               {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-4 overflow-y-auto overflow-x-hidden min-h-0">
+              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0">
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
