@@ -103,6 +103,14 @@ export default function EditorCanvas({
     return Math.round(value / gridSize) * gridSize;
   }, [snapToGrid, gridSize]);
 
+  // История действий (Undo/Redo) - объявлена раньше, так как используется в других функциях
+  const saveToHistory = useCallback(() => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({ ...currentPage });
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [currentPage, history, historyIndex]);
+
   const handleElementMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
     if (tool === 'select') {
@@ -266,14 +274,6 @@ export default function EditorCanvas({
       setHistoryIndex(0);
     }
   }, [currentPage, history.length]);
-
-  // История действий (Undo/Redo)
-  const saveToHistory = useCallback(() => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push({ ...currentPage });
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [currentPage, history, historyIndex]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
