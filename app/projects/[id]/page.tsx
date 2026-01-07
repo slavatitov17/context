@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface UploadedFile {
   id: string;
@@ -14,6 +15,7 @@ interface UploadedFile {
 }
 
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -98,7 +100,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
+    alert(`${t.projectChat.messageSent}\nEmail: ${email}\n${t.projectChat.yourMessage}: ${message}${filesInfo ? `\nFiles: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
     setAttachedFiles([]);
@@ -118,7 +120,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       {/* Модальное окно */}
       <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
+          <h2 className="text-xl font-medium text-gray-900">{t.projectChat.supportModalTitle}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -132,7 +134,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-900 font-medium mb-2">
-              Ваша электронная почта
+              {t.projectChat.yourEmail}
             </label>
             <input
               type="email"
@@ -146,7 +148,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
           <div className="mb-6">
             <label className="block text-gray-900 font-medium mb-2">
-              Ваше сообщение
+              {t.projectChat.yourMessage}
             </label>
             <textarea
               value={message}
@@ -154,7 +156,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               required
               rows={4}
               className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              placeholder="Опишите вашу проблему или вопрос..."
+              placeholder={t.projectChat.messagePlaceholder}
             />
             <div className="flex justify-end mt-2">
               <button
@@ -163,7 +165,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
               >
                 <i className="fas fa-paperclip mr-2 text-lg"></i>
-                Прикрепить файл
+                {t.projectChat.attachFile}
               </button>
               <input
                 ref={fileInputRef}
@@ -214,7 +216,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Отправить
+            {t.projectChat.sendButton}
           </button>
         </form>
       </div>
@@ -223,6 +225,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 }
 
 export default function ProjectDetailPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const projectId = params?.id as string;
   const [projectData, setProjectData] = useState<Project | null>(null);
@@ -275,7 +278,7 @@ export default function ProjectDetailPage() {
         if (projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
           setUploadedFiles(projectData.files.map((file: any) => ({
             id: file.id || `file-${Date.now()}`,
-            name: file.name || 'Неизвестный файл',
+            name: file.name || t.projectChat.unknownFile,
             size: file.size || 0,
             status: 'success' as const,
             progress: 100,
@@ -365,10 +368,10 @@ export default function ProjectDetailPage() {
     
     // Список статусов загрузки (каждый отображается 3 секунды, последний до конца)
     const statusMessages = [
-      'Обработка запроса...',
-      'Поиск информации...',
-      'Формирование ответа...',
-      'Проверка ответа...',
+      t.projectChat.processingRequest,
+      t.projectChat.searchingInfo,
+      t.projectChat.generatingAnswer,
+      t.projectChat.checkingAnswer,
     ];
     setLoadingMessages(statusMessages);
     setLoadingStage('processing');
@@ -553,7 +556,10 @@ export default function ProjectDetailPage() {
 
     // Добавляем сообщение о загрузке документов
     setMessages(prev => [...prev, {
-      text: `Загружено и обработано документов: ${processedDocuments.length} из ${newFiles.length} (${totalSizeKB} КБ)`,
+      text: t.projectChat.uploadDocuments
+        .replace('{processed}', processedDocuments.length.toString())
+        .replace('{total}', newFiles.length.toString())
+        .replace('{size}', totalSizeKB.toString()),
       isUser: false,
       timestamp: new Date(),
     }]);
@@ -641,7 +647,7 @@ export default function ProjectDetailPage() {
         
         if (processedDocs.length === 0) {
           setMessages(prev => [...prev, {
-            text: 'Пожалуйста, сначала загрузите документы для анализа.',
+            text: t.projectChat.pleaseUploadDocuments,
             isUser: false,
             timestamp: new Date(),
           }]);
@@ -671,7 +677,7 @@ export default function ProjectDetailPage() {
         const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
         
         setMessages(prev => [...prev, {
-          text: data.answer || 'Не удалось получить ответ.',
+          text: data.answer || t.projectChat.errorProcessingRequest.replace('{error}', 'Failed to get answer'),
           isUser: false,
           timestamp: new Date(),
           generationTime: finalElapsedSeconds,
@@ -680,7 +686,7 @@ export default function ProjectDetailPage() {
         console.error('Ошибка при отправке сообщения:', error);
         const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
         setMessages(prev => [...prev, {
-          text: `Ошибка при обработке запроса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+          text: t.projectChat.errorProcessingRequest.replace('{error}', error instanceof Error ? error.message : 'Unknown error'),
           isUser: false,
           timestamp: new Date(),
           generationTime: finalElapsedSeconds,
@@ -694,7 +700,7 @@ export default function ProjectDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className="text-gray-500">{t.common.loading}</div>
       </div>
     );
   }
@@ -715,7 +721,7 @@ export default function ProjectDetailPage() {
           {/* Заголовок с бордером */}
           <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-medium text-gray-900">
-              Документы {hasFiles && `(${uploadedFiles.length})`}
+              {hasFiles ? t.projectChat.documentsCount.replace('{count}', uploadedFiles.length.toString()) : t.projectChat.documents}
             </h2>
           </div>
 
@@ -744,8 +750,8 @@ export default function ProjectDetailPage() {
                   <i className="fas fa-download text-4xl text-gray-400"></i>
                 </div>
                 <p className="text-base text-gray-500">
-                  Перетащите файлы сюда<br />
-                  или нажмите кнопку ниже
+                  {t.projectChat.dragFilesHere}<br />
+                  {t.projectChat.orClickButton}
                 </p>
               </div>
             ) : (
@@ -791,7 +797,7 @@ export default function ProjectDetailPage() {
                           <button
                             onClick={() => handleRemoveFile(fileItem.id)}
                             className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
-                            title="Удалить файл"
+                            title={t.projectChat.removeFile}
                           >
                             <i className="fas fa-times text-xs"></i>
                           </button>
@@ -823,7 +829,7 @@ export default function ProjectDetailPage() {
               className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
             >
               <i className="fas fa-plus"></i>
-              Добавить документы
+              {t.projectChat.addDocuments}
             </button>
           </div>
         </div>
@@ -836,7 +842,7 @@ export default function ProjectDetailPage() {
               <div className="text-center">
                 <i className="fas fa-comments text-6xl text-gray-400 mb-4"></i>
                 <p className="text-gray-500 text-base">
-                  Загрузите документы, чтобы начать работу с ними
+                  {t.projectChat.uploadDocumentsToStart}
                 </p>
               </div>
             </div>
@@ -873,7 +879,7 @@ export default function ProjectDetailPage() {
                                 onClick={() => setShowSupportModal(true)}
                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                               >
-                                Сообщить об ошибке
+                                {t.projectChat.reportError}
                               </button>
                             </div>
                             
@@ -969,9 +975,9 @@ export default function ProjectDetailPage() {
                           <span className="text-sm text-gray-600">
                             {loadingMessages.length > 0 
                               ? loadingMessages[Math.min(Math.floor(elapsedSeconds / 3), loadingMessages.length - 1)]
-                              : (loadingStage === 'processing' ? 'Обработка запроса...' : 
-                                 loadingStage === 'generating' ? 'Формирование ответа...' : 
-                                 'Проверка ответа...')}
+                              : (loadingStage === 'processing' ? t.projectChat.processingRequest : 
+                                 loadingStage === 'generating' ? t.projectChat.generatingAnswer : 
+                                 t.projectChat.checkingAnswer)}
                           </span>
                         </div>
                       </div>
@@ -992,7 +998,7 @@ export default function ProjectDetailPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Введите сообщение..."
+                  placeholder={t.projectChat.enterMessage}
                   disabled={isProcessing}
                   className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                   style={{
@@ -1008,7 +1014,7 @@ export default function ProjectDetailPage() {
                     onClick={handleSendMessage}
                     disabled={!message.trim() || isProcessing}
                     className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
-                    title="Отправить"
+                    title={t.projectChat.send}
                   >
                     <i className="fas fa-paper-plane text-xs"></i>
                   </button>

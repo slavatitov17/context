@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -79,7 +80,7 @@ mermaid.initialize({
 });
 
 // Компонент для рендеринга Mermaid диаграммы
-function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: number; onSvgReady?: (svg: string) => void }) {
+function MermaidDiagram({ code, index, onSvgReady, t }: { code: string; index: number; onSvgReady?: (svg: string) => void; t: any }) {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const [mermaidError, setMermaidError] = useState<string>('');
@@ -97,7 +98,7 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
           }
         } catch (error) {
           console.error('Ошибка рендеринга Mermaid:', error);
-          setMermaidError(error instanceof Error ? error.message : 'Ошибка рендеринга');
+          setMermaidError(error instanceof Error ? error.message : t.diagramChat.renderingError.replace(':', ''));
         }
       };
       renderMermaid();
@@ -148,7 +149,7 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   if (mermaidError) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        <p className="font-medium mb-2">Ошибка рендеринга:</p>
+        <p className="font-medium mb-2">{t.diagramChat.renderingError}</p>
         <p className="text-sm">{mermaidError}</p>
         <div className="mt-4 bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
           <pre className="whitespace-pre-wrap">{code}</pre>
@@ -165,13 +166,14 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
   
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-center">
-      <div className="text-gray-500">Рендеринг диаграммы...</div>
+      <div className="text-gray-500">{t.diagramChat.renderingDiagram}</div>
     </div>
   );
 }
 
 // Компонент модального окна поддержки
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -256,7 +258,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
+    alert(`${t.diagramChat.messageSent}\nEmail: ${email}\n${t.diagramChat.yourMessage}: ${message}${filesInfo ? `\nFiles: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
     setAttachedFiles([]);
@@ -276,7 +278,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       {/* Модальное окно */}
       <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
+          <h2 className="text-xl font-medium text-gray-900">{t.diagramChat.supportModalTitle}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -290,7 +292,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-900 font-medium mb-2">
-              Ваша электронная почта
+              {t.diagramChat.yourEmail}
             </label>
             <input
               type="email"
@@ -304,7 +306,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
           <div className="mb-6">
             <label className="block text-gray-900 font-medium mb-2">
-              Ваше сообщение
+              {t.diagramChat.yourMessage}
             </label>
             <textarea
               value={message}
@@ -312,7 +314,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               required
               rows={4}
               className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              placeholder="Опишите вашу проблему или вопрос..."
+              placeholder={t.diagramChat.messagePlaceholder}
             />
             <div className="flex justify-end mt-2">
               <button
@@ -321,7 +323,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
               >
                 <i className="fas fa-paperclip mr-2 text-lg"></i>
-                Прикрепить файл
+                {t.diagramChat.attachFile}
               </button>
               <input
                 ref={fileInputRef}
@@ -372,7 +374,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Отправить
+            {t.diagramChat.sendButton}
           </button>
         </form>
       </div>
@@ -385,6 +387,7 @@ function DualFormatMessage({
   msg,
   index,
   dateStr,
+  t,
   timeStr,
   viewModes,
   setViewModes,
@@ -403,6 +406,7 @@ function DualFormatMessage({
   setFormatSelectors: (selectors: Map<number, 'plantuml' | 'mermaid'>) => void;
   generationTime?: number;
   onOpenSupport: () => void;
+  t: any;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -468,7 +472,7 @@ function DualFormatMessage({
         });
       } catch (error) {
         console.error('Ошибка при создании PNG:', error);
-        alert(`Не удалось создать PNG файл: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        alert(t.diagramChat.errorCreatingPNG.replace('{error}', error instanceof Error ? error.message : 'Unknown error'));
       }
     }
   };
@@ -513,7 +517,7 @@ function DualFormatMessage({
                 onClick={onOpenSupport}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Сообщить об ошибке
+                {t.diagramChat.reportError}
               </button>
             </div>
 
@@ -531,7 +535,7 @@ function DualFormatMessage({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Диаграмма
+                {t.diagramChat.diagram}
               </button>
               <button
                 onClick={() => {
@@ -545,7 +549,7 @@ function DualFormatMessage({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Код
+                {t.diagramChat.code}
               </button>
             </div>
 
@@ -577,7 +581,7 @@ function DualFormatMessage({
                     onClick={downloadMermaidPNG}
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                   >
-                    Скачать PNG
+                    {t.diagramChat.downloadPNG}
                   </button>
                 )}
                 {currentFormat === 'plantuml' && msg.diagramImageUrl && (
@@ -585,19 +589,19 @@ function DualFormatMessage({
                     onClick={downloadPlantUmlPNG}
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                   >
-                    Скачать PNG
+                    {t.diagramChat.downloadPNG}
                   </button>
                 )}
                 <button
                   onClick={() => {
                     if (currentCode) {
                       navigator.clipboard.writeText(currentCode);
-                      alert('Код скопирован в буфер обмена');
+                      alert(t.diagramChat.codeCopied);
                     }
                   }}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
-                  Скопировать код
+                  {t.diagramChat.copyCode}
                 </button>
               </div>
             </div>
@@ -611,6 +615,7 @@ function DualFormatMessage({
                   code={msg.mermaidCode || ''} 
                   index={index}
                   onSvgReady={setMermaidSvg}
+                  t={t}
                 />
               )}
               {currentFormat === 'plantuml' && msg.diagramImageUrl && (
@@ -633,12 +638,12 @@ function DualFormatMessage({
           {/* Глоссарий (внизу, в том же сообщении) */}
           {currentGlossary && currentGlossary.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+              <h4 className="font-medium text-lg mb-4">{t.diagramChat.glossaryTitle}</h4>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
-                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                    <th className="text-left py-2 font-medium text-gray-900">{t.diagramChat.element}</th>
+                    <th className="text-left py-2 font-medium text-gray-900">{t.diagramChat.description}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -778,7 +783,7 @@ function MermaidMessage({
         });
       } catch (error) {
         console.error('Ошибка при создании PNG:', error);
-        alert(`Не удалось создать PNG файл: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        alert(t.diagramChat.errorCreatingPNG.replace('{error}', error instanceof Error ? error.message : 'Unknown error'));
       }
     }
   };
@@ -807,7 +812,7 @@ function MermaidMessage({
                 onClick={onOpenSupport}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Сообщить об ошибке
+                {t.diagramChat.reportError}
               </button>
             </div>
 
@@ -825,7 +830,7 @@ function MermaidMessage({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Диаграмма
+                {t.diagramChat.diagram}
               </button>
               <button
                 onClick={() => {
@@ -839,7 +844,7 @@ function MermaidMessage({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Код
+                {t.diagramChat.code}
               </button>
             </div>
 
@@ -850,14 +855,14 @@ function MermaidMessage({
                   onClick={downloadPNG}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
-                  Скачать PNG
+                  {t.diagramChat.downloadPNG}
                 </button>
               )}
               <button
                 onClick={() => {
                   if (msg.mermaidCode) {
                     navigator.clipboard.writeText(msg.mermaidCode);
-                    alert('Код скопирован в буфер обмена');
+                    alert(t.diagramChat.codeCopied);
                   }
                 }}
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
@@ -872,6 +877,7 @@ function MermaidMessage({
               code={msg.mermaidCode || ''} 
               index={index}
               onSvgReady={setMermaidSvg}
+              t={t}
             />
           )}
           {currentViewMode === 'code' && (
@@ -917,6 +923,7 @@ interface UploadedFile {
 }
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
+  const { t } = useLanguage();
   const routeParams = useParams();
   const diagramId = routeParams?.id as string;
   const [diagramData, setDiagramData] = useState<Diagram | null>(null);
@@ -943,9 +950,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   
   // Состояния для поиска, фильтров и сортировки типов диаграмм
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStandard, setSelectedStandard] = useState<string>('Все');
-  const [selectedPurpose, setSelectedPurpose] = useState<string>('Все');
-  const [selectedTag, setSelectedTag] = useState<string>('Все');
+  const [selectedStandard, setSelectedStandard] = useState<string>(t.diagramTypeCatalog.all);
+  const [selectedPurpose, setSelectedPurpose] = useState<string>(t.diagramTypeCatalog.all);
+  const [selectedTag, setSelectedTag] = useState<string>(t.diagramTypeCatalog.all);
   const [sortBy, setSortBy] = useState<'alphabet' | 'popularity'>('alphabet');
 
   // Загрузка диаграммы
@@ -996,7 +1003,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             if (projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
               setUploadedFiles(projectData.files.map((file: any) => ({
                 id: file.id || `file-${Date.now()}`,
-                name: file.name || 'Неизвестный файл',
+                name: file.name || t.projectChat.unknownFile,
                 size: file.size || 0,
                 status: 'success' as const,
                 progress: 100,
@@ -1052,7 +1059,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         } else if (diagram.selectedOption === 'scratch') {
           // Если создание с нуля и нет сообщений, показываем приветственное
           setMessages([{
-            text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
+            text: t.diagramDetail.chatPlaceholderScratch,
             isUser: false,
             timestamp: new Date()
           }]);
@@ -1062,10 +1069,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           if (projectData && projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
             const filesList = projectData.files.map((file: any) => {
               const sizeKB = Math.round((file.size || 0) / 1024);
-              return `${file.name || 'Неизвестный файл'} (${sizeKB} KB)`;
+              return `${file.name || t.projectChat.unknownFile} (${sizeKB} KB)`;
             }).join(', ');
+            const processedCount = projectData.files.length;
+            const totalSizeKB = Math.round(projectData.files.reduce((sum: number, file: any) => sum + (file.size || 0), 0) / 1024);
             setMessages([{
-              text: `Обработаны документы: ${filesList}. Теперь можно выбрать объект, по которому будет построена диаграмма.`,
+              text: `${t.projectChat.uploadDocuments.replace('{processed}', processedCount.toString()).replace('{total}', processedCount.toString()).replace('{size}', totalSizeKB.toString())}. ${t.diagramDetail.chatPlaceholderWithType}`,
               isUser: false,
               timestamp: new Date()
             }]);
@@ -1488,12 +1497,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     
     // Список статусов загрузки (каждый отображается 3 секунды)
     const statusMessages = [
-      'Обработка запроса',
-      'Определение требований',
-      'Формирование кода',
-      'Проверка кода',
-      'Рендеринг диаграммы',
-      'Проверка качества',
+      t.diagramChat.processingRequest,
+      t.diagramChat.searchingInfo,
+      t.diagramChat.generatingAnswer,
+      t.diagramChat.checkingAnswer,
+      t.diagramChat.renderingDiagram,
+      t.diagramChat.checkingAnswer,
     ];
     setLoadingMessages(statusMessages);
     setLoadingStage('processing');
@@ -1830,7 +1839,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   if (!diagramData) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Диаграмма не найдена</div>
+        <div className="text-gray-500">{t.diagramTypeCatalog.noDiagramsFound}</div>
       </div>
     );
   }
@@ -1883,125 +1892,127 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     popularity: number; // для сортировки по популярности
   }
 
-  const diagramTypesInfo: DiagramTypeInfo[] = [
+  const getDiagramTypesInfo = (): DiagramTypeInfo[] => [
     {
       type: 'SequencePlantUML',
       name: 'Sequence',
-      description: 'Диаграмма последовательности отображает взаимодействие объектов во времени через обмен сообщениями между участниками системы и последовательность вызовов',
-      standard: 'UML',
-      purpose: 'Взаимодействие',
-      tags: ['UML', 'Взаимодействие', 'Поведение'],
+      description: t.diagramTypeCatalog.diagramDescriptions.sequence,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.interaction,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.interaction, t.diagramTypeCatalog.diagramTags.behavior],
       popularity: 10
     },
     {
       type: 'UseCasePlantUML',
       name: 'Use Case',
-      description: 'Диаграмма вариантов использования описывает функциональные требования системы через взаимодействие актеров и прецедентов использования с указанием границ',
-      standard: 'UML',
-      purpose: 'Требования',
-      tags: ['UML', 'Функции', 'Требования'],
+      description: t.diagramTypeCatalog.diagramDescriptions.useCase,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.requirements,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.functions, t.diagramTypeCatalog.diagramTags.requirements],
       popularity: 10
     },
     {
       type: 'ClassPlantUML',
       name: 'Class',
-      description: 'Диаграмма классов показывает структуру системы через классы, их атрибуты, методы и связи между ними, включая наследование и композицию',
-      standard: 'UML',
-      purpose: 'Архитектура',
-      tags: ['UML', 'Структура', 'Классы'],
+      description: t.diagramTypeCatalog.diagramDescriptions.class,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.architecture,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.structure, t.diagramTypeCatalog.diagramTags.classes],
       popularity: 10
     },
     {
       type: 'ObjectPlantUML',
       name: 'Object',
-      description: 'Диаграмма объектов отображает конкретные экземпляры классов и их связи в определенный момент времени выполнения системы с указанием значений',
-      standard: 'UML',
-      purpose: 'Моделирование',
-      tags: ['UML', 'Структура', 'Объекты'],
+      description: t.diagramTypeCatalog.diagramDescriptions.object,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.modeling,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.structure, t.diagramTypeCatalog.diagramTags.objects],
       popularity: 10
     },
     {
       type: 'ActivityPlantUML',
       name: 'Activity',
-      description: 'Диаграмма деятельности моделирует бизнес-процессы и потоки работ, показывая последовательность действий, принятие решений и параллельные потоки',
-      standard: 'UML',
-      purpose: 'Бизнес-процессы',
-      tags: ['UML', 'Поведение', 'Динамика'],
+      description: t.diagramTypeCatalog.diagramDescriptions.activity,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.businessProcesses,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.behavior, t.diagramTypeCatalog.diagramTags.dynamics],
       popularity: 10
     },
     {
       type: 'ComponentPlantUML',
       name: 'Component',
-      description: 'Диаграмма компонентов показывает архитектуру системы и её компоненты с указанием интерфейсов, зависимостей и способов взаимодействия между ними',
-      standard: 'UML',
-      purpose: 'Архитектура',
-      tags: ['UML', 'Архитектура', 'Требования'],
+      description: t.diagramTypeCatalog.diagramDescriptions.component,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.architecture,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.architecture, t.diagramTypeCatalog.diagramTags.requirements],
       popularity: 10
     },
     {
       type: 'DeploymentPlantUML',
       name: 'Deployment',
-      description: 'Диаграмма развертывания отображает физическую архитектуру системы, показывая размещение компонентов на узлах развертывания и связи между ними',
-      standard: 'UML',
-      purpose: 'Архитектура',
-      tags: ['UML', 'Архитектура', 'Требования'],
+      description: t.diagramTypeCatalog.diagramDescriptions.deployment,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.architecture,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.architecture, t.diagramTypeCatalog.diagramTags.requirements],
       popularity: 10
     },
     {
       type: 'StatechartPlantUML',
       name: 'Statechart',
-      description: 'Диаграмма состояний моделирует жизненный цикл объектов и их состояния, показывая переходы между состояниями, условия перехода и действия',
-      standard: 'UML',
-      purpose: 'Моделирование состояний',
-      tags: ['UML', 'Поведение', 'Состояние'],
+      description: t.diagramTypeCatalog.diagramDescriptions.statechart,
+      standard: t.diagramTypeCatalog.diagramStandards.uml,
+      purpose: t.diagramTypeCatalog.diagramPurposes.stateModeling,
+      tags: [t.diagramTypeCatalog.diagramTags.uml, t.diagramTypeCatalog.diagramTags.behavior, t.diagramTypeCatalog.diagramTags.state],
       popularity: 10
     },
     {
       type: 'GanttPlantUML',
       name: 'Gantt',
-      description: 'Диаграмма Ганта визуализирует временные рамки проекта и задачи, показывая длительность, зависимость, последовательность выполнения работ и ресурсы',
-      standard: 'Управление проектами',
-      purpose: 'Управление проектами',
-      tags: ['Время', 'Проект', 'Планирование'],
+      description: t.diagramTypeCatalog.diagramDescriptions.gantt,
+      standard: t.diagramTypeCatalog.diagramStandards.projectManagement,
+      purpose: t.diagramTypeCatalog.diagramPurposes.projectManagement,
+      tags: [t.diagramTypeCatalog.diagramTags.time, t.diagramTypeCatalog.diagramTags.project, t.diagramTypeCatalog.diagramTags.planning],
       popularity: 10
     },
     {
       type: 'MindMapPlantUML',
       name: 'MindMap',
-      description: 'Интеллект-карта представляет идеи и концепции в иерархической структуре, показывая связи между понятиями, их взаимное расположение и группировку',
-      standard: 'Идеи',
-      purpose: 'Идеи',
-      tags: ['Иерархия', 'Структура', 'Связи'],
+      description: t.diagramTypeCatalog.diagramDescriptions.mindMap,
+      standard: t.diagramTypeCatalog.diagramStandards.ideas,
+      purpose: t.diagramTypeCatalog.diagramStandards.ideas,
+      tags: [t.diagramTypeCatalog.diagramTags.hierarchy, t.diagramTypeCatalog.diagramTags.structure, t.diagramTypeCatalog.diagramTags.connections],
       popularity: 10
     },
     {
       type: 'ERPlantUML',
       name: 'Entity-Relationships',
-      description: 'Диаграмма сущность-связь моделирует структуру базы данных, показывая сущности, их атрибуты и связи между ними с указанием типов отношений',
-      standard: 'База данных',
-      purpose: 'База данных',
-      tags: ['Базы данных', 'Структура', 'Связи'],
+      description: t.diagramTypeCatalog.diagramDescriptions.er,
+      standard: t.diagramTypeCatalog.diagramStandards.database,
+      purpose: t.diagramTypeCatalog.diagramPurposes.database,
+      tags: [t.diagramTypeCatalog.diagramTags.databases, t.diagramTypeCatalog.diagramTags.structure, t.diagramTypeCatalog.diagramTags.connections],
       popularity: 10
     },
     {
       type: 'WBSPlantUML',
       name: 'WBS',
-      description: 'Иерархическая структура работ декомпозирует проект на задачи, показывая иерархию работ, их взаимосвязи в структуре проекта и уровни детализации',
-      standard: 'Управление проектами',
-      purpose: 'Управление проектами',
-      tags: ['Иерархия', 'Проект', 'Планирование'],
+      description: t.diagramTypeCatalog.diagramDescriptions.wbs,
+      standard: t.diagramTypeCatalog.diagramStandards.projectManagement,
+      purpose: t.diagramTypeCatalog.diagramPurposes.projectManagement,
+      tags: [t.diagramTypeCatalog.diagramTags.hierarchy, t.diagramTypeCatalog.diagramTags.project, t.diagramTypeCatalog.diagramTags.planning],
       popularity: 10
     },
     {
       type: 'JSONPlantUML',
       name: 'JSON',
-      description: 'Диаграмма JSON визуализирует структуру данных в формате JSON, показывая объекты, массивы, их вложенность с указанием типов данных и значений',
-      standard: 'Данные',
-      purpose: 'Данные',
-      tags: ['Структура', 'Данные', 'Формат'],
+      description: t.diagramTypeCatalog.diagramDescriptions.json,
+      standard: t.diagramTypeCatalog.diagramStandards.data,
+      purpose: t.diagramTypeCatalog.diagramStandards.data,
+      tags: [t.diagramTypeCatalog.diagramTags.structure, t.diagramTypeCatalog.diagramTags.data, t.diagramTypeCatalog.diagramTags.format],
       popularity: 10
-    }
+    },
   ];
+  
+  const diagramTypesInfo = getDiagramTypesInfo();
 
   // Получаем уникальные значения для фильтров
   const allStandards = Array.from(new Set(diagramTypesInfo.map(d => d.standard)));
@@ -2009,14 +2020,25 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const allTags = Array.from(new Set(diagramTypesInfo.flatMap(d => d.tags)));
 
   // Проверяем, применены ли фильтры
-  const hasActiveFilters = selectedStandard !== 'Все' || selectedPurpose !== 'Все' || selectedTag !== 'Все';
+  const hasActiveFilters = selectedStandard !== t.diagramTypeCatalog.all || selectedPurpose !== t.diagramTypeCatalog.all || selectedTag !== t.diagramTypeCatalog.all;
 
   // Функция для сброса всех фильтров
   const handleClearFilters = () => {
-    setSelectedStandard('Все');
-    setSelectedPurpose('Все');
-    setSelectedTag('Все');
+    setSelectedStandard(t.diagramTypeCatalog.all);
+    setSelectedPurpose(t.diagramTypeCatalog.all);
+    setSelectedTag(t.diagramTypeCatalog.all);
   };
+  
+  // Обновляем состояния фильтров при изменении языка
+  useEffect(() => {
+    // Проверяем, если фильтры установлены на старое значение "Все", обновляем их
+    const oldAllValue = language === 'ru' ? 'Все' : 'All';
+    if (selectedStandard === oldAllValue || selectedPurpose === oldAllValue || selectedTag === oldAllValue) {
+      setSelectedStandard(t.diagramTypeCatalog.all);
+      setSelectedPurpose(t.diagramTypeCatalog.all);
+      setSelectedTag(t.diagramTypeCatalog.all);
+    }
+  }, [t, language]);
 
   // Фильтрация и сортировка
   const filteredAndSortedTypes = diagramTypesInfo
@@ -2028,13 +2050,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         diagram.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       
       // Фильтр по стандарту
-      const matchesStandard = selectedStandard === 'Все' || diagram.standard === selectedStandard;
+      const matchesStandard = selectedStandard === t.diagramTypeCatalog.all || diagram.standard === selectedStandard;
       
       // Фильтр по цели
-      const matchesPurpose = selectedPurpose === 'Все' || diagram.purpose === selectedPurpose;
+      const matchesPurpose = selectedPurpose === t.diagramTypeCatalog.all || diagram.purpose === selectedPurpose;
       
       // Фильтр по тегу
-      const matchesTag = selectedTag === 'Все' || diagram.tags.includes(selectedTag);
+      const matchesTag = selectedTag === t.diagramTypeCatalog.all || diagram.tags.includes(selectedTag);
       
       return matchesSearch && matchesStandard && matchesPurpose && matchesTag;
     })
@@ -2055,8 +2077,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         /* Выбор типа диаграммы */
         <div>
           <div className="mb-8 pb-6 border-b border-gray-200">
-            <h1 className="text-3xl font-medium mb-2">Тип диаграммы</h1>
-            <p className="text-gray-600 text-base">Выберите тип диаграммы</p>
+            <h1 className="text-3xl font-medium mb-2">{t.diagramTypeCatalog.title}</h1>
+            <p className="text-gray-600 text-base">{t.diagramTypeCatalog.description}</p>
           </div>
 
           {/* Панель управления: Поиск, Фильтры, Сортировка */}
@@ -2065,27 +2087,27 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             <div className="flex flex-col md:flex-row gap-4">
               {/* Поиск */}
               <div className="flex-1">
-                <label className="block text-xl font-medium text-gray-900 mb-2">Поиск</label>
+                <label className="block text-xl font-medium text-gray-900 mb-2">{t.diagramTypeCatalog.search}</label>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Введите название или описание диаграммы"
+                  placeholder={t.diagramTypeCatalog.searchPlaceholder}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               
               {/* Сортировка */}
               <div className="md:w-64">
-                <label className="block text-xl font-medium text-gray-900 mb-2">Сортировка</label>
+                <label className="block text-xl font-medium text-gray-900 mb-2">{t.diagramTypeCatalog.sort}</label>
                 <div className="relative">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
                     className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
                   >
-                    <option value="alphabet">По алфавиту</option>
-                    <option value="popularity">По популярности</option>
+                    <option value="alphabet">{t.diagramTypeCatalog.sortByAlphabet}</option>
+                    <option value="popularity">{t.diagramTypeCatalog.sortByPopularity}</option>
                   </select>
                   {/* Кастомная стрелочка */}
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -2100,13 +2122,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             {/* Фильтры */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-medium text-gray-900">Фильтры</h3>
+                <h3 className="text-xl font-medium text-gray-900">{t.diagramTypeCatalog.filters}</h3>
                 {hasActiveFilters && (
                   <button
                     onClick={handleClearFilters}
                     className="text-base text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    Убрать фильтры
+                    {t.diagramTypeCatalog.clearFilters}
                   </button>
                 )}
               </div>
@@ -2114,7 +2136,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 {/* Фильтр по стандарту/нотации */}
                 <div>
                   <label className="block text-base font-medium text-gray-900 mb-2">
-                    Стандарт или нотация
+                    {t.diagramTypeCatalog.standardOrNotation}
                   </label>
                   <div className="relative">
                     <select
@@ -2122,7 +2144,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onChange={(e) => setSelectedStandard(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
                     >
-                      <option value="Все">Все</option>
+                      <option value={t.diagramTypeCatalog.all}>{t.diagramTypeCatalog.all}</option>
                       {allStandards.map(standard => (
                         <option key={standard} value={standard}>{standard}</option>
                       ))}
@@ -2139,7 +2161,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 {/* Фильтр по цели использования */}
                 <div>
                   <label className="block text-base font-medium text-gray-900 mb-2">
-                    Цель использования
+                    {t.diagramTypeCatalog.purposeOfUse}
                   </label>
                   <div className="relative">
                     <select
@@ -2147,7 +2169,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onChange={(e) => setSelectedPurpose(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
                     >
-                      <option value="Все">Все</option>
+                      <option value={t.diagramTypeCatalog.all}>{t.diagramTypeCatalog.all}</option>
                       {allPurposes.map(purpose => (
                         <option key={purpose} value={purpose}>{purpose}</option>
                       ))}
@@ -2164,7 +2186,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 {/* Фильтр по тегам */}
                 <div>
                   <label className="block text-base font-medium text-gray-900 mb-2">
-                    Теги
+                    {t.diagramTypeCatalog.tags}
                   </label>
                   <div className="relative">
                     <select
@@ -2172,7 +2194,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onChange={(e) => setSelectedTag(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
                     >
-                      <option value="Все">Все</option>
+                      <option value={t.diagramTypeCatalog.all}>{t.diagramTypeCatalog.all}</option>
                       {allTags.map(tag => (
                         <option key={tag} value={tag}>{tag}</option>
                       ))}
@@ -2228,8 +2250,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           {/* Сообщение, если ничего не найдено */}
           {filteredAndSortedTypes.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">Диаграммы не найдены</p>
-              <p className="text-gray-400 text-sm mt-2">Попробуйте изменить параметры поиска или фильтры</p>
+              <p className="text-gray-500 text-lg">{t.diagramTypeCatalog.noDiagramsFound}</p>
+              <p className="text-gray-400 text-sm mt-2">{t.diagramTypeCatalog.tryChangingFilters}</p>
             </div>
           )}
         </div>
@@ -2241,8 +2263,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               {/* Если есть тип диаграммы, но еще не выбран способ создания - показываем заголовок "Способ создания диаграммы" */}
               {diagramType && !selectedOption ? (
                 <div className="mb-8 pb-6 border-b border-gray-200 max-w-2xl">
-                  <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
-                  <p className="text-gray-600 text-base">Выберите способ создания диаграммы</p>
+                  <h1 className="text-3xl font-medium mb-2">{t.diagramCreationMethod.title}</h1>
+                  <p className="text-gray-600 text-base">{t.diagramCreationMethod.description}</p>
                 </div>
               ) : (
                 <>
@@ -2259,16 +2281,16 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-medium text-gray-900 mb-2">Выбрать из моих проектов</h2>
+                <h2 className="text-xl font-medium text-gray-900 mb-2">{t.diagramCreationMethod.selectFromProjects}</h2>
                 <p className="text-gray-500 text-base">
-                  Использовать данные из существующего проекта
+                  {t.diagramCreationMethod.selectFromProjectsDescription}
                 </p>
               </div>
               <button
                 onClick={() => handleOptionSelect('projects')}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
               >
-                Выбрать проект
+                {t.diagramCreationMethod.selectProjectButton}
                 <i className="fas fa-arrow-right"></i>
               </button>
             </div>
@@ -2278,16 +2300,16 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-medium text-gray-900 mb-2">Создать с нуля</h2>
+                <h2 className="text-xl font-medium text-gray-900 mb-2">{t.diagramCreationMethod.createFromScratch}</h2>
                 <p className="text-gray-500 text-base">
-                  Опишите предметную область вручную
+                  {t.diagramCreationMethod.createFromScratchDescription}
                 </p>
               </div>
               <button
                 onClick={() => handleOptionSelect('scratch')}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
               >
-                Ввести данные
+                {t.diagramCreationMethod.enterDataButton}
                 <i className="fas fa-arrow-right"></i>
               </button>
             </div>
@@ -2296,7 +2318,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       ) : selectedOption === 'projects' && !selectedProject ? (
         /* Таблица проектов */
         <div>
-          <h2 className="text-2xl font-medium mb-6">Выберите проект</h2>
+          <h2 className="text-2xl font-medium mb-6">{t.diagramCreationMethod.selectProjectTitle}</h2>
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-gray-500">Загрузка...</div>
@@ -2365,6 +2387,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           setFormatSelectors={setFormatSelectors}
                           generationTime={msg.generationTime}
                           onOpenSupport={() => setShowSupportModal(true)}
+                          t={t}
                         />
                       );
                     }
@@ -2455,19 +2478,19 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                       download
                                       className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                                     >
-                                      Скачать PNG
+                                      {t.diagramChat.downloadPNG}
                                     </a>
                                   )}
                                   <button
                                     onClick={() => {
                                       if (msg.plantUmlCode) {
                                         navigator.clipboard.writeText(msg.plantUmlCode);
-                                        alert('Код скопирован в буфер обмена');
+                                        alert(t.diagramChat.codeCopied);
                                       }
                                     }}
                                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                                   >
-                                    Скопировать код
+                                    {t.diagramChat.copyCode}
                                   </button>
                                 </div>
                               </div>
@@ -2548,9 +2571,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           <span className="text-sm text-gray-600">
                             {loadingMessages.length > 0 
                               ? loadingMessages[Math.floor(elapsedSeconds / 3) % loadingMessages.length]
-                              : (loadingStage === 'processing' ? 'Обработка запроса' : 
-                                 loadingStage === 'generating' ? 'Формирование кода' : 
-                                 'Создание диаграммы')}
+                              : (loadingStage === 'processing' ? t.diagramChat.processingRequest : 
+                                 loadingStage === 'generating' ? t.diagramChat.generatingAnswer : 
+                                 t.diagramChat.renderingDiagram)}
                           </span>
                         </div>
                       </div>
@@ -2571,7 +2594,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                         handleSendMessage();
                       }
                     }}
-                    placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
+                    placeholder={diagramType ? (selectedOption === 'projects' ? t.diagramDetail.chatPlaceholderWithType : t.diagramDetail.chatPlaceholderScratch) : t.diagramDetail.chatPlaceholder}
                     disabled={isProcessing || !diagramType}
                     className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
                     style={{
@@ -2587,7 +2610,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onClick={handleSendMessage}
                       disabled={!message.trim() || isProcessing || !diagramType}
                       className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center w-8 h-8"
-                      title="Отправить"
+                      title={t.diagramChat.sendButton}
                     >
                       <i className="fas fa-paper-plane text-xs"></i>
                     </button>

@@ -157,6 +157,151 @@ export interface Translations {
     chatPlaceholderScratch: string;
     reportError: string;
   };
+  
+  // Каталог типов диаграмм
+  diagramTypeCatalog: {
+    title: string;
+    description: string;
+    search: string;
+    searchPlaceholder: string;
+    sort: string;
+    sortByAlphabet: string;
+    sortByPopularity: string;
+    filters: string;
+    clearFilters: string;
+    standardOrNotation: string;
+    purposeOfUse: string;
+    tags: string;
+    all: string;
+    noDiagramsFound: string;
+    tryChangingFilters: string;
+    diagramDescriptions: {
+      sequence: string;
+      useCase: string;
+      class: string;
+      object: string;
+      activity: string;
+      component: string;
+      deployment: string;
+      statechart: string;
+      gantt: string;
+      mindMap: string;
+      er: string;
+      wbs: string;
+      json: string;
+    };
+    diagramTags: {
+      uml: string;
+      interaction: string;
+      behavior: string;
+      functions: string;
+      requirements: string;
+      structure: string;
+      classes: string;
+      architecture: string;
+      objects: string;
+      dynamics: string;
+      businessProcesses: string;
+      state: string;
+      time: string;
+      project: string;
+      planning: string;
+      hierarchy: string;
+      connections: string;
+      ideas: string;
+      database: string;
+      databases: string;
+      data: string;
+      format: string;
+    };
+    diagramStandards: {
+      uml: string;
+      projectManagement: string;
+      ideas: string;
+      database: string;
+      data: string;
+    };
+    diagramPurposes: {
+      interaction: string;
+      requirements: string;
+      architecture: string;
+      modeling: string;
+      businessProcesses: string;
+      stateModeling: string;
+      projectManagement: string;
+      database: string;
+    };
+  };
+  
+  // Способ создания диаграммы
+  diagramCreationMethod: {
+    title: string;
+    description: string;
+    selectFromProjects: string;
+    selectFromProjectsDescription: string;
+    selectProjectButton: string;
+    createFromScratch: string;
+    createFromScratchDescription: string;
+    enterDataButton: string;
+    selectProjectTitle: string;
+  };
+  
+  // Чат проекта
+  projectChat: {
+    documents: string;
+    documentsCount: string;
+    dragFilesHere: string;
+    orClickButton: string;
+    addDocuments: string;
+    uploadDocuments: string;
+    uploadDocumentsProcessed: string;
+    unknownFile: string;
+    removeFile: string;
+    uploadDocumentsToStart: string;
+    enterMessage: string;
+    send: string;
+    processingRequest: string;
+    searchingInfo: string;
+    generatingAnswer: string;
+    checkingAnswer: string;
+    pleaseUploadDocuments: string;
+    errorProcessingRequest: string;
+    reportError: string;
+    supportModalTitle: string;
+    yourEmail: string;
+    yourMessage: string;
+    messagePlaceholder: string;
+    attachFile: string;
+    sendButton: string;
+    messageSent: string;
+  };
+  
+  // Чат диаграммы
+  diagramChat: {
+    reportError: string;
+    diagram: string;
+    code: string;
+    downloadPNG: string;
+    copyCode: string;
+    codeCopied: string;
+    glossaryTitle: string;
+    element: string;
+    description: string;
+    renderingError: string;
+    renderingDiagram: string;
+    errorCreatingPNG: string;
+    supportModalTitle: string;
+    yourEmail: string;
+    yourMessage: string;
+    messagePlaceholder: string;
+    attachFile: string;
+    sendButton: string;
+    messageSent: string;
+    processingRequest: string;
+    searchingInfo: string;
+    generatingAnswer: string;
+    checkingAnswer: string;
+  };
 
   // Страница входа
   login: {
@@ -424,6 +569,142 @@ const translations: Record<Language, Translations> = {
       chatPlaceholderScratch: 'Опишите предметную область и конкретный объект...',
       reportError: 'Сообщить об ошибке',
     },
+    diagramTypeCatalog: {
+      title: 'Тип диаграммы',
+      description: 'Выберите тип диаграммы',
+      search: 'Поиск',
+      searchPlaceholder: 'Введите название или описание диаграммы',
+      sort: 'Сортировка',
+      sortByAlphabet: 'По алфавиту',
+      sortByPopularity: 'По популярности',
+      filters: 'Фильтры',
+      clearFilters: 'Убрать фильтры',
+      standardOrNotation: 'Стандарт или нотация',
+      purposeOfUse: 'Цель использования',
+      tags: 'Теги',
+      all: 'Все',
+      noDiagramsFound: 'Диаграммы не найдены',
+      tryChangingFilters: 'Попробуйте изменить параметры поиска или фильтры',
+      diagramDescriptions: {
+        sequence: 'Диаграмма последовательности отображает взаимодействие объектов во времени через обмен сообщениями между участниками системы и последовательность вызовов',
+        useCase: 'Диаграмма вариантов использования описывает функциональные требования системы через взаимодействие актеров и прецедентов использования с указанием границ',
+        class: 'Диаграмма классов показывает структуру системы через классы, их атрибуты, методы и связи между ними, включая наследование и композицию',
+        object: 'Диаграмма объектов отображает конкретные экземпляры классов и их связи в определенный момент времени выполнения системы с указанием значений',
+        activity: 'Диаграмма деятельности моделирует бизнес-процессы и потоки работ, показывая последовательность действий, принятие решений и параллельные потоки',
+        component: 'Диаграмма компонентов показывает архитектуру системы и её компоненты с указанием интерфейсов, зависимостей и способов взаимодействия между ними',
+        deployment: 'Диаграмма развертывания отображает физическую архитектуру системы, показывая размещение компонентов на узлах развертывания и связи между ними',
+        statechart: 'Диаграмма состояний моделирует жизненный цикл объектов и их состояния, показывая переходы между состояниями, условия перехода и действия',
+        gantt: 'Диаграмма Ганта визуализирует временные рамки проекта и задачи, показывая длительность, зависимость, последовательность выполнения работ и ресурсы',
+        mindMap: 'Интеллект-карта представляет идеи и концепции в иерархической структуре, показывая связи между понятиями, их взаимное расположение и группировку',
+        er: 'Диаграмма сущность-связь моделирует структуру базы данных, показывая сущности, их атрибуты и связи между ними с указанием типов отношений',
+        wbs: 'Иерархическая структура работ декомпозирует проект на задачи, показывая иерархию работ, их взаимосвязи в структуре проекта и уровни детализации',
+        json: 'Диаграмма JSON визуализирует структуру данных в формате JSON, показывая объекты, массивы, их вложенность с указанием типов данных и значений',
+      },
+      diagramTags: {
+        uml: 'UML',
+        interaction: 'Взаимодействие',
+        behavior: 'Поведение',
+        functions: 'Функции',
+        requirements: 'Требования',
+        structure: 'Структура',
+        classes: 'Классы',
+        architecture: 'Архитектура',
+        objects: 'Объекты',
+        dynamics: 'Динамика',
+        businessProcesses: 'Бизнес-процессы',
+        state: 'Состояние',
+        time: 'Время',
+        project: 'Проект',
+        planning: 'Планирование',
+        hierarchy: 'Иерархия',
+        connections: 'Связи',
+        ideas: 'Идеи',
+        database: 'База данных',
+        databases: 'Базы данных',
+        data: 'Данные',
+        format: 'Формат',
+      },
+      diagramStandards: {
+        uml: 'UML',
+        projectManagement: 'Управление проектами',
+        ideas: 'Идеи',
+        database: 'База данных',
+        data: 'Данные',
+      },
+      diagramPurposes: {
+        interaction: 'Взаимодействие',
+        requirements: 'Требования',
+        architecture: 'Архитектура',
+        modeling: 'Моделирование',
+        businessProcesses: 'Бизнес-процессы',
+        stateModeling: 'Моделирование состояний',
+        projectManagement: 'Управление проектами',
+        database: 'База данных',
+      },
+    },
+    diagramCreationMethod: {
+      title: 'Способ создания диаграммы',
+      description: 'Выберите способ создания диаграммы',
+      selectFromProjects: 'Выбрать из моих проектов',
+      selectFromProjectsDescription: 'Использовать данные из существующего проекта',
+      selectProjectButton: 'Выбрать проект',
+      createFromScratch: 'Создать с нуля',
+      createFromScratchDescription: 'Опишите предметную область вручную',
+      enterDataButton: 'Ввести данные',
+      selectProjectTitle: 'Выберите проект',
+    },
+    projectChat: {
+      documents: 'Документы',
+      documentsCount: 'Документы ({count})',
+      dragFilesHere: 'Перетащите файлы сюда',
+      orClickButton: 'или нажмите кнопку ниже',
+      addDocuments: 'Добавить документы',
+      uploadDocuments: 'Загружено и обработано документов: {processed} из {total} ({size} КБ)',
+      unknownFile: 'Неизвестный файл',
+      removeFile: 'Удалить файл',
+      uploadDocumentsToStart: 'Загрузите документы, чтобы начать работу с ними',
+      enterMessage: 'Введите сообщение...',
+      send: 'Отправить',
+      processingRequest: 'Обработка запроса...',
+      searchingInfo: 'Поиск информации...',
+      generatingAnswer: 'Формирование ответа...',
+      checkingAnswer: 'Проверка ответа...',
+      pleaseUploadDocuments: 'Пожалуйста, сначала загрузите документы для анализа.',
+      errorProcessingRequest: 'Ошибка при обработке запроса: {error}',
+      reportError: 'Сообщить об ошибке',
+      supportModalTitle: 'Обратиться в поддержку',
+      yourEmail: 'Ваша электронная почта',
+      yourMessage: 'Ваше сообщение',
+      messagePlaceholder: 'Опишите вашу проблему или вопрос...',
+      attachFile: 'Прикрепить файл',
+      sendButton: 'Отправить',
+      messageSent: 'Сообщение отправлено (заглушка)',
+    },
+    diagramChat: {
+      reportError: 'Сообщить об ошибке',
+      diagram: 'Диаграмма',
+      code: 'Код',
+      downloadPNG: 'Скачать PNG',
+      copyCode: 'Скопировать код',
+      codeCopied: 'Код скопирован в буфер обмена',
+      glossaryTitle: 'Глоссарий элементов диаграммы',
+      element: 'Элемент',
+      description: 'Описание',
+      renderingError: 'Ошибка рендеринга:',
+      renderingDiagram: 'Рендеринг диаграммы...',
+      errorCreatingPNG: 'Не удалось создать PNG файл: {error}',
+      supportModalTitle: 'Обратиться в поддержку',
+      yourEmail: 'Ваша электронная почта',
+      yourMessage: 'Ваше сообщение',
+      messagePlaceholder: 'Опишите вашу проблему или вопрос...',
+      attachFile: 'Прикрепить файл',
+      sendButton: 'Отправить',
+      messageSent: 'Сообщение отправлено (заглушка)',
+      processingRequest: 'Обработка запроса...',
+      searchingInfo: 'Поиск информации...',
+      generatingAnswer: 'Формирование ответа...',
+      checkingAnswer: 'Проверка ответа...',
+    },
     login: {
       welcome: 'Войдите в систему для продолжения работы',
       email: 'Эл. почта',
@@ -678,6 +959,142 @@ const translations: Record<Language, Translations> = {
       chatPlaceholderWithType: 'Enter the name of the object or process for the diagram...',
       chatPlaceholderScratch: 'Describe the subject area and specific object...',
       reportError: 'Report Error',
+    },
+    diagramTypeCatalog: {
+      title: 'Diagram Type',
+      description: 'Select diagram type',
+      search: 'Search',
+      searchPlaceholder: 'Enter diagram name or description',
+      sort: 'Sort',
+      sortByAlphabet: 'Alphabetically',
+      sortByPopularity: 'By popularity',
+      filters: 'Filters',
+      clearFilters: 'Clear filters',
+      standardOrNotation: 'Standard or notation',
+      purposeOfUse: 'Purpose of use',
+      tags: 'Tags',
+      all: 'All',
+      noDiagramsFound: 'No diagrams found',
+      tryChangingFilters: 'Try changing search parameters or filters',
+      diagramDescriptions: {
+        sequence: 'Sequence diagram displays the interaction of objects over time through message exchange between system participants and the sequence of calls',
+        useCase: 'Use case diagram describes the functional requirements of the system through the interaction of actors and use cases with boundary indication',
+        class: 'Class diagram shows the system structure through classes, their attributes, methods, and relationships, including inheritance and composition',
+        object: 'Object diagram displays specific instances of classes and their relationships at a specific point in time during system execution with value indication',
+        activity: 'Activity diagram models business processes and workflows, showing the sequence of actions, decision-making, and parallel flows',
+        component: 'Component diagram shows the system architecture and its components, indicating interfaces, dependencies, and interaction methods',
+        deployment: 'Deployment diagram displays the physical architecture of the system, showing the placement of components on deployment nodes and connections between them',
+        statechart: 'Statechart diagram models the life cycle of objects and their states, showing transitions between states, transition conditions, and actions',
+        gantt: 'Gantt chart visualizes project timelines and tasks, showing duration, dependencies, sequence of work, and resources',
+        mindMap: 'Mind map represents ideas and concepts in a hierarchical structure, showing connections between concepts, their relative positions, and grouping',
+        er: 'Entity-relationship diagram models the database structure, showing entities, their attributes, and relationships with relationship type indication',
+        wbs: 'Work breakdown structure decomposes the project into tasks, showing the hierarchy of work, their interrelationships in the project structure, and levels of detail',
+        json: 'JSON diagram visualizes the data structure in JSON format, showing objects, arrays, their nesting with data type and value indication',
+      },
+      diagramTags: {
+        uml: 'UML',
+        interaction: 'Interaction',
+        behavior: 'Behavior',
+        functions: 'Functions',
+        requirements: 'Requirements',
+        structure: 'Structure',
+        classes: 'Classes',
+        architecture: 'Architecture',
+        objects: 'Objects',
+        dynamics: 'Dynamics',
+        businessProcesses: 'Business Processes',
+        state: 'State',
+        time: 'Time',
+        project: 'Project',
+        planning: 'Planning',
+        hierarchy: 'Hierarchy',
+        connections: 'Connections',
+        ideas: 'Ideas',
+        database: 'Database',
+        databases: 'Databases',
+        data: 'Data',
+        format: 'Format',
+      },
+      diagramStandards: {
+        uml: 'UML',
+        projectManagement: 'Project Management',
+        ideas: 'Ideas',
+        database: 'Database',
+        data: 'Data',
+      },
+      diagramPurposes: {
+        interaction: 'Interaction',
+        requirements: 'Requirements',
+        architecture: 'Architecture',
+        modeling: 'Modeling',
+        businessProcesses: 'Business Processes',
+        stateModeling: 'State Modeling',
+        projectManagement: 'Project Management',
+        database: 'Database',
+      },
+    },
+    diagramCreationMethod: {
+      title: 'Diagram Creation Method',
+      description: 'Select creation method',
+      selectFromProjects: 'Select from my projects',
+      selectFromProjectsDescription: 'Use data from an existing project',
+      selectProjectButton: 'Select Project',
+      createFromScratch: 'Create from Scratch',
+      createFromScratchDescription: 'Describe the subject area manually',
+      enterDataButton: 'Enter Data',
+      selectProjectTitle: 'Select Project',
+    },
+    projectChat: {
+      documents: 'Documents',
+      documentsCount: 'Documents ({count})',
+      dragFilesHere: 'Drag files here',
+      orClickButton: 'or click the button below',
+      addDocuments: 'Add Documents',
+      uploadDocuments: 'Uploaded and processed documents: {processed} of {total} ({size} KB)',
+      unknownFile: 'Unknown file',
+      removeFile: 'Remove file',
+      uploadDocumentsToStart: 'Upload documents to start working with them',
+      enterMessage: 'Enter message...',
+      send: 'Send',
+      processingRequest: 'Processing request...',
+      searchingInfo: 'Searching information...',
+      generatingAnswer: 'Generating answer...',
+      checkingAnswer: 'Checking answer...',
+      pleaseUploadDocuments: 'Please upload documents first for analysis.',
+      errorProcessingRequest: 'Error processing request: {error}',
+      reportError: 'Report Error',
+      supportModalTitle: 'Contact Support',
+      yourEmail: 'Your Email',
+      yourMessage: 'Your Message',
+      messagePlaceholder: 'Describe your problem or question...',
+      attachFile: 'Attach File',
+      sendButton: 'Send',
+      messageSent: 'Message sent (stub)',
+    },
+    diagramChat: {
+      reportError: 'Report Error',
+      diagram: 'Diagram',
+      code: 'Code',
+      downloadPNG: 'Download PNG',
+      copyCode: 'Copy Code',
+      codeCopied: 'Code copied to clipboard',
+      glossaryTitle: 'Diagram Elements Glossary',
+      element: 'Element',
+      description: 'Description',
+      renderingError: 'Rendering error:',
+      renderingDiagram: 'Rendering diagram...',
+      errorCreatingPNG: 'Failed to create PNG file: {error}',
+      supportModalTitle: 'Contact Support',
+      yourEmail: 'Your Email',
+      yourMessage: 'Your Message',
+      messagePlaceholder: 'Describe your problem or question...',
+      attachFile: 'Attach File',
+      sendButton: 'Send',
+      messageSent: 'Message sent (stub)',
+      processingRequest: 'Processing request...',
+      searchingInfo: 'Searching information...',
+      generatingAnswer: 'Generating answer...',
+      checkingAnswer: 'Checking answer...',
     },
     login: {
       welcome: 'Sign in to continue',
