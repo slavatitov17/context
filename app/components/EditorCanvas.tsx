@@ -15,6 +15,7 @@ interface EditorCanvasProps {
   onAddPage: () => void;
   onSwitchPage: (pageId: string) => void;
   onDeletePage: (pageId: string) => void;
+  onUpdatePageName?: (pageId: string, name: string) => void;
   onBack: () => void;
 }
 
@@ -30,6 +31,7 @@ export default function EditorCanvas({
   onAddPage,
   onSwitchPage,
   onDeletePage,
+  onUpdatePageName,
   onBack,
 }: EditorCanvasProps) {
   const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'arrow'>('select');
@@ -897,28 +899,22 @@ export default function EditorCanvas({
                         type="text"
                         value={page.name}
                         onBlur={() => {
-                          const updatedPages = diagram.pages.map(p =>
-                            p.id === page.id ? { ...p, name: page.name } : p
-                          );
-                          onUpdatePage({ ...currentPage, ...diagram, pages: updatedPages });
                           setEditingPageName(null);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
-                            const updatedPages = diagram.pages.map(p =>
-                              p.id === page.id ? { ...p, name: page.name } : p
-                            );
-                            onUpdatePage({ ...currentPage, ...diagram, pages: updatedPages });
                             setEditingPageName(null);
                           } else if (e.key === 'Escape') {
                             setEditingPageName(null);
                           }
                         }}
                         onChange={(e) => {
-                          const updatedPages = diagram.pages.map(p =>
-                            p.id === page.id ? { ...p, name: e.target.value } : p
-                          );
-                          onUpdatePage({ ...currentPage, ...diagram, pages: updatedPages });
+                          if (onUpdatePageName) {
+                            onUpdatePageName(page.id, e.target.value);
+                          } else {
+                            const updatedPage = { ...page, name: e.target.value };
+                            onUpdatePage(updatedPage);
+                          }
                         }}
                         className="flex-1 text-xs border border-blue-300 rounded px-1"
                         autoFocus

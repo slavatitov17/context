@@ -173,6 +173,25 @@ export default function EditorEditPage() {
     }
   }, [diagram, saveDiagram]);
 
+  const updatePageName = useCallback((pageId: string, name: string) => {
+    if (!diagram) return;
+
+    const updatedPages = diagram.pages.map(p =>
+      p.id === pageId ? { ...p, name } : p
+    );
+
+    setDiagram({
+      ...diagram,
+      pages: updatedPages,
+    });
+
+    if (currentPage?.id === pageId) {
+      setCurrentPage({ ...currentPage, name });
+    }
+
+    saveDiagram();
+  }, [diagram, currentPage, saveDiagram]);
+
   const deletePage = useCallback((pageId: string) => {
     if (!diagram || diagram.pages.length <= 1) return;
 
@@ -216,6 +235,7 @@ export default function EditorEditPage() {
         onAddPage={addPage}
         onSwitchPage={switchPage}
         onDeletePage={deletePage}
+        onUpdatePageName={updatePageName}
         onBack={() => router.push('/editor')}
       />
     </div>
