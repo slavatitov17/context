@@ -12,7 +12,7 @@ export default function AboutPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
+    alert(`${t.common.messageSent}\nEmail: ${email}\n${t.about.yourMessage}: ${message}`);
     setEmail('');
     setMessage('');
   };
@@ -34,15 +34,15 @@ export default function AboutPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <div className="mb-6">
             <h2 className="text-xl font-medium text-gray-900 mb-2">
-              Context (рус. Контекст)
+              {t.common.contextName}
             </h2>
             <p className="text-gray-500 text-base">
-              Ответы на вопросы по загруженным документам, автоматическое создание диаграмм. Используя Context, вы соглашаетесь с{' '}
+              {t.common.contextDescription}{' '}
               <Link
                 href="/privacy"
                 className="text-blue-600 hover:underline"
               >
-                Политикой конфиденциальности
+                {t.common.agreeWithPrivacy}
               </Link>
             </p>
           </div>
@@ -95,7 +95,7 @@ export default function AboutPage() {
                 <button
                   type="button"
                   className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
-                  onClick={() => alert('Функция прикрепления файла (заглушка)')}
+                  onClick={() => alert(t.common.attachFileStub)}
                 >
                   <i className="fas fa-paperclip mr-2 text-lg"></i>
                   {t.about.attachFile}

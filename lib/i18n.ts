@@ -14,6 +14,18 @@ export interface Translations {
     search: string;
     send: string;
     close: string;
+    requiredFields: string;
+    goToDocumentUpload: string;
+    creatingProject: string;
+    creatingDiagram: string;
+    projectCreationError: string;
+    diagramCreationError: string;
+    contextDescription: string;
+    contextName: string;
+    agreeWithPrivacy: string;
+    back: string;
+    messageSent: string;
+    attachFileStub: string;
   };
 
   // Навигация
@@ -105,6 +117,8 @@ export interface Translations {
     descriptionLabel: string;
     descriptionPlaceholder: string;
     createButton: string;
+    goToDocumentUpload: string;
+    creating: string;
   };
 
   // Страница создания диаграммы
@@ -122,6 +136,8 @@ export interface Translations {
     fromProject: string;
     fromScratch: string;
     selectProject: string;
+    createButton: string;
+    creating: string;
   };
 
   // Страница проекта
@@ -217,6 +233,57 @@ export interface Translations {
   // Страница политики конфиденциальности
   privacy: {
     title: string;
+    description: string;
+    back: string;
+    section1Title: string;
+    section1Content1: string;
+    section1Content2: string;
+    section2Title: string;
+    section2Intro: string;
+    section2Item1: string;
+    section2Item2: string;
+    section2Item3: string;
+    section2Item4: string;
+    section2Item5: string;
+    section3Title: string;
+    section3Intro: string;
+    section3Item1: string;
+    section3Item2: string;
+    section3Item3: string;
+    section3Item4: string;
+    section3Item5: string;
+    section3Item6: string;
+    section3Item7: string;
+    section4Title: string;
+    section4Content1: string;
+    section4Content2: string;
+    section5Title: string;
+    section5Intro: string;
+    section5Item1: string;
+    section5Item2: string;
+    section5Item3: string;
+    section6Title: string;
+    section6Intro: string;
+    section6Item1: string;
+    section6Item2: string;
+    section6Item3: string;
+    section6Item4: string;
+    section6Content: string;
+    section7Title: string;
+    section7Content1: string;
+    section7Content2: string;
+    section8Title: string;
+    section8Content1: string;
+    section8Content2: string;
+    section9Title: string;
+    section9Intro: string;
+    yourEmail: string;
+    yourMessage: string;
+    messagePlaceholder: string;
+    attachFile: string;
+    send: string;
+    messageSent: string;
+    attachFileStub: string;
   };
 }
 
@@ -232,6 +299,18 @@ const translations: Record<Language, Translations> = {
       search: 'Поиск',
       send: 'Отправить',
       close: 'Закрыть',
+      requiredFields: '* - обязательные поля',
+      goToDocumentUpload: 'Перейти к загрузке документов',
+      creatingProject: 'Создание проекта...',
+      creatingDiagram: 'Создание диаграммы...',
+      projectCreationError: 'Не удалось создать проект. Попробуйте еще раз.',
+      diagramCreationError: 'Не удалось создать диаграмму. Попробуйте еще раз.',
+      contextDescription: 'Ответы на вопросы по загруженным документам, автоматическое создание диаграмм. Используя Context, вы соглашаетесь с',
+      contextName: 'Context (рус. Контекст)',
+      agreeWithPrivacy: 'Политикой конфиденциальности',
+      back: 'Назад',
+      messageSent: 'Сообщение отправлено (заглушка)',
+      attachFileStub: 'Функция прикрепления файла (заглушка)',
     },
     nav: {
       projects: 'Проекты',
@@ -311,6 +390,8 @@ const translations: Record<Language, Translations> = {
       descriptionLabel: 'Краткое описание проекта',
       descriptionPlaceholder: 'Введите краткое описание проекта',
       createButton: 'Создать проект',
+      goToDocumentUpload: 'Перейти к загрузке документов',
+      creating: 'Создание проекта...',
     },
     createDiagram: {
       title: 'Создание диаграммы',
@@ -326,6 +407,8 @@ const translations: Record<Language, Translations> = {
       fromProject: 'Из проекта',
       fromScratch: 'С нуля',
       selectProject: 'Выберите проект',
+      createButton: 'Создать диаграмму',
+      creating: 'Создание диаграммы...',
     },
     projectDetail: {
       documents: 'Документы',
@@ -407,6 +490,57 @@ const translations: Record<Language, Translations> = {
     },
     privacy: {
       title: 'Политика конфиденциальности',
+      description: 'Узнайте, как мы собираем, используем и защищаем ваши персональные данные',
+      back: 'Назад',
+      section1Title: '1. Общие положения',
+      section1Content1: 'Настоящая Политика конфиденциальности определяет порядок обработки и защиты персональных данных пользователей сервиса Context (далее — «Сервис»). Используя Сервис, вы соглашаетесь с условиями настоящей Политики конфиденциальности.',
+      section1Content2: 'Администрация Сервиса обязуется соблюдать конфиденциальность персональных данных пользователей в соответствии с действующим законодательством.',
+      section2Title: '2. Собираемые данные',
+      section2Intro: 'При использовании Сервиса мы собираем следующую информацию:',
+      section2Item1: 'Электронный адрес (email) для идентификации пользователя',
+      section2Item2: 'Информация о проектах, созданных пользователем',
+      section2Item3: 'Загруженные пользователем файлы и документы',
+      section2Item4: 'Данные о взаимодействии с Сервисом (время использования, действия пользователя)',
+      section2Item5: 'Техническая информация (IP-адрес, тип браузера, операционная система)',
+      section3Title: '3. Цели использования данных',
+      section3Intro: 'Собранные данные используются для следующих целей:',
+      section3Item1: 'Предоставление доступа к функциям Сервиса',
+      section3Item2: 'Идентификация и аутентификация пользователей',
+      section3Item3: 'Обработка и анализ загруженных файлов для ответов на вопросы',
+      section3Item4: 'Создание диаграмм на основе загруженных данных',
+      section3Item5: 'Улучшение качества работы Сервиса',
+      section3Item6: 'Обеспечение безопасности и предотвращение мошенничества',
+      section3Item7: 'Информирование пользователей об изменениях в Сервисе',
+      section4Title: '4. Защита персональных данных',
+      section4Content1: 'Администрация Сервиса принимает необходимые технические и организационные меры для защиты персональных данных от неправомерного доступа, уничтожения, изменения, блокирования, копирования, распространения, а также от иных неправомерных действий.',
+      section4Content2: 'Все данные хранятся на защищенных серверах с использованием современных технологий шифрования. Доступ к персональным данным имеют только уполномоченные сотрудники, которые обязаны соблюдать конфиденциальность.',
+      section5Title: '5. Передача данных третьим лицам',
+      section5Intro: 'Администрация Сервиса не передает персональные данные третьим лицам, за исключением следующих случаев:',
+      section5Item1: 'Пользователь дал согласие на такие действия',
+      section5Item2: 'Передача предусмотрена законодательством в рамках установленной процедуры',
+      section5Item3: 'Передача необходима для работы Сервиса или его функций (например, обработка файлов с использованием внешних сервисов)',
+      section6Title: '6. Права пользователей',
+      section6Intro: 'Пользователь имеет право:',
+      section6Item1: 'Получать информацию о своих персональных данных, обрабатываемых Сервисом',
+      section6Item2: 'Требовать уточнения, блокирования или уничтожения персональных данных',
+      section6Item3: 'Отозвать согласие на обработку персональных данных',
+      section6Item4: 'Удалить свой аккаунт и связанные с ним данные',
+      section6Content: 'Для реализации своих прав пользователь может обратиться к Администрации Сервиса через форму обратной связи на странице «О системе».',
+      section7Title: '7. Использование Cookies',
+      section7Content1: 'Сервис использует технологию cookies для обеспечения удобства использования и улучшения функциональности. Cookies — это небольшие текстовые файлы, которые сохраняются на устройстве пользователя.',
+      section7Content2: 'Пользователь может настроить свой браузер для отказа от cookies, однако это может ограничить доступ к некоторым функциям Сервиса.',
+      section8Title: '8. Изменения в Политике конфиденциальности',
+      section8Content1: 'Администрация Сервиса оставляет за собой право вносить изменения в настоящую Политику конфиденциальности. Актуальная версия всегда доступна на данной странице.',
+      section8Content2: 'При внесении существенных изменений пользователи будут уведомлены через Сервис или по электронной почте.',
+      section9Title: '9. Контактная информация',
+      section9Intro: 'По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться к Администрации Сервиса:',
+      yourEmail: 'Ваша электронная почта',
+      yourMessage: 'Ваше сообщение',
+      messagePlaceholder: 'Опишите вашу проблему или вопрос...',
+      attachFile: 'Прикрепить файл',
+      send: 'Отправить',
+      messageSent: 'Сообщение отправлено (заглушка)',
+      attachFileStub: 'Функция прикрепления файла (заглушка)',
     },
   },
   en: {
@@ -420,6 +554,18 @@ const translations: Record<Language, Translations> = {
       search: 'Search',
       send: 'Send',
       close: 'Close',
+      requiredFields: '* - required fields',
+      goToDocumentUpload: 'Go to document upload',
+      creatingProject: 'Creating project...',
+      creatingDiagram: 'Creating diagram...',
+      projectCreationError: 'Failed to create project. Please try again.',
+      diagramCreationError: 'Failed to create diagram. Please try again.',
+      contextDescription: 'Answers to questions about uploaded documents, automatic creation of diagrams. By using Context, you agree to the',
+      contextName: 'Context',
+      agreeWithPrivacy: 'Privacy Policy',
+      back: 'Back',
+      messageSent: 'Message sent (stub)',
+      attachFileStub: 'File attachment function (stub)',
     },
     nav: {
       projects: 'Projects',
@@ -437,7 +583,7 @@ const translations: Record<Language, Translations> = {
       dark: 'Dark',
       language: 'Interface Language',
       languageDescription: 'Select the display language for system elements',
-      russian: 'Русский',
+      russian: 'Russian',
       english: 'English',
     },
     breadcrumbs: {
@@ -499,6 +645,8 @@ const translations: Record<Language, Translations> = {
       descriptionLabel: 'Short Project Description',
       descriptionPlaceholder: 'Enter short project description',
       createButton: 'Create Project',
+      goToDocumentUpload: 'Go to document upload',
+      creating: 'Creating project...',
     },
     createDiagram: {
       title: 'Create Diagram',
@@ -514,6 +662,8 @@ const translations: Record<Language, Translations> = {
       fromProject: 'From Project',
       fromScratch: 'From Scratch',
       selectProject: 'Select Project',
+      createButton: 'Create Diagram',
+      creating: 'Creating diagram...',
     },
     projectDetail: {
       documents: 'Documents',
@@ -595,6 +745,57 @@ const translations: Record<Language, Translations> = {
     },
     privacy: {
       title: 'Privacy Policy',
+      description: 'Learn how we collect, use, and protect your personal data',
+      back: 'Back',
+      section1Title: '1. General Provisions',
+      section1Content1: 'This Privacy Policy defines the procedure for processing and protecting personal data of users of the Context service (hereinafter — "Service"). By using the Service, you agree to the terms of this Privacy Policy.',
+      section1Content2: 'The Service Administration undertakes to observe the confidentiality of users\' personal data in accordance with current legislation.',
+      section2Title: '2. Collected Data',
+      section2Intro: 'When using the Service, we collect the following information:',
+      section2Item1: 'Email address for user identification',
+      section2Item2: 'Information about projects created by the user',
+      section2Item3: 'Files and documents uploaded by the user',
+      section2Item4: 'Data on interaction with the Service (usage time, user actions)',
+      section2Item5: 'Technical information (IP address, browser type, operating system)',
+      section3Title: '3. Purposes of Data Use',
+      section3Intro: 'Collected data is used for the following purposes:',
+      section3Item1: 'Providing access to Service functions',
+      section3Item2: 'User identification and authentication',
+      section3Item3: 'Processing and analyzing uploaded files to answer questions',
+      section3Item4: 'Creating diagrams based on uploaded data',
+      section3Item5: 'Improving the quality of the Service',
+      section3Item6: 'Ensuring security and preventing fraud',
+      section3Item7: 'Informing users about changes in the Service',
+      section4Title: '4. Protection of Personal Data',
+      section4Content1: 'The Service Administration takes necessary technical and organizational measures to protect personal data from unauthorized access, destruction, alteration, blocking, copying, distribution, as well as from other unlawful actions.',
+      section4Content2: 'All data is stored on secure servers using modern encryption technologies. Access to personal data is granted only to authorized employees who are obliged to maintain confidentiality.',
+      section5Title: '5. Data Transfer to Third Parties',
+      section5Intro: 'The Service Administration does not transfer personal data to third parties, with the following exceptions:',
+      section5Item1: 'The user has given consent for such actions',
+      section5Item2: 'The transfer is provided for by legislation within the framework of an established procedure',
+      section5Item3: 'The transfer is necessary for the operation of the Service or its functions (for example, file processing using external services)',
+      section6Title: '6. User Rights',
+      section6Intro: 'The user has the right to:',
+      section6Item1: 'Receive information about their personal data processed by the Service',
+      section6Item2: 'Demand clarification, blocking, or destruction of personal data',
+      section6Item3: 'Withdraw consent for the processing of personal data',
+      section6Item4: 'Delete their account and associated data',
+      section6Content: 'To exercise their rights, the user can contact the Service Administration via the feedback form on the "About" page.',
+      section7Title: '7. Use of Cookies',
+      section7Content1: 'The Service uses cookie technology to ensure ease of use and improve functionality. Cookies are small text files that are stored on the user\'s device.',
+      section7Content2: 'The user can configure their browser to refuse cookies, but this may limit access to some Service functions.',
+      section8Title: '8. Changes to the Privacy Policy',
+      section8Content1: 'The Service Administration reserves the right to make changes to this Privacy Policy. The current version is always available on this page.',
+      section8Content2: 'Users will be notified of significant changes through the Service or by email.',
+      section9Title: '9. Contact Information',
+      section9Intro: 'For all questions related to the processing of personal data, you can contact the Service Administration:',
+      yourEmail: 'Your Email',
+      yourMessage: 'Your Message',
+      messagePlaceholder: 'Describe your problem or question...',
+      attachFile: 'Attach File',
+      send: 'Send',
+      messageSent: 'Message sent (stub)',
+      attachFileStub: 'File attachment function (stub)',
     },
   },
 };

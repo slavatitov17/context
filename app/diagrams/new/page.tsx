@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function NewDiagramPage() {
+  const { t } = useLanguage();
   const [diagramName, setDiagramName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ export default function NewDiagramPage() {
       router.push(`/diagrams/${newDiagram.id}`);
     } catch (error) {
       console.error('Ошибка при создании диаграммы:', error);
-      alert('Не удалось создать диаграмму. Попробуйте еще раз.');
+      alert(t.common.diagramCreationError);
       setLoading(false);
     }
   };
@@ -47,7 +49,7 @@ export default function NewDiagramPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className="text-gray-500">{t.common.loading}</div>
       </div>
     );
   }
@@ -55,24 +57,24 @@ export default function NewDiagramPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-8 pb-6 border-b border-gray-200">
-        <h1 className="text-3xl font-medium mb-2">Создание диаграммы</h1>
-        <p className="text-gray-600 text-base">Заполните основную информацию о диаграмме</p>
+        <h1 className="text-3xl font-medium mb-2">{t.createDiagram.title}</h1>
+        <p className="text-gray-600 text-base">{t.createDiagram.description}</p>
       </div>
 
       <div className="space-y-6">
         {/* Информация о полях */}
-        <p className="text-gray-500 text-base">* - обязательные поля</p>
+        <p className="text-gray-500 text-base">{t.common.requiredFields}</p>
 
         {/* Название диаграммы */}
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
-            Название диаграммы *
+            {t.createDiagram.nameLabel} *
           </label>
           <input
             type="text"
             value={diagramName}
             onChange={(e) => setDiagramName(e.target.value)}
-            placeholder="Введите название диаграммы..."
+            placeholder={t.createDiagram.namePlaceholder}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={loading}
           />
@@ -81,12 +83,12 @@ export default function NewDiagramPage() {
         {/* Описание диаграммы */}
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
-            Краткое описание диаграммы
+            {t.createDiagram.descriptionLabel}
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Введите описание диаграммы..."
+            placeholder={t.createDiagram.descriptionPlaceholder}
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={loading}
@@ -107,10 +109,10 @@ export default function NewDiagramPage() {
                   <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                   <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
-                <span>Создание диаграммы...</span>
+                <span>{t.createDiagram.creating}</span>
               </>
             ) : (
-              'Создать диаграмму'
+              t.createDiagram.createButton
             )}
           </button>
         </div>

@@ -3,8 +3,8 @@ import LayoutWrapper from './components/LayoutWrapper';
 import { LanguageProvider } from './contexts/LanguageContext';
 
 export const metadata = {
-  title: 'Context: анализ файлов и создание диаграмм',
-  description: 'Анализ файлов и создание диаграмм',
+  title: 'Context: File Analysis and Diagram Creation',
+  description: 'File analysis and diagram creation',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

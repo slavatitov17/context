@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function PrivacyPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -21,7 +23,7 @@ export default function PrivacyPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
+    alert(`${t.privacy.messageSent}\nEmail: ${email}\n${t.privacy.yourMessage}: ${message}`);
     setEmail('');
     setMessage('');
   };
@@ -31,7 +33,7 @@ export default function PrivacyPage() {
   if (isAuthenticated === null) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className="text-gray-500">{t.common.loading}</div>
       </div>
     );
   }
@@ -46,12 +48,12 @@ export default function PrivacyPage() {
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <i className="fas fa-arrow-left mr-2"></i>
-            <span className="text-base">Назад</span>
+            <span className="text-base">{t.privacy.back}</span>
           </button>
         )}
-        <h1 className="text-3xl font-medium mb-2">Политика конфиденциальности</h1>
+        <h1 className="text-3xl font-medium mb-2">{t.privacy.title}</h1>
         <p className="text-gray-600 text-base">
-          Узнайте, как мы собираем, используем и защищаем ваши персональные данные
+          {t.privacy.description}
         </p>
       </div>
 
@@ -59,15 +61,14 @@ export default function PrivacyPage() {
         {/* Блок 1: Общие положения */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            1. Общие положения
+            {t.privacy.section1Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
             <p>
-              Настоящая Политика конфиденциальности определяет порядок обработки и защиты персональных данных пользователей сервиса Context (далее — «Сервис»). 
-              Используя Сервис, вы соглашаетесь с условиями настоящей Политики конфиденциальности.
+              {t.privacy.section1Content1}
             </p>
             <p>
-              Администрация Сервиса обязуется соблюдать конфиденциальность персональных данных пользователей в соответствии с действующим законодательством.
+              {t.privacy.section1Content2}
             </p>
           </div>
         </div>
@@ -75,16 +76,16 @@ export default function PrivacyPage() {
         {/* Блок 2: Собираемые данные */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            2. Собираемые данные
+            {t.privacy.section2Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
-            <p>При использовании Сервиса мы собираем следующую информацию:</p>
+            <p>{t.privacy.section2Intro}</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Электронный адрес (email) для идентификации пользователя</li>
-              <li>Информация о проектах, созданных пользователем</li>
-              <li>Загруженные пользователем файлы и документы</li>
-              <li>Данные о взаимодействии с Сервисом (время использования, действия пользователя)</li>
-              <li>Техническая информация (IP-адрес, тип браузера, операционная система)</li>
+              <li>{t.privacy.section2Item1}</li>
+              <li>{t.privacy.section2Item2}</li>
+              <li>{t.privacy.section2Item3}</li>
+              <li>{t.privacy.section2Item4}</li>
+              <li>{t.privacy.section2Item5}</li>
             </ul>
           </div>
         </div>
@@ -92,18 +93,18 @@ export default function PrivacyPage() {
         {/* Блок 3: Цели использования данных */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            3. Цели использования данных
+            {t.privacy.section3Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
-            <p>Собранные данные используются для следующих целей:</p>
+            <p>{t.privacy.section3Intro}</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Предоставление доступа к функциям Сервиса</li>
-              <li>Идентификация и аутентификация пользователей</li>
-              <li>Обработка и анализ загруженных файлов для ответов на вопросы</li>
-              <li>Создание диаграмм на основе загруженных данных</li>
-              <li>Улучшение качества работы Сервиса</li>
-              <li>Обеспечение безопасности и предотвращение мошенничества</li>
-              <li>Информирование пользователей об изменениях в Сервисе</li>
+              <li>{t.privacy.section3Item1}</li>
+              <li>{t.privacy.section3Item2}</li>
+              <li>{t.privacy.section3Item3}</li>
+              <li>{t.privacy.section3Item4}</li>
+              <li>{t.privacy.section3Item5}</li>
+              <li>{t.privacy.section3Item6}</li>
+              <li>{t.privacy.section3Item7}</li>
             </ul>
           </div>
         </div>
@@ -111,16 +112,14 @@ export default function PrivacyPage() {
         {/* Блок 4: Защита данных */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            4. Защита персональных данных
+            {t.privacy.section4Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
             <p>
-              Администрация Сервиса принимает необходимые технические и организационные меры для защиты персональных данных от неправомерного доступа, 
-              уничтожения, изменения, блокирования, копирования, распространения, а также от иных неправомерных действий.
+              {t.privacy.section4Content1}
             </p>
             <p>
-              Все данные хранятся на защищенных серверах с использованием современных технологий шифрования. 
-              Доступ к персональным данным имеют только уполномоченные сотрудники, которые обязаны соблюдать конфиденциальность.
+              {t.privacy.section4Content2}
             </p>
           </div>
         </div>
@@ -128,16 +127,16 @@ export default function PrivacyPage() {
         {/* Блок 5: Передача данных третьим лицам */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            5. Передача данных третьим лицам
+            {t.privacy.section5Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
             <p>
-              Администрация Сервиса не передает персональные данные третьим лицам, за исключением следующих случаев:
+              {t.privacy.section5Intro}
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Пользователь дал согласие на такие действия</li>
-              <li>Передача предусмотрена законодательством в рамках установленной процедуры</li>
-              <li>Передача необходима для работы Сервиса или его функций (например, обработка файлов с использованием внешних сервисов)</li>
+              <li>{t.privacy.section5Item1}</li>
+              <li>{t.privacy.section5Item2}</li>
+              <li>{t.privacy.section5Item3}</li>
             </ul>
           </div>
         </div>
@@ -145,18 +144,18 @@ export default function PrivacyPage() {
         {/* Блок 6: Права пользователей */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            6. Права пользователей
+            {t.privacy.section6Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
-            <p>Пользователь имеет право:</p>
+            <p>{t.privacy.section6Intro}</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Получать информацию о своих персональных данных, обрабатываемых Сервисом</li>
-              <li>Требовать уточнения, блокирования или уничтожения персональных данных</li>
-              <li>Отозвать согласие на обработку персональных данных</li>
-              <li>Удалить свой аккаунт и связанные с ним данные</li>
+              <li>{t.privacy.section6Item1}</li>
+              <li>{t.privacy.section6Item2}</li>
+              <li>{t.privacy.section6Item3}</li>
+              <li>{t.privacy.section6Item4}</li>
             </ul>
             <p>
-              Для реализации своих прав пользователь может обратиться к Администрации Сервиса через форму обратной связи на странице «О системе».
+              {t.privacy.section6Content}
             </p>
           </div>
         </div>
@@ -164,15 +163,14 @@ export default function PrivacyPage() {
         {/* Блок 7: Cookies */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            7. Использование Cookies
+            {t.privacy.section7Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
             <p>
-              Сервис использует технологию cookies для обеспечения удобства использования и улучшения функциональности. 
-              Cookies — это небольшие текстовые файлы, которые сохраняются на устройстве пользователя.
+              {t.privacy.section7Content1}
             </p>
             <p>
-              Пользователь может настроить свой браузер для отказа от cookies, однако это может ограничить доступ к некоторым функциям Сервиса.
+              {t.privacy.section7Content2}
             </p>
           </div>
         </div>
@@ -180,15 +178,14 @@ export default function PrivacyPage() {
         {/* Блок 8: Изменения в политике */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            8. Изменения в Политике конфиденциальности
+            {t.privacy.section8Title}
           </h2>
           <div className="space-y-3 text-gray-700 text-base leading-relaxed">
             <p>
-              Администрация Сервиса оставляет за собой право вносить изменения в настоящую Политику конфиденциальности. 
-              Актуальная версия всегда доступна на данной странице.
+              {t.privacy.section8Content1}
             </p>
             <p>
-              При внесении существенных изменений пользователи будут уведомлены через Сервис или по электронной почте.
+              {t.privacy.section8Content2}
             </p>
           </div>
         </div>
@@ -196,11 +193,11 @@ export default function PrivacyPage() {
         {/* Блок 9: Контакты */}
         <div className="bg-white border border-gray-200 rounded-xl p-6" ref={formRef}>
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            9. Контактная информация
+            {t.privacy.section9Title}
           </h2>
           <div className="space-y-4 text-gray-700 text-base leading-relaxed">
             <p>
-              По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться к Администрации Сервиса:
+              {t.privacy.section9Intro}
             </p>
             
             {/* Форма обратной связи */}
@@ -209,7 +206,7 @@ export default function PrivacyPage() {
                 {/* Поле Email */}
                 <div className="mb-4">
                   <label className="block text-gray-900 font-medium mb-2">
-                    Ваша электронная почта
+                    {t.privacy.yourEmail}
                   </label>
                   <input
                     type="email"
@@ -224,7 +221,7 @@ export default function PrivacyPage() {
                 {/* Поле Сообщение */}
                 <div className="mb-6">
                   <label className="block text-gray-900 font-medium mb-2">
-                    Ваше сообщение
+                    {t.privacy.yourMessage}
                   </label>
                   <textarea
                     value={message}
@@ -232,16 +229,16 @@ export default function PrivacyPage() {
                     required
                     rows={3}
                     className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Опишите вашу проблему или вопрос..."
+                    placeholder={t.privacy.messagePlaceholder}
                   />
                   <div className="flex justify-end mt-2">
                     <button
                       type="button"
                       className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
-                      onClick={() => alert('Функция прикрепления файла (заглушка)')}
+                      onClick={() => alert(t.privacy.attachFileStub)}
                     >
                       <i className="fas fa-paperclip mr-2 text-lg"></i>
-                      Прикрепить файл
+                      {t.privacy.attachFile}
                     </button>
                   </div>
                 </div>
@@ -256,7 +253,7 @@ export default function PrivacyPage() {
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  Отправить
+                  {t.privacy.send}
                 </button>
               </form>
             </div>
