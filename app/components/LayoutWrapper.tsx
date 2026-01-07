@@ -174,6 +174,13 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               <span className="font-medium">Диаграммы</span>
             </Link>
             <Link
+              href="/editor"
+              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+            >
+              <i className="fas fa-pen-ruler mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
+              <span className="font-medium">Редактор</span>
+            </Link>
+            <Link
               href="/settings"
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
