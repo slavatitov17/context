@@ -924,7 +924,7 @@ interface UploadedFile {
 }
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const routeParams = useParams();
   const diagramId = routeParams?.id as string;
   const [diagramData, setDiagramData] = useState<Diagram | null>(null);
