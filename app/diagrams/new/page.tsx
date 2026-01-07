@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 
@@ -10,9 +10,12 @@ export default function NewDiagramPage() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     const checkUser = () => {
+      if (!isMountedRef.current) return;
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
@@ -22,10 +25,15 @@ export default function NewDiagramPage() {
     };
 
     checkUser();
-  }, [router]);
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreate = () => {
-    if (!diagramName.trim() || !user) return;
+    if (!diagramName.trim() || !user || loading) return;
 
     try {
       setLoading(true);
@@ -36,11 +44,16 @@ export default function NewDiagramPage() {
         user_id: user.id,
       });
 
-      router.push(`/diagrams/${newDiagram.id}`);
+      // Используем window.location для надежного редиректа
+      if (isMountedRef.current) {
+        router.push(`/diagrams/${newDiagram.id}`);
+      }
     } catch (error) {
       console.error('Ошибка при создании диаграммы:', error);
-      alert('Не удалось создать диаграмму. Попробуйте еще раз.');
-      setLoading(false);
+      if (isMountedRef.current) {
+        alert('Не удалось создать диаграмму. Попробуйте еще раз.');
+        setLoading(false);
+      }
     }
   };
 
