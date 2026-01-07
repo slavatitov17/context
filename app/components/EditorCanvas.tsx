@@ -135,7 +135,7 @@ export default function EditorCanvas({
       if (element?.locked) return;
       
       // Двойной клик по тексту для редактирования
-      if (e.detail === 2 && element.type === 'text') {
+      if (e.detail === 2 && element && element.type === 'text') {
         // Переход в режим редактирования текста
         const textElement = e.target as SVGTextElement;
         // Можно добавить input поверх текста для редактирования
