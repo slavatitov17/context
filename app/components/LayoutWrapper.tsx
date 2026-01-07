@@ -12,6 +12,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPrivacyPage = pathname === '/privacy';
+  const isEditorPage = pathname?.startsWith('/editor/') && pathname?.includes('/edit');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
@@ -148,8 +149,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
-      {/* Боковое меню - показывается только если не страница авторизации и пользователь авторизован */}
-      {!isAuthPage && isAuthenticated && (
+      {/* Боковое меню - показывается только если не страница авторизации, не редактор и пользователь авторизован */}
+      {!isAuthPage && !isEditorPage && isAuthenticated && (
         <aside className="fixed left-4 top-4 w-64 bg-gray-50 text-gray-800 p-6 rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="mb-10 flex items-center gap-3">
             {/* Логотип - диаграмма с узлами (уменьшен) */}
@@ -177,7 +178,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               href="/editor"
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
-              <i className="fas fa-pen-ruler mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
+              <i className="fas fa-pen-nib mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">Редактор</span>
             </Link>
             <Link
@@ -221,9 +222,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       )}
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
-      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage ? 'ml-[calc(16rem+1rem)]' : ''}`} style={{ paddingTop: '2.5rem', paddingBottom: '1rem', paddingLeft: '2rem', paddingRight: '2rem', height: '100vh', overflowY: 'auto' }}>
-        {/* Хлебные крошки - показываются только на страницах не первого уровня, включая privacy для авторизованных */}
-        {!isAuthPage && isAuthenticated && <Breadcrumbs />}
+      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
+        {/* Хлебные крошки - показываются только на страницах не первого уровня, включая privacy для авторизованных, но не в редакторе */}
+        {!isAuthPage && !isEditorPage && isAuthenticated && <Breadcrumbs />}
         {children}
       </main>
       

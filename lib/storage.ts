@@ -102,6 +102,16 @@ export interface EditorElement {
   locked?: boolean;
   name?: string;
   opacity?: number;
+  // IDEF0 специфичные поля
+  idef0Number?: string; // A1, A2, etc.
+  idef0DetailDiagramId?: string; // Ссылка на другую диаграмму
+  // DFD специфичные поля
+  dfdLabel?: string; // Метка на стрелке
+  dfdLabelPosition?: number; // Позиция метки на линии (0-1)
+  // Группировка
+  groupId?: string;
+  // Порты для умных соединительных линий
+  ports?: Array<{ id: string; x: number; y: number; side: 'top' | 'right' | 'bottom' | 'left' }>;
 }
 
 export interface EditorPage {

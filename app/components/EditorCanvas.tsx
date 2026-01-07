@@ -56,6 +56,15 @@ export default function EditorCanvas({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [editingLayerName, setEditingLayerName] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
+  const [editingDiagramName, setEditingDiagramName] = useState(false);
+  const [diagramTypeFilter, setDiagramTypeFilter] = useState<'all' | 'IDEF0' | 'DFD' | 'BPMN' | 'Custom'>(diagram.diagramType || 'all');
+  const [toolMode, setToolMode] = useState<'select' | 'pan' | 'draw'>('select');
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'svg' | 'png' | 'pdf' | 'ctxdr'>('svg');
+  const [exportScope, setExportScope] = useState<'page' | 'all' | 'selection'>('page');
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
 
@@ -115,9 +124,23 @@ export default function EditorCanvas({
 
   const handleElementMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
-    if (tool === 'select') {
+    if (toolMode === 'pan') {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    
+    if (tool === 'select' || toolMode === 'select') {
       const element = currentPage.elements.find(el => el.id === elementId);
       if (element?.locked) return;
+      
+      // Двойной клик по тексту для редактирования
+      if (e.detail === 2 && element.type === 'text') {
+        // Переход в режим редактирования текста
+        const textElement = e.target as SVGTextElement;
+        // Можно добавить input поверх текста для редактирования
+        return;
+      }
       
       onSelectElement(elementId);
       setIsDragging(true);
@@ -143,7 +166,19 @@ export default function EditorCanvas({
       });
     }
 
-    if (isDragging && selectedElementId && tool === 'select' && !isResizing) {
+    // Панорамирование
+    if (isPanning && toolMode === 'pan') {
+      const deltaX = e.clientX - panStart.x;
+      const deltaY = e.clientY - panStart.y;
+      setPan({
+        x: pan.x + deltaX,
+        y: pan.y + deltaY,
+      });
+      setPanStart({ x: e.clientX, y: e.clientY });
+      return;
+    }
+
+    if (isDragging && selectedElementId && tool === 'select' && !isResizing && toolMode !== 'pan') {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -168,15 +203,28 @@ export default function EditorCanvas({
       const deltaY = mouseY - dragStart.y;
 
       let updates: Partial<EditorElement> = {};
+      const maintainAspectRatio = e.shiftKey; // Shift для сохранения пропорций
 
       switch (resizeHandle) {
         case 'nw':
-          updates = {
-            x: snapToGridValue(selectedElement.x + deltaX),
-            y: snapToGridValue(selectedElement.y + deltaY),
-            width: snapToGridValue((selectedElement.width || 100) - deltaX),
-            height: snapToGridValue((selectedElement.height || 100) - deltaY),
-          };
+          if (maintainAspectRatio) {
+            const aspectRatio = (selectedElement.width || 100) / (selectedElement.height || 100);
+            const newWidth = snapToGridValue((selectedElement.width || 100) - deltaX);
+            const newHeight = newWidth / aspectRatio;
+            updates = {
+              x: snapToGridValue(selectedElement.x + deltaX),
+              y: snapToGridValue(selectedElement.y + deltaY),
+              width: newWidth,
+              height: snapToGridValue(newHeight),
+            };
+          } else {
+            updates = {
+              x: snapToGridValue(selectedElement.x + deltaX),
+              y: snapToGridValue(selectedElement.y + deltaY),
+              width: snapToGridValue((selectedElement.width || 100) - deltaX),
+              height: snapToGridValue((selectedElement.height || 100) - deltaY),
+            };
+          }
           break;
         case 'ne':
           updates = {
@@ -193,10 +241,20 @@ export default function EditorCanvas({
           };
           break;
         case 'se':
-          updates = {
-            width: snapToGridValue((selectedElement.width || 100) + deltaX),
-            height: snapToGridValue((selectedElement.height || 100) + deltaY),
-          };
+          if (maintainAspectRatio) {
+            const aspectRatio = (selectedElement.width || 100) / (selectedElement.height || 100);
+            const newWidth = snapToGridValue((selectedElement.width || 100) + deltaX);
+            const newHeight = newWidth / aspectRatio;
+            updates = {
+              width: newWidth,
+              height: snapToGridValue(newHeight),
+            };
+          } else {
+            updates = {
+              width: snapToGridValue((selectedElement.width || 100) + deltaX),
+              height: snapToGridValue((selectedElement.height || 100) + deltaY),
+            };
+          }
           break;
         case 'n':
           updates = {
@@ -238,11 +296,12 @@ export default function EditorCanvas({
     }
     setIsDragging(false);
     setIsResizing(false);
+    setIsPanning(false);
     setResizeHandle(null);
-  }, [isDragging, isResizing, saveToHistory]);
+  }, [isDragging, isResizing, isPanning, saveToHistory]);
 
   useEffect(() => {
-    if (isDragging || isResizing) {
+    if (isDragging || isResizing || isPanning) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -250,15 +309,35 @@ export default function EditorCanvas({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, isPanning, handleMouseMove, handleMouseUp]);
 
-  // Масштабирование колесиком мыши
+  // Масштабирование колесиком мыши (Alt + колесико для масштабирования относительно указателя)
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
+      if (e.altKey || e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        setZoom(prev => Math.max(0.25, Math.min(4, prev + delta)));
+        
+        if (e.altKey) {
+          // Масштабирование относительно указателя мыши
+          const container = containerRef.current;
+          if (container) {
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
+            const zoomFactor = newZoom / zoom;
+            
+            setPan({
+              x: mouseX - (mouseX - pan.x) * zoomFactor,
+              y: mouseY - (mouseY - pan.y) * zoomFactor,
+            });
+            setZoom(newZoom);
+          }
+        } else {
+          setZoom(prev => Math.max(0.25, Math.min(4, prev + delta)));
+        }
       }
     };
 
@@ -267,7 +346,7 @@ export default function EditorCanvas({
       container.addEventListener('wheel', handleWheel, { passive: false });
       return () => container.removeEventListener('wheel', handleWheel);
     }
-  }, []);
+  }, [zoom, pan]);
 
   // Инициализация истории
   useEffect(() => {
@@ -352,16 +431,24 @@ export default function EditorCanvas({
         handleRedo();
       }
       // Горячие клавиши для инструментов
-      else if (e.key === 'v') {
+      else if (e.key === 'v' || e.key === 'V') {
         setTool('select');
-      } else if (e.key === 'r') {
+        setToolMode('select');
+      } else if (e.key === 'h' || e.key === 'H') {
+        setToolMode('pan');
+        setTool('select');
+      } else if (e.key === 'r' || e.key === 'R') {
         setTool('rectangle');
-      } else if (e.key === 'o') {
+        setToolMode('draw');
+      } else if (e.key === 'o' || e.key === 'O') {
         setTool('circle');
-      } else if (e.key === 'l') {
+        setToolMode('draw');
+      } else if (e.key === 'l' || e.key === 'L') {
         setTool('line');
-      } else if (e.key === 't') {
+        setToolMode('draw');
+      } else if (e.key === 't' || e.key === 'T') {
         setTool('text');
+        setToolMode('draw');
       }
     };
 
@@ -645,6 +732,9 @@ export default function EditorCanvas({
         const arrowLength = Math.sqrt((element.width || 100) ** 2 + (element.height || 0) ** 2);
         const angle = Math.atan2(element.height || 0, element.width || 100);
         const arrowHeadSize = 10;
+        const labelPosition = element.dfdLabelPosition !== undefined ? element.dfdLabelPosition : 0.5;
+        const labelX = element.x + (element.width || 100) * labelPosition;
+        const labelY = element.y + (element.height || 0) * labelPosition;
         return (
           <g {...commonProps}>
             <line
@@ -657,6 +747,19 @@ export default function EditorCanvas({
               markerEnd="url(#arrowhead)"
               opacity={opacity}
             />
+            {element.dfdLabel && (
+              <text
+                x={labelX}
+                y={labelY - 5}
+                fill={element.stroke || '#000000'}
+                fontSize={12}
+                fontFamily="Inter, sans-serif"
+                textAnchor="middle"
+                className="pointer-events-none"
+              >
+                {element.dfdLabel}
+              </text>
+            )}
             <defs>
               <marker
                 id="arrowhead"
@@ -685,14 +788,27 @@ export default function EditorCanvas({
               fill={element.fill || '#ffffff'}
               stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
               strokeWidth={strokeWidth}
+              opacity={opacity}
             />
+            {element.idef0Number && (
+              <text
+                x={element.x + 10}
+                y={element.y + 20}
+                fill="#000000"
+                fontSize={12}
+                fontFamily={element.fontFamily || 'Inter, sans-serif'}
+                fontWeight="bold"
+              >
+                {element.idef0Number}
+              </text>
+            )}
             {element.text && (
               <text
                 x={element.x + (element.width || 200) / 2}
                 y={element.y + (element.height || 120) / 2}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={element.fill || '#000000'}
+                fill="#000000"
                 fontSize={element.fontSize || 14}
                 fontFamily={element.fontFamily || 'Inter, sans-serif'}
               >
@@ -801,11 +917,40 @@ export default function EditorCanvas({
           {/* Заголовок и кнопка назад */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">{diagram.name}</h2>
+              {editingDiagramName ? (
+                <input
+                  type="text"
+                  value={diagram.name}
+                  onBlur={() => {
+                    setEditingDiagramName(false);
+                    // Сохранение названия будет через onUpdatePage или отдельный callback
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setEditingDiagramName(false);
+                    } else if (e.key === 'Escape') {
+                      setEditingDiagramName(false);
+                    }
+                  }}
+                  onChange={(e) => {
+                    // Обновление названия через callback если нужен
+                  }}
+                  className="flex-1 text-lg font-semibold text-gray-900 border border-blue-300 rounded px-2 py-1"
+                  autoFocus
+                />
+              ) : (
+                <h2
+                  className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors flex-1"
+                  onDoubleClick={() => setEditingDiagramName(true)}
+                  title="Двойной клик для редактирования"
+                >
+                  {diagram.name}
+                </h2>
+              )}
               <button
                 onClick={onBack}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-                title="Назад"
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2"
+                title="Назад в галерею"
               >
                 <i className="fas fa-arrow-left"></i>
               </button>
@@ -834,44 +979,13 @@ export default function EditorCanvas({
                   className="w-full h-8 border border-gray-300 rounded mt-1"
                 />
               </div>
-              <div className="relative group">
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between">
-                  <span><i className="fas fa-download mr-2"></i> Экспорт</span>
-                  <i className="fas fa-chevron-right text-xs"></i>
-                </button>
-                <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                  <button
-                    onClick={() => handleExport('svg')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-                  >
-                    <i className="fas fa-file-code mr-2"></i> SVG
-                  </button>
-                  <button
-                    onClick={() => handleExport('png', 1)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-                  >
-                    <i className="fas fa-image mr-2"></i> PNG (стандартное)
-                  </button>
-                  <button
-                    onClick={() => handleExport('png', 2)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-                  >
-                    <i className="fas fa-image mr-2"></i> PNG (высокое)
-                  </button>
-                  <button
-                    onClick={() => handleExport('png', 3)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-                  >
-                    <i className="fas fa-image mr-2"></i> PNG (максимальное)
-                  </button>
-                  <button
-                    onClick={() => handleExport('pdf')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-                  >
-                    <i className="fas fa-file-pdf mr-2"></i> PDF
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => setShowExportDialog(true)}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
+              >
+                <span><i className="fas fa-download mr-2"></i> Экспорт</span>
+                <i className="fas fa-chevron-right text-xs"></i>
+              </button>
             </div>
           </div>
 
@@ -957,6 +1071,193 @@ export default function EditorCanvas({
               </div>
             )}
           </div>
+
+          {/* Библиотека компонентов (показывается при выборе типа диаграммы) */}
+          {diagramTypeFilter !== 'all' && (
+            <div className="border-b border-gray-200">
+              <div className="px-4 py-3 text-sm font-medium text-gray-900">Библиотека компонентов</div>
+              <div className="px-4 pb-3 space-y-2">
+                {diagramTypeFilter === 'IDEF0' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'idef0-box',
+                          x: 100,
+                          y: 100,
+                          width: 200,
+                          height: 120,
+                          text: 'Функция',
+                          fill: '#ffffff',
+                          stroke: '#000000',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-square mr-2"></i> Блок функции
+                    </button>
+                  </>
+                )}
+                {diagramTypeFilter === 'DFD' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'dfd-process',
+                          x: 100,
+                          y: 100,
+                          width: 120,
+                          height: 80,
+                          text: 'Процесс',
+                          fill: '#ffffff',
+                          stroke: '#000000',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-circle mr-2"></i> Процесс
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'dfd-data-store',
+                          x: 100,
+                          y: 100,
+                          width: 100,
+                          height: 60,
+                          text: 'Хранилище',
+                          fill: '#ffffff',
+                          stroke: '#000000',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-database mr-2"></i> Хранилище данных
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'dfd-external',
+                          x: 100,
+                          y: 100,
+                          width: 100,
+                          height: 60,
+                          text: 'Внешняя сущность',
+                          fill: '#ffffff',
+                          stroke: '#000000',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-user mr-2"></i> Внешняя сущность
+                    </button>
+                  </>
+                )}
+                {diagramTypeFilter === 'BPMN' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'bpmn-event',
+                          x: 100,
+                          y: 100,
+                          width: 40,
+                          height: 40,
+                          fill: '#4caf50',
+                          stroke: '#2e7d32',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-circle mr-2"></i> Событие
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'bpmn-task',
+                          x: 100,
+                          y: 100,
+                          width: 120,
+                          height: 60,
+                          text: 'Задача',
+                          fill: '#ffffff',
+                          stroke: '#000000',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-square mr-2"></i> Задача
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newElement: EditorElement = {
+                          id: `element_${Date.now()}`,
+                          type: 'bpmn-gateway',
+                          x: 100,
+                          y: 100,
+                          width: 50,
+                          height: 50,
+                          fill: '#ffffff',
+                          stroke: '#000000',
+                          strokeWidth: 2,
+                          zIndex: currentPage.elements.length,
+                          opacity: 1,
+                        };
+                        saveToHistory();
+                        onAddElement(newElement);
+                        onSelectElement(newElement.id);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
+                    >
+                      <i className="fas fa-times mr-2"></i> Шлюз
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Слои */}
           <div className="flex-1 overflow-y-auto">
@@ -1079,6 +1380,50 @@ export default function EditorCanvas({
               <i className="fas fa-bars"></i>
             </button>
             <span className="text-sm text-gray-600">{currentPage.name}</span>
+            <div className="w-px h-6 bg-gray-300 mx-2"></div>
+            {/* Переключатель типа диаграммы */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setDiagramTypeFilter('all')}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  diagramTypeFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Все
+              </button>
+              <button
+                onClick={() => setDiagramTypeFilter('IDEF0')}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  diagramTypeFilter === 'IDEF0' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                IDEF0
+              </button>
+              <button
+                onClick={() => setDiagramTypeFilter('DFD')}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  diagramTypeFilter === 'DFD' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                DFD
+              </button>
+              <button
+                onClick={() => setDiagramTypeFilter('BPMN')}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  diagramTypeFilter === 'BPMN' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                BPMN
+              </button>
+              <button
+                onClick={() => setDiagramTypeFilter('Custom')}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  diagramTypeFilter === 'Custom' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Произвольная
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1175,13 +1520,28 @@ export default function EditorCanvas({
         {/* Нижняя панель инструментов */}
         <div className="h-16 bg-white border-t border-gray-200 flex items-center justify-center gap-4 px-4">
           <button
-            onClick={() => setTool('select')}
+            onClick={() => {
+              setTool('select');
+              setToolMode('select');
+            }}
             className={`p-3 rounded-lg transition-colors ${
-              tool === 'select' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+              tool === 'select' && toolMode === 'select' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
-            title="Курсор"
+            title="Курсор (V)"
           >
             <i className="fas fa-mouse-pointer"></i>
+          </button>
+          <button
+            onClick={() => {
+              setToolMode('pan');
+              setTool('select');
+            }}
+            className={`p-3 rounded-lg transition-colors ${
+              toolMode === 'pan' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Рука для панорамирования (H)"
+          >
+            <i className="fas fa-hand"></i>
           </button>
           <button
             onClick={() => setTool('rectangle')}
@@ -1230,14 +1590,26 @@ export default function EditorCanvas({
           </button>
           <div className="w-px h-8 bg-gray-300"></div>
           <button
+            onClick={() => setTool('arrow')}
+            className={`p-3 rounded-lg transition-colors ${
+              tool === 'arrow' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Соединительная линия"
+          >
+            <i className="fas fa-project-diagram"></i>
+          </button>
+          <button
             className="p-3 rounded-lg text-gray-600 hover:bg-gray-100"
             title="Шаблоны"
           >
             <i className="fas fa-layer-group"></i>
           </button>
           <button
-            className="p-3 rounded-lg text-gray-600 hover:bg-gray-100"
-            title="Комментарии"
+            onClick={() => setTool('comment')}
+            className={`p-3 rounded-lg transition-colors ${
+              tool === 'comment' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Комментарий"
           >
             <i className="fas fa-comment"></i>
           </button>
@@ -1396,7 +1768,7 @@ export default function EditorCanvas({
                       onUpdateElement(selectedElementId, { x: leftmost });
                     }
                   }}
-                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-transform hover:scale-105"
                   title="По левому краю"
                 >
                   <i className="fas fa-align-left"></i>
@@ -1408,7 +1780,7 @@ export default function EditorCanvas({
                       onUpdateElement(selectedElementId, { x: centerX });
                     }
                   }}
-                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-transform hover:scale-105"
                   title="По центру"
                 >
                   <i className="fas fa-align-center"></i>
@@ -1420,12 +1792,145 @@ export default function EditorCanvas({
                       onUpdateElement(selectedElementId, { x: rightmost - (selectedElement.width || 0) });
                     }
                   }}
-                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-transform hover:scale-105"
                   title="По правому краю"
                 >
                   <i className="fas fa-align-right"></i>
                 </button>
               </div>
+            </div>
+
+            {/* IDEF0 специфичные поля */}
+            {selectedElement.type === 'idef0-box' && (
+              <div className="pt-2 border-t border-gray-200 space-y-3">
+                <div className="text-xs font-medium text-gray-700 mb-2">IDEF0 свойства</div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Номер (A1, A2...)</label>
+                  <input
+                    type="text"
+                    value={selectedElement.idef0Number || ''}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { idef0Number: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    placeholder="A1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Название функции</label>
+                  <input
+                    type="text"
+                    value={selectedElement.text || ''}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { text: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    placeholder="Название функции"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Детализация (ID диаграммы)</label>
+                  <input
+                    type="text"
+                    value={selectedElement.idef0DetailDiagramId || ''}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { idef0DetailDiagramId: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    placeholder="ID диаграммы детализации"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Ссылка на другую диаграмму в системе</p>
+                </div>
+              </div>
+            )}
+
+            {/* DFD специфичные поля для стрелок */}
+            {selectedElement.type === 'arrow' && diagram.diagramType === 'DFD' && (
+              <div className="pt-2 border-t border-gray-200 space-y-3">
+                <div className="text-xs font-medium text-gray-700 mb-2">DFD свойства</div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Метка на стрелке</label>
+                  <input
+                    type="text"
+                    value={selectedElement.dfdLabel || ''}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { dfdLabel: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    placeholder="Название потока данных"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Позиция метки (0-1)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={selectedElement.dfdLabelPosition !== undefined ? selectedElement.dfdLabelPosition : 0.5}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { dfdLabelPosition: parseFloat(e.target.value) || 0.5 })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Правая панель - свойства страницы (когда ничего не выбрано) */}
+      {rightMenuOpen && !selectedElement && (
+        <div className="w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900">Свойства страницы</h3>
+            <button
+              onClick={() => setRightMenuOpen(false)}
+              className="p-1 text-gray-500 hover:text-gray-700"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Название страницы</label>
+              <input
+                type="text"
+                value={currentPage.name}
+                onChange={(e) => {
+                  const updatedPage = { ...currentPage, name: e.target.value };
+                  onUpdatePage(updatedPage);
+                }}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Ширина</label>
+              <input
+                type="number"
+                value={currentPage.width}
+                onChange={(e) => {
+                  const updatedPage = { ...currentPage, width: parseFloat(e.target.value) || 1920 };
+                  onUpdatePage(updatedPage);
+                }}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Высота</label>
+              <input
+                type="number"
+                value={currentPage.height}
+                onChange={(e) => {
+                  const updatedPage = { ...currentPage, height: parseFloat(e.target.value) || 1080 };
+                  onUpdatePage(updatedPage);
+                }}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Цвет фона</label>
+              <input
+                type="color"
+                value={currentPage.background || '#ffffff'}
+                onChange={(e) => {
+                  const updatedPage = { ...currentPage, background: e.target.value };
+                  onUpdatePage(updatedPage);
+                }}
+                className="w-full h-8 border border-gray-300 rounded"
+              />
             </div>
           </div>
         </div>
@@ -1440,6 +1945,136 @@ export default function EditorCanvas({
           >
             <i className="fas fa-chevron-left"></i>
           </button>
+        </div>
+      )}
+
+      {/* Диалог экспорта */}
+      {showExportDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Экспорт диаграммы</h3>
+              <button
+                onClick={() => setShowExportDialog(false)}
+                className="p-2 text-gray-500 hover:text-gray-700"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Формат</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setExportFormat('svg')}
+                    className={`p-3 border rounded-lg text-sm transition-colors ${
+                      exportFormat === 'svg' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <i className="fas fa-file-code mr-2"></i> SVG
+                  </button>
+                  <button
+                    onClick={() => setExportFormat('png')}
+                    className={`p-3 border rounded-lg text-sm transition-colors ${
+                      exportFormat === 'png' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <i className="fas fa-image mr-2"></i> PNG
+                  </button>
+                  <button
+                    onClick={() => setExportFormat('pdf')}
+                    className={`p-3 border rounded-lg text-sm transition-colors ${
+                      exportFormat === 'pdf' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <i className="fas fa-file-pdf mr-2"></i> PDF
+                  </button>
+                  <button
+                    onClick={() => setExportFormat('ctxdr')}
+                    className={`p-3 border rounded-lg text-sm transition-colors ${
+                      exportFormat === 'ctxdr' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <i className="fas fa-file-code mr-2"></i> .ctxdr
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Область экспорта</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="page"
+                      checked={exportScope === 'page'}
+                      onChange={(e) => setExportScope(e.target.value as 'page')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Текущая страница</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="all"
+                      checked={exportScope === 'all'}
+                      onChange={(e) => setExportScope(e.target.value as 'all')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Все страницы</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="selection"
+                      checked={exportScope === 'selection'}
+                      onChange={(e) => setExportScope(e.target.value as 'selection')}
+                      className="mr-2"
+                      disabled={!selectedElementId}
+                    />
+                    <span className={`text-sm ${selectedElementId ? 'text-gray-700' : 'text-gray-400'}`}>
+                      Выделенная область {!selectedElementId && '(ничего не выбрано)'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowExportDialog(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={() => {
+                    if (exportFormat === 'ctxdr') {
+                      // Экспорт в собственный формат
+                      const exportData = {
+                        diagram: diagram,
+                        version: '1.0',
+                        exportedAt: new Date().toISOString(),
+                      };
+                      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `${diagram.name}.ctxdr`;
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    } else {
+                      handleExport(exportFormat as 'svg' | 'png' | 'pdf');
+                    }
+                    setShowExportDialog(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Экспортировать
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
