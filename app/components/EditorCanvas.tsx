@@ -34,7 +34,7 @@ export default function EditorCanvas({
   onUpdatePageName,
   onBack,
 }: EditorCanvasProps) {
-  const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'arrow'>('select');
+  const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'arrow' | 'comment'>('select');
   const [leftMenuOpen, setLeftMenuOpen] = useState(true);
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
   const [layersOpen, setLayersOpen] = useState(true);
