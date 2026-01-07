@@ -32,17 +32,28 @@ export default function EditorCanvas({
   onDeletePage,
   onBack,
 }: EditorCanvasProps) {
-  const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text'>('select');
+  const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'arrow'>('select');
   const [leftMenuOpen, setLeftMenuOpen] = useState(true);
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
   const [layersOpen, setLayersOpen] = useState(true);
   const [pagesOpen, setPagesOpen] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [showGrid, setShowGrid] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridSize] = useState(20);
+  const [history, setHistory] = useState<EditorPage[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [copiedElement, setCopiedElement] = useState<EditorElement | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [editingLayerName, setEditingLayerName] = useState<string | null>(null);
+  const [editingPageName, setEditingPageName] = useState<string | null>(null);
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
 
@@ -58,11 +69,14 @@ export default function EditorCanvas({
       const x = (e.clientX - rect.left - pan.x) / zoom;
       const y = (e.clientY - rect.top - pan.y) / zoom;
 
+      const snappedX = snapToGridValue(x);
+      const snappedY = snapToGridValue(y);
+
       const newElement: EditorElement = {
         id: `element_${Date.now()}`,
-        type: tool === 'rectangle' ? 'rectangle' : tool === 'circle' ? 'circle' : tool === 'line' ? 'line' : 'text',
-        x,
-        y,
+        type: tool === 'rectangle' ? 'rectangle' : tool === 'circle' ? 'circle' : tool === 'line' ? 'line' : tool === 'arrow' ? 'arrow' : 'text',
+        x: snappedX,
+        y: snappedY,
         width: tool === 'text' ? undefined : 100,
         height: tool === 'text' ? undefined : 100,
         text: tool === 'text' ? 'Текст' : undefined,
@@ -72,9 +86,13 @@ export default function EditorCanvas({
         fontSize: tool === 'text' ? 16 : undefined,
         fontFamily: 'Inter, sans-serif',
         zIndex: currentPage.elements.length,
+        opacity: 1,
       };
 
+      saveToHistory();
+
       onAddElement(newElement);
+      onSelectElement(newElement.id);
       setTool('select');
     }
   };
@@ -82,9 +100,11 @@ export default function EditorCanvas({
   const handleElementMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
     if (tool === 'select') {
+      const element = currentPage.elements.find(el => el.id === elementId);
+      if (element?.locked) return;
+      
       onSelectElement(elementId);
       setIsDragging(true);
-      const element = currentPage.elements.find(el => el.id === elementId);
       if (element) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (rect) {
@@ -98,26 +118,115 @@ export default function EditorCanvas({
   };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging && selectedElementId && tool === 'select') {
+    // Обновление позиции мыши для отображения координат
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setMousePosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    }
+
+    if (isDragging && selectedElementId && tool === 'select' && !isResizing) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      const newX = (e.clientX - dragStart.x - pan.x) / zoom;
-      const newY = (e.clientY - dragStart.y - pan.y) / zoom;
+      let newX = (e.clientX - dragStart.x - pan.x) / zoom;
+      let newY = (e.clientY - dragStart.y - pan.y) / zoom;
+
+      // Привязка к сетке
+      newX = snapToGridValue(newX);
+      newY = snapToGridValue(newY);
 
       onUpdateElement(selectedElementId, {
         x: Math.max(0, newX),
         y: Math.max(0, newY),
       });
+    } else if (isResizing && selectedElementId && selectedElement) {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const mouseX = (e.clientX - rect.left - pan.x) / zoom;
+      const mouseY = (e.clientY - rect.top - pan.y) / zoom;
+      const deltaX = mouseX - dragStart.x;
+      const deltaY = mouseY - dragStart.y;
+
+      let updates: Partial<EditorElement> = {};
+
+      switch (resizeHandle) {
+        case 'nw':
+          updates = {
+            x: snapToGridValue(selectedElement.x + deltaX),
+            y: snapToGridValue(selectedElement.y + deltaY),
+            width: snapToGridValue((selectedElement.width || 100) - deltaX),
+            height: snapToGridValue((selectedElement.height || 100) - deltaY),
+          };
+          break;
+        case 'ne':
+          updates = {
+            y: snapToGridValue(selectedElement.y + deltaY),
+            width: snapToGridValue((selectedElement.width || 100) + deltaX),
+            height: snapToGridValue((selectedElement.height || 100) - deltaY),
+          };
+          break;
+        case 'sw':
+          updates = {
+            x: snapToGridValue(selectedElement.x + deltaX),
+            width: snapToGridValue((selectedElement.width || 100) - deltaX),
+            height: snapToGridValue((selectedElement.height || 100) + deltaY),
+          };
+          break;
+        case 'se':
+          updates = {
+            width: snapToGridValue((selectedElement.width || 100) + deltaX),
+            height: snapToGridValue((selectedElement.height || 100) + deltaY),
+          };
+          break;
+        case 'n':
+          updates = {
+            y: snapToGridValue(selectedElement.y + deltaY),
+            height: snapToGridValue((selectedElement.height || 100) - deltaY),
+          };
+          break;
+        case 's':
+          updates = {
+            height: snapToGridValue((selectedElement.height || 100) + deltaY),
+          };
+          break;
+        case 'w':
+          updates = {
+            x: snapToGridValue(selectedElement.x + deltaX),
+            width: snapToGridValue((selectedElement.width || 100) - deltaX),
+          };
+          break;
+        case 'e':
+          updates = {
+            width: snapToGridValue((selectedElement.width || 100) + deltaX),
+          };
+          break;
+      }
+
+      // Ограничения минимального размера
+      if (updates.width !== undefined && updates.width < 10) updates.width = 10;
+      if (updates.height !== undefined && updates.height < 10) updates.height = 10;
+      if (updates.x !== undefined && updates.x < 0) updates.x = 0;
+      if (updates.y !== undefined && updates.y < 0) updates.y = 0;
+
+      onUpdateElement(selectedElementId, updates);
     }
-  }, [isDragging, selectedElementId, tool, dragStart, pan, zoom, onUpdateElement]);
+  }, [isDragging, isResizing, selectedElementId, tool, dragStart, pan, zoom, onUpdateElement, resizeHandle, selectedElement, snapToGridValue]);
 
   const handleMouseUp = useCallback(() => {
+    if (isDragging || isResizing) {
+      saveToHistory();
+    }
     setIsDragging(false);
-  }, []);
+    setIsResizing(false);
+    setResizeHandle(null);
+  }, [isDragging, isResizing, saveToHistory]);
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -125,26 +234,138 @@ export default function EditorCanvas({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+
+  // Масштабирование колесиком мыши
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom(prev => Math.max(0.25, Math.min(4, prev + delta)));
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      return () => container.removeEventListener('wheel', handleWheel);
+    }
+  }, []);
+
+  // Инициализация истории
+  useEffect(() => {
+    if (history.length === 0) {
+      setHistory([{ ...currentPage }]);
+      setHistoryIndex(0);
+    }
+  }, [currentPage, history.length]);
 
   const handleDelete = useCallback(() => {
     if (selectedElementId) {
+      saveToHistory();
       onDeleteElement(selectedElementId);
     }
   }, [selectedElementId, onDeleteElement]);
 
+  // История действий (Undo/Redo)
+  const saveToHistory = useCallback(() => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({ ...currentPage });
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [currentPage, history, historyIndex]);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevPage = history[historyIndex - 1];
+      onUpdatePage({ ...prevPage });
+      setHistoryIndex(historyIndex - 1);
+    }
+  }, [history, historyIndex, onUpdatePage]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextPage = history[historyIndex + 1];
+      onUpdatePage({ ...nextPage });
+      setHistoryIndex(historyIndex + 1);
+    }
+  }, [history, historyIndex, onUpdatePage]);
+
+  // Копирование/Вставка
+  const handleCopy = useCallback(() => {
+    if (selectedElementId && selectedElement) {
+      setCopiedElement({ ...selectedElement });
+    }
+  }, [selectedElementId, selectedElement]);
+
+  const handlePaste = useCallback(() => {
+    if (copiedElement) {
+      saveToHistory();
+      const newElement: EditorElement = {
+        ...copiedElement,
+        id: `element_${Date.now()}`,
+        x: copiedElement.x + 20,
+        y: copiedElement.y + 20,
+      };
+      onAddElement(newElement);
+      onSelectElement(newElement.id);
+    }
+  }, [copiedElement, onAddElement, onSelectElement, saveToHistory]);
+
+  // Привязка к сетке
+  const snapToGridValue = useCallback((value: number) => {
+    if (!snapToGrid) return value;
+    return Math.round(value / gridSize) * gridSize;
+  }, [snapToGrid, gridSize]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Удаление
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
-        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
-          handleDelete();
-        }
+        handleDelete();
+      }
+      // Копирование
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementId) {
+        e.preventDefault();
+        handleCopy();
+      }
+      // Вставка
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedElement) {
+        e.preventDefault();
+        handlePaste();
+      }
+      // Отмена
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      // Повтор
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+      // Горячие клавиши для инструментов
+      else if (e.key === 'v') {
+        setTool('select');
+      } else if (e.key === 'r') {
+        setTool('rectangle');
+      } else if (e.key === 'o') {
+        setTool('circle');
+      } else if (e.key === 'l') {
+        setTool('line');
+      } else if (e.key === 't') {
+        setTool('text');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, handleDelete]);
+  }, [selectedElementId, handleDelete, handleCopy, handlePaste, handleUndo, handleRedo, copiedElement]);
 
   const exportSVG = () => {
     if (!canvasRef.current) return;
@@ -161,10 +382,14 @@ export default function EditorCanvas({
     URL.revokeObjectURL(url);
   };
 
-  const exportPNG = async () => {
+  const exportPNG = async (quality: number = 1) => {
     if (!canvasRef.current) return;
 
     const svg = canvasRef.current.cloneNode(true) as SVGElement;
+    // Удаляем маркеры изменения размера из экспорта
+    const resizeHandles = svg.querySelectorAll('[data-resize-handle]');
+    resizeHandles.forEach(handle => handle.remove());
+    
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
@@ -172,14 +397,15 @@ export default function EditorCanvas({
 
     const img = new Image();
     img.onload = () => {
+      const scale = quality;
       const canvas = document.createElement('canvas');
-      canvas.width = currentPage.width;
-      canvas.height = currentPage.height;
+      canvas.width = currentPage.width * scale;
+      canvas.height = currentPage.height * scale;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.fillStyle = currentPage.background || '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         canvas.toBlob((blob) => {
           if (blob) {
             const downloadUrl = URL.createObjectURL(blob);
@@ -189,7 +415,7 @@ export default function EditorCanvas({
             link.click();
             URL.revokeObjectURL(downloadUrl);
           }
-        }, 'image/png');
+        }, 'image/png', quality);
       }
       URL.revokeObjectURL(url);
     };
@@ -258,16 +484,87 @@ export default function EditorCanvas({
     }
   };
 
-  const handleExport = (format: 'svg' | 'png' | 'pdf') => {
+  const handleExport = (format: 'svg' | 'png' | 'pdf', quality?: number) => {
     if (format === 'svg') {
       exportSVG();
     } else if (format === 'png') {
-      exportPNG();
+      if (quality !== undefined) {
+        exportPNG(quality);
+      } else {
+        // Показываем диалог выбора качества
+        const qualityChoice = prompt('Выберите качество (1 = стандартное, 2 = высокое, 3 = максимальное):', '2');
+        if (qualityChoice) {
+          const q = parseFloat(qualityChoice);
+          exportPNG(Math.max(0.1, Math.min(3, q)));
+        }
+      }
     } else if (format === 'pdf') {
       exportPDF();
     }
   };
 
+
+  // Рендеринг маркеров изменения размера
+  const renderResizeHandles = (element: EditorElement) => {
+    if (element.id !== selectedElementId || !selectedElement || tool !== 'select') return null;
+    if (element.width === undefined || element.height === undefined) return null;
+    if (element.locked) return null;
+
+    const handles = [
+      { id: 'nw', x: element.x, y: element.y, cursor: 'nw-resize' },
+      { id: 'ne', x: element.x + element.width, y: element.y, cursor: 'ne-resize' },
+      { id: 'sw', x: element.x, y: element.y + element.height, cursor: 'sw-resize' },
+      { id: 'se', x: element.x + element.width, y: element.y + element.height, cursor: 'se-resize' },
+      { id: 'n', x: element.x + element.width / 2, y: element.y, cursor: 'n-resize' },
+      { id: 's', x: element.x + element.width / 2, y: element.y + element.height, cursor: 's-resize' },
+      { id: 'w', x: element.x, y: element.y + element.height / 2, cursor: 'w-resize' },
+      { id: 'e', x: element.x + element.width, y: element.y + element.height / 2, cursor: 'e-resize' },
+    ];
+
+    return (
+      <g>
+        {/* Рамка выбранного элемента */}
+        <rect
+          x={element.x - 2}
+          y={element.y - 2}
+          width={element.width + 4}
+          height={element.height + 4}
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth={2}
+          strokeDasharray="5,5"
+          pointerEvents="none"
+        />
+        {/* Маркеры */}
+        {handles.map(handle => (
+          <rect
+            key={handle.id}
+            x={handle.x - 6}
+            y={handle.y - 6}
+            width={12}
+            height={12}
+            fill="#3b82f6"
+            stroke="#ffffff"
+            strokeWidth={2}
+            cursor={handle.cursor}
+            onMouseDown={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setIsResizing(true);
+              setResizeHandle(handle.id);
+              const rect = canvasRef.current?.getBoundingClientRect();
+              if (rect && selectedElement) {
+                setDragStart({
+                  x: (e.clientX - rect.left - pan.x) / zoom - selectedElement.x,
+                  y: (e.clientY - rect.top - pan.y) / zoom - selectedElement.y,
+                });
+              }
+            }}
+            style={{ cursor: handle.cursor }}
+          />
+        ))}
+      </g>
+    );
+  };
 
   const renderElement = (element: EditorElement) => {
     const commonProps = {
@@ -281,6 +578,7 @@ export default function EditorCanvas({
 
     const isSelected = element.id === selectedElementId;
     const strokeWidth = isSelected ? (element.strokeWidth || 2) + 2 : (element.strokeWidth || 2);
+    const opacity = element.opacity !== undefined ? element.opacity : 1;
 
     switch (element.type) {
       case 'rectangle':
@@ -294,8 +592,10 @@ export default function EditorCanvas({
             fill={element.fill || '#3b82f6'}
             stroke={isSelected ? '#ef4444' : (element.stroke || '#1e40af')}
             strokeWidth={strokeWidth}
+            opacity={opacity}
             rx={4}
             ry={4}
+            opacity={opacity}
           />
         );
       case 'circle':
@@ -308,6 +608,7 @@ export default function EditorCanvas({
             fill={element.fill || '#3b82f6'}
             stroke={isSelected ? '#ef4444' : (element.stroke || '#1e40af')}
             strokeWidth={strokeWidth}
+            opacity={opacity}
           />
         );
       case 'line':
@@ -333,6 +634,7 @@ export default function EditorCanvas({
               fontFamily={element.fontFamily || 'Inter, sans-serif'}
               stroke={isSelected ? '#ef4444' : 'none'}
               strokeWidth={isSelected ? 1 : 0}
+              opacity={opacity}
             >
               {element.text || 'Текст'}
             </text>
@@ -352,6 +654,7 @@ export default function EditorCanvas({
               stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
               strokeWidth={strokeWidth}
               markerEnd="url(#arrowhead)"
+              opacity={opacity}
             />
             <defs>
               <marker
@@ -510,13 +813,26 @@ export default function EditorCanvas({
             <div className="space-y-1">
               <button 
                 onClick={() => {
-                  // Автосохранение уже работает
+                  saveToHistory();
                   alert('Диаграмма сохранена');
                 }}
                 className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
               >
                 <i className="fas fa-save mr-2"></i> Сохранить
               </button>
+              <div className="px-3 py-2 text-xs text-gray-500">
+                <div>Фон страницы:</div>
+                <input
+                  type="color"
+                  value={currentPage.background || '#ffffff'}
+                  onChange={(e) => {
+                    const updatedPage = { ...currentPage, background: e.target.value };
+                    saveToHistory();
+                    onUpdatePage(updatedPage);
+                  }}
+                  className="w-full h-8 border border-gray-300 rounded mt-1"
+                />
+              </div>
               <div className="relative group">
                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between">
                   <span><i className="fas fa-download mr-2"></i> Экспорт</span>
@@ -530,10 +846,22 @@ export default function EditorCanvas({
                     <i className="fas fa-file-code mr-2"></i> SVG
                   </button>
                   <button
-                    onClick={() => handleExport('png')}
+                    onClick={() => handleExport('png', 1)}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
                   >
-                    <i className="fas fa-image mr-2"></i> PNG
+                    <i className="fas fa-image mr-2"></i> PNG (стандартное)
+                  </button>
+                  <button
+                    onClick={() => handleExport('png', 2)}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                  >
+                    <i className="fas fa-image mr-2"></i> PNG (высокое)
+                  </button>
+                  <button
+                    onClick={() => handleExport('png', 3)}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                  >
+                    <i className="fas fa-image mr-2"></i> PNG (максимальное)
                   </button>
                   <button
                     onClick={() => handleExport('pdf')}
@@ -560,25 +888,69 @@ export default function EditorCanvas({
                 {diagram.pages.map((page) => (
                   <div
                     key={page.id}
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 flex items-center justify-between ${
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 flex items-center justify-between group ${
                       page.id === currentPage.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                     }`}
                     onClick={() => onSwitchPage(page.id)}
                   >
-                    <span>{page.name}</span>
-                    {diagram.pages.length > 1 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('Удалить страницу?')) {
-                            onDeletePage(page.id);
+                    {editingPageName === page.id ? (
+                      <input
+                        type="text"
+                        value={page.name}
+                        onBlur={() => {
+                          const updatedPages = diagram.pages.map(p =>
+                            p.id === page.id ? { ...p, name: page.name } : p
+                          );
+                          onUpdatePage({ ...currentPage, ...diagram, pages: updatedPages });
+                          setEditingPageName(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const updatedPages = diagram.pages.map(p =>
+                              p.id === page.id ? { ...p, name: page.name } : p
+                            );
+                            onUpdatePage({ ...currentPage, ...diagram, pages: updatedPages });
+                            setEditingPageName(null);
+                          } else if (e.key === 'Escape') {
+                            setEditingPageName(null);
                           }
                         }}
-                        className="text-red-500 hover:text-red-700"
+                        onChange={(e) => {
+                          const updatedPages = diagram.pages.map(p =>
+                            p.id === page.id ? { ...p, name: e.target.value } : p
+                          );
+                          onUpdatePage({ ...currentPage, ...diagram, pages: updatedPages });
+                        }}
+                        className="flex-1 text-xs border border-blue-300 rounded px-1"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPageName(page.id);
+                        }}
                       >
-                        <i className="fas fa-trash text-xs"></i>
-                      </button>
+                        {page.name}
+                      </span>
                     )}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {diagram.pages.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Удалить страницу?')) {
+                              saveToHistory();
+                              onDeletePage(page.id);
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <i className="fas fa-trash text-xs"></i>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <button
@@ -613,30 +985,83 @@ export default function EditorCanvas({
                     .map((element) => (
                       <div
                         key={element.id}
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 ${
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 group ${
                           element.id === selectedElementId ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                         }`}
                         onClick={() => onSelectElement(element.id)}
                       >
                         <div className="flex items-center justify-between">
-                          <span>
+                          <div className="flex items-center flex-1 min-w-0">
+                            {element.locked && (
+                              <i className="fas fa-lock text-xs mr-1 text-gray-400"></i>
+                            )}
                             <i className={`fas fa-${
                               element.type === 'rectangle' ? 'square' :
                               element.type === 'circle' ? 'circle' :
                               element.type === 'line' ? 'minus' :
+                              element.type === 'arrow' ? 'arrow-right' :
                               'font'
-                            } mr-2`}></i>
-                            {element.type === 'text' ? element.text || 'Текст' : element.type}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteElement(element.id);
-                            }}
-                            className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
-                          >
-                            <i className="fas fa-trash text-xs"></i>
-                          </button>
+                            } mr-2 flex-shrink-0`}></i>
+                            {editingLayerName === element.id ? (
+                              <input
+                                type="text"
+                                value={element.name || ''}
+                                onBlur={() => {
+                                  if (element.name !== undefined) {
+                                    onUpdateElement(element.id, { name: element.name });
+                                  }
+                                  setEditingLayerName(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (element.name !== undefined) {
+                                      onUpdateElement(element.id, { name: element.name });
+                                    }
+                                    setEditingLayerName(null);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingLayerName(null);
+                                  }
+                                }}
+                                onChange={(e) => onUpdateElement(element.id, { name: e.target.value })}
+                                className="flex-1 text-xs border border-blue-300 rounded px-1"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <span
+                                className="truncate flex-1"
+                                onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingLayerName(element.id);
+                                }}
+                              >
+                                {element.name || (element.type === 'text' ? element.text || 'Текст' : element.type)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateElement(element.id, { locked: !element.locked });
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                              title={element.locked ? 'Разблокировать' : 'Заблокировать'}
+                            >
+                              <i className={`fas fa-${element.locked ? 'unlock' : 'lock'} text-xs`}></i>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveToHistory();
+                                onDeleteElement(element.id);
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                              title="Удалить"
+                            >
+                              <i className="fas fa-trash text-xs"></i>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -662,6 +1087,38 @@ export default function EditorCanvas({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleUndo}
+              disabled={historyIndex <= 0}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Отменить (Ctrl+Z)"
+            >
+              <i className="fas fa-undo"></i>
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Повторить (Ctrl+Y)"
+            >
+              <i className="fas fa-redo"></i>
+            </button>
+            <div className="w-px h-6 bg-gray-300"></div>
+            <button
+              onClick={() => setShowGrid(!showGrid)}
+              className={`p-2 rounded ${showGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+              title="Показать/скрыть сетку"
+            >
+              <i className="fas fa-th"></i>
+            </button>
+            <button
+              onClick={() => setSnapToGrid(!snapToGrid)}
+              className={`p-2 rounded ${snapToGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+              title="Привязка к сетке"
+            >
+              <i className="fas fa-magnet"></i>
+            </button>
+            <div className="w-px h-6 bg-gray-300"></div>
+            <button
               onClick={() => setZoom(Math.max(0.25, zoom - 0.25))}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
             >
@@ -674,11 +1131,20 @@ export default function EditorCanvas({
             >
               <i className="fas fa-plus"></i>
             </button>
+            <button
+              onClick={() => setZoom(1)}
+              className="px-3 py-1 text-xs text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded"
+            >
+              100%
+            </button>
+          </div>
+          <div className="text-xs text-gray-500">
+            X: {Math.round(mousePosition.x)} Y: {Math.round(mousePosition.y)}
           </div>
         </div>
 
         {/* Холст */}
-        <div className="flex-1 overflow-auto bg-gray-100" style={{ backgroundImage: 'radial-gradient(circle, #e5e7eb 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+        <div className="flex-1 overflow-auto bg-gray-100">
           <div className="flex items-center justify-center h-full p-8">
             <svg
               ref={canvasRef}
@@ -694,7 +1160,19 @@ export default function EditorCanvas({
               }}
               onClick={handleCanvasClick}
             >
+              {/* Сетка */}
+              {showGrid && (
+                <defs>
+                  <pattern id="grid" width={gridSize} height={gridSize} patternUnits="userSpaceOnUse">
+                    <path d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`} fill="none" stroke="#e5e7eb" strokeWidth="0.5" opacity="0.5" />
+                  </pattern>
+                </defs>
+              )}
+              {showGrid && (
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              )}
               {currentPage.elements.map(renderElement)}
+              {selectedElement && renderResizeHandles(selectedElement)}
             </svg>
           </div>
         </div>
@@ -733,9 +1211,18 @@ export default function EditorCanvas({
             className={`p-3 rounded-lg transition-colors ${
               tool === 'line' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
-            title="Линия"
+            title="Линия (L)"
           >
             <i className="fas fa-minus"></i>
+          </button>
+          <button
+            onClick={() => setTool('arrow')}
+            className={`p-3 rounded-lg transition-colors ${
+              tool === 'arrow' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Стрелка"
+          >
+            <i className="fas fa-arrow-right"></i>
           </button>
           <button
             onClick={() => setTool('text')}
@@ -856,6 +1343,95 @@ export default function EditorCanvas({
                 />
               </div>
             )}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Название</label>
+              <input
+                type="text"
+                value={selectedElement.name || ''}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { name: e.target.value })}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                placeholder="Название элемента"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Прозрачность</label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={selectedElement.opacity !== undefined ? selectedElement.opacity : 1}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { opacity: parseFloat(e.target.value) })}
+                className="w-full"
+              />
+              <span className="text-xs text-gray-500">
+                {Math.round((selectedElement.opacity !== undefined ? selectedElement.opacity : 1) * 100)}%
+              </span>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Толщина обводки</label>
+              <input
+                type="number"
+                min="0"
+                value={selectedElement.strokeWidth || 2}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { strokeWidth: parseFloat(e.target.value) || 0 })}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => selectedElementId && onUpdateElement(selectedElementId, { locked: !selectedElement.locked })}
+                className={`flex-1 px-3 py-2 text-xs rounded ${
+                  selectedElement.locked
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <i className={`fas fa-${selectedElement.locked ? 'lock' : 'unlock'} mr-1`}></i>
+                {selectedElement.locked ? 'Заблокирован' : 'Заблокировать'}
+              </button>
+            </div>
+            <div className="pt-2 border-t border-gray-200">
+              <div className="text-xs font-medium text-gray-700 mb-2">Выравнивание</div>
+              <div className="grid grid-cols-3 gap-1">
+                <button
+                  onClick={() => {
+                    if (selectedElementId && selectedElement.width !== undefined) {
+                      const leftmost = Math.min(...currentPage.elements.map(el => el.x));
+                      onUpdateElement(selectedElementId, { x: leftmost });
+                    }
+                  }}
+                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                  title="По левому краю"
+                >
+                  <i className="fas fa-align-left"></i>
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedElementId && selectedElement.width !== undefined) {
+                      const centerX = currentPage.width / 2 - (selectedElement.width || 0) / 2;
+                      onUpdateElement(selectedElementId, { x: centerX });
+                    }
+                  }}
+                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                  title="По центру"
+                >
+                  <i className="fas fa-align-center"></i>
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedElementId && selectedElement.width !== undefined) {
+                      const rightmost = Math.max(...currentPage.elements.map(el => (el.x + (el.width || 0))));
+                      onUpdateElement(selectedElementId, { x: rightmost - (selectedElement.width || 0) });
+                    }
+                  }}
+                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                  title="По правому краю"
+                >
+                  <i className="fas fa-align-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

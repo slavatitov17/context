@@ -99,6 +99,9 @@ export interface EditorElement {
   rotation?: number;
   zIndex?: number;
   properties?: Record<string, any>;
+  locked?: boolean;
+  name?: string;
+  opacity?: number;
 }
 
 export interface EditorPage {
