@@ -244,6 +244,7 @@ export interface Translations {
     createFromScratchDescription: string;
     enterDataButton: string;
     selectProjectTitle: string;
+    noProjects: string;
   };
   
   // Чат проекта
@@ -652,6 +653,7 @@ const translations: Record<Language, Translations> = {
       createFromScratchDescription: 'Опишите предметную область вручную',
       enterDataButton: 'Ввести данные',
       selectProjectTitle: 'Выберите проект',
+      noProjects: 'У вас пока нет проектов',
     },
     projectChat: {
       documents: 'Документы',
@@ -1043,6 +1045,7 @@ const translations: Record<Language, Translations> = {
       createFromScratchDescription: 'Describe the subject area manually',
       enterDataButton: 'Enter Data',
       selectProjectTitle: 'Select Project',
+      noProjects: 'You don't have any projects yet',
     },
     projectChat: {
       documents: 'Documents',

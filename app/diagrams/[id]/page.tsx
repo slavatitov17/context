@@ -683,6 +683,7 @@ function MermaidMessage({
   generationTime?: number;
   onOpenSupport: () => void;
 }) {
+  const { t } = useLanguage();
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
   
@@ -1831,7 +1832,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className="text-gray-500">{t.common.loading}</div>
       </div>
     );
   }
@@ -2321,20 +2322,20 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           <h2 className="text-2xl font-medium mb-6">{t.diagramCreationMethod.selectProjectTitle}</h2>
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">Загрузка...</div>
+              <div className="text-gray-500">{t.common.loading}</div>
             </div>
           ) : projects.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-gray-500">У вас пока нет проектов</p>
+              <p className="text-gray-500">{t.diagramCreationMethod.noProjects}</p>
             </div>
           ) : (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.projects.name}</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.projects.shortDescription}</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.projects.creationDate}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2434,7 +2435,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     onClick={() => setShowSupportModal(true)}
                                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                                   >
-                                    Сообщить об ошибке
+                                    {t.diagramChat.reportError}
                                   </button>
                                 </div>
 
@@ -2452,7 +2453,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                         : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                   >
-                                    Диаграмма
+                                    {t.diagramChat.diagram}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -2466,7 +2467,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                         : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                   >
-                                    Код
+                                    {t.diagramChat.code}
                                   </button>
                                 </div>
 
