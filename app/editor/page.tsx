@@ -246,7 +246,7 @@ export default function EditorPage() {
         {!hasDiagrams ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="mb-6">
-              <i className="fas fa-pen-ruler text-6xl text-gray-400"></i>
+              <i className="fas fa-pen-nib text-6xl text-gray-400"></i>
             </div>
             <h3 className="text-xl font-medium text-gray-900 mb-3">
               Диаграммы отсутствуют...
