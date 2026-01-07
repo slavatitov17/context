@@ -51,7 +51,7 @@ export default function EditorCanvas({
       const target = e.target as SVGElement;
       const elementId = target.getAttribute('data-element-id');
       onSelectElement(elementId);
-    } else if (tool !== 'select') {
+    } else {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
