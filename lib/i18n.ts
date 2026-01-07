@@ -1045,7 +1045,7 @@ const translations: Record<Language, Translations> = {
       createFromScratchDescription: 'Describe the subject area manually',
       enterDataButton: 'Enter Data',
       selectProjectTitle: 'Select Project',
-      noProjects: 'You don't have any projects yet',
+      noProjects: "You don't have any projects yet",
     },
     projectChat: {
       documents: 'Documents',
