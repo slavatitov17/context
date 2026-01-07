@@ -781,7 +781,7 @@ export default function EditorCanvas({
               <input
                 type="number"
                 value={Math.round(selectedElement.x)}
-                onChange={(e) => onUpdateElement(selectedElementId, { x: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { x: parseFloat(e.target.value) || 0 })}
                 className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
@@ -790,7 +790,7 @@ export default function EditorCanvas({
               <input
                 type="number"
                 value={Math.round(selectedElement.y)}
-                onChange={(e) => onUpdateElement(selectedElementId, { y: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { y: parseFloat(e.target.value) || 0 })}
                 className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
@@ -800,7 +800,7 @@ export default function EditorCanvas({
                 <input
                   type="number"
                   value={Math.round(selectedElement.width)}
-                  onChange={(e) => onUpdateElement(selectedElementId, { width: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { width: parseFloat(e.target.value) || 0 })}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
                 />
               </div>
@@ -811,7 +811,7 @@ export default function EditorCanvas({
                 <input
                   type="number"
                   value={Math.round(selectedElement.height)}
-                  onChange={(e) => onUpdateElement(selectedElementId, { height: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { height: parseFloat(e.target.value) || 0 })}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
                 />
               </div>
@@ -821,7 +821,7 @@ export default function EditorCanvas({
               <input
                 type="color"
                 value={selectedElement.fill || '#3b82f6'}
-                onChange={(e) => onUpdateElement(selectedElementId, { fill: e.target.value })}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { fill: e.target.value })}
                 className="w-full h-8 border border-gray-300 rounded"
               />
             </div>
@@ -830,7 +830,7 @@ export default function EditorCanvas({
               <input
                 type="color"
                 value={selectedElement.stroke || '#1e40af'}
-                onChange={(e) => onUpdateElement(selectedElementId, { stroke: e.target.value })}
+                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { stroke: e.target.value })}
                 className="w-full h-8 border border-gray-300 rounded"
               />
             </div>
@@ -839,7 +839,7 @@ export default function EditorCanvas({
                 <label className="block text-xs font-medium text-gray-700 mb-1">Текст</label>
                 <textarea
                   value={selectedElement.text || ''}
-                  onChange={(e) => onUpdateElement(selectedElementId, { text: e.target.value })}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { text: e.target.value })}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
                   rows={3}
                 />
@@ -851,7 +851,7 @@ export default function EditorCanvas({
                 <input
                   type="number"
                   value={selectedElement.fontSize || 16}
-                  onChange={(e) => onUpdateElement(selectedElementId, { fontSize: parseFloat(e.target.value) || 16 })}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { fontSize: parseFloat(e.target.value) || 16 })}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
                 />
               </div>
