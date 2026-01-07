@@ -72,12 +72,19 @@ export default function NewEditorDiagramPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-medium mb-8">Создать новую диаграмму</h1>
-      
+    <div className="max-w-2xl">
+      <div className="mb-8 pb-6 border-b border-gray-200">
+        <h1 className="text-3xl font-medium mb-2">Создание диаграммы</h1>
+        <p className="text-gray-600 text-base">Заполните основную информацию о диаграмме</p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Информация о полях */}
+        <p className="text-gray-500 text-base">* - обязательные поля</p>
+
+        {/* Название диаграммы */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="name" className="block text-lg font-medium text-gray-900 mb-3">
             Название диаграммы *
           </label>
           <input
@@ -85,35 +92,40 @@ export default function NewEditorDiagramPage() {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Введите название диаграммы"
+            placeholder="Введите название диаграммы..."
+            className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={loading}
             required
           />
         </div>
 
+        {/* Описание диаграммы */}
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-            Описание
+          <label htmlFor="description" className="block text-lg font-medium text-gray-900 mb-3">
+            Краткое описание диаграммы
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Введите описание диаграммы"
-            rows={4}
+            placeholder="Введите описание диаграммы..."
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            disabled={loading}
           />
         </div>
 
+        {/* Тип диаграммы */}
         <div>
-          <label htmlFor="diagramType" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="diagramType" className="block text-lg font-medium text-gray-900 mb-3">
             Тип диаграммы
           </label>
           <select
             id="diagramType"
             value={diagramType}
             onChange={(e) => setDiagramType(e.target.value as EditorDiagramType)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white pr-10"
+            disabled={loading}
           >
             <option value="Custom">Пользовательская</option>
             <option value="IDEF0">IDEF0</option>
@@ -122,20 +134,25 @@ export default function NewEditorDiagramPage() {
           </select>
         </div>
 
-        <div className="flex gap-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-          >
-            Отмена
-          </button>
+        {/* Кнопка создания */}
+        <div className="flex space-x-4 pt-4">
           <button
             type="submit"
-            disabled={loading}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!name.trim() || loading}
+            className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-1 text-base font-medium flex items-center justify-center gap-2"
           >
-            {loading ? 'Создание...' : 'Создать диаграмму'}
+            {loading ? (
+              <>
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span>Создание диаграммы...</span>
+              </>
+            ) : (
+              'Создать диаграмму'
+            )}
           </button>
         </div>
       </form>

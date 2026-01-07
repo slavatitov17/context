@@ -65,6 +65,10 @@ export default function EditorCanvas({
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<'svg' | 'png' | 'pdf' | 'ctxdr'>('svg');
   const [exportScope, setExportScope] = useState<'page' | 'all' | 'selection'>('page');
+  const [showSaveTooltip, setShowSaveTooltip] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(true);
+  const [componentsOpen, setComponentsOpen] = useState(true);
+  const [componentsExpanded, setComponentsExpanded] = useState<'IDEF0' | 'DFD' | 'BPMN' | null>(null);
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
 
@@ -914,7 +918,7 @@ export default function EditorCanvas({
       {/* Левое меню */}
       {leftMenuOpen && (
         <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-          {/* Заголовок и кнопка назад */}
+          {/* Заголовок с названием диаграммы и иконкой скрытия */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               {editingDiagramName ? (
@@ -923,7 +927,6 @@ export default function EditorCanvas({
                   value={diagram.name}
                   onBlur={() => {
                     setEditingDiagramName(false);
-                    // Сохранение названия будет через onUpdatePage или отдельный callback
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -935,339 +938,792 @@ export default function EditorCanvas({
                   onChange={(e) => {
                     // Обновление названия через callback если нужен
                   }}
-                  className="flex-1 text-lg font-semibold text-gray-900 border border-blue-300 rounded px-2 py-1"
+                  className="flex-1 text-base text-gray-600 border border-blue-300 rounded px-2 py-1"
                   autoFocus
                 />
               ) : (
-                <h2
-                  className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors flex-1"
+                <span
+                  className="text-base text-gray-600 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
                   onDoubleClick={() => setEditingDiagramName(true)}
                   title="Двойной клик для редактирования"
                 >
                   {diagram.name}
-                </h2>
+                </span>
               )}
               <button
-                onClick={onBack}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2"
-                title="Назад в галерею"
+                onClick={() => setLeftMenuOpen(false)}
+                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2"
+                title="Скрыть меню"
               >
-                <i className="fas fa-arrow-left"></i>
+                <div className="w-4 h-4 border border-gray-400 flex items-center justify-center">
+                  <div className="w-px h-3 bg-gray-400"></div>
+                </div>
               </button>
             </div>
-            <div className="text-sm text-gray-600 mb-2">Файл</div>
-            <div className="space-y-1">
-              <button 
-                onClick={() => {
-                  saveToHistory();
-                  alert('Диаграмма сохранена');
-                }}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-              >
-                <i className="fas fa-save mr-2"></i> Сохранить
-              </button>
-              <div className="px-3 py-2 text-xs text-gray-500">
-                <div>Фон страницы:</div>
-                <input
-                  type="color"
-                  value={currentPage.background || '#ffffff'}
-                  onChange={(e) => {
-                    const updatedPage = { ...currentPage, background: e.target.value };
-                    saveToHistory();
-                    onUpdatePage(updatedPage);
-                  }}
-                  className="w-full h-8 border border-gray-300 rounded mt-1"
-                />
-              </div>
-              <button
-                onClick={() => setShowExportDialog(true)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
-              >
-                <span><i className="fas fa-download mr-2"></i> Экспорт</span>
-                <i className="fas fa-chevron-right text-xs"></i>
-              </button>
-            </div>
-          </div>
+            
+            {/* Девайдер */}
+            <div className="border-t border-gray-200 my-3"></div>
 
-          {/* Страницы */}
-          <div className="border-b border-gray-200">
-            <button
-              onClick={() => setPagesOpen(!pagesOpen)}
-              className="w-full px-4 py-3 text-left flex items-center justify-between text-sm font-medium text-gray-900 hover:bg-gray-50"
-            >
-              <span>Страницы</span>
-              <i className={`fas fa-chevron-${pagesOpen ? 'down' : 'right'} text-xs`}></i>
-            </button>
-            {pagesOpen && (
-              <div className="pb-2">
-                {diagram.pages.map((page) => (
-                  <div
-                    key={page.id}
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 flex items-center justify-between group ${
-                      page.id === currentPage.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                    }`}
-                    onClick={() => onSwitchPage(page.id)}
-                  >
-                    {editingPageName === page.id ? (
-                      <input
-                        type="text"
-                        value={page.name}
-                        onBlur={() => {
-                          setEditingPageName(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            setEditingPageName(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingPageName(null);
-                          }
-                        }}
-                        onChange={(e) => {
-                          if (onUpdatePageName) {
-                            onUpdatePageName(page.id, e.target.value);
-                          } else {
-                            const updatedPage = { ...page, name: e.target.value };
-                            onUpdatePage(updatedPage);
-                          }
-                        }}
-                        className="flex-1 text-xs border border-blue-300 rounded px-1"
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <span
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          setEditingPageName(page.id);
-                        }}
-                      >
-                        {page.name}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {diagram.pages.length > 1 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm('Удалить страницу?')) {
-                              saveToHistory();
-                              onDeletePage(page.id);
-                            }
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <i className="fas fa-trash text-xs"></i>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {/* Блок "Действия" */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-900">Действия</span>
                 <button
-                  onClick={onAddPage}
-                  className="w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 text-left"
+                  onClick={() => setActionsOpen(!actionsOpen)}
+                  className="p-1 text-gray-400 hover:text-gray-600"
                 >
-                  <i className="fas fa-plus mr-2"></i> Добавить страницу
+                  <i className={`fas fa-chevron-${actionsOpen ? 'down' : 'right'} text-xs`}></i>
                 </button>
+              </div>
+              {actionsOpen && (
+                <div className="space-y-1">
+                  <div className="relative">
+                    <button 
+                      onClick={() => {
+                        saveToHistory();
+                        setShowSaveTooltip(true);
+                        setTimeout(() => setShowSaveTooltip(false), 2000);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                    >
+                      <i className="fas fa-save"></i>
+                      <span>Сохранить</span>
+                    </button>
+                    {showSaveTooltip && (
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50">
+                        <i className="fas fa-check text-green-400"></i>
+                        <span>Сохранено</span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowExportDialog(true)}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                  >
+                    <i className="fas fa-download"></i>
+                    <span>Экспорт</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Девайдер */}
+            <div className="border-t border-gray-200 my-3"></div>
+
+            {/* Блок "Компоненты" */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-900">Компоненты</span>
+                <button
+                  onClick={() => setComponentsOpen(!componentsOpen)}
+                  className="p-1 text-gray-400 hover:text-gray-600"
+                >
+                  <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs`}></i>
+                </button>
+              </div>
+              {componentsOpen && (
+                <div className="space-y-1">
+                  <div className="relative">
+                    <button
+                      onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
+                    >
+                      <span>IDEF0</span>
+                      <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
+                    </button>
+                    {componentsExpanded === 'IDEF0' && (
+                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[200px]">
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'idef0-box',
+                              x: 100,
+                              y: 100,
+                              width: 200,
+                              height: 120,
+                              text: 'Функция',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Функциональный блок
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'rectangle',
+                              x: 100,
+                              y: 100,
+                              width: 80,
+                              height: 30,
+                              text: 'Вход',
+                              fill: '#e3f2fd',
+                              stroke: '#1976d2',
+                              strokeWidth: 1,
+                              fontSize: 12,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Вход
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'rectangle',
+                              x: 100,
+                              y: 100,
+                              width: 80,
+                              height: 30,
+                              text: 'Выход',
+                              fill: '#fff3e0',
+                              stroke: '#f57c00',
+                              strokeWidth: 1,
+                              fontSize: 12,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Выход
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'rectangle',
+                              x: 100,
+                              y: 100,
+                              width: 100,
+                              height: 30,
+                              text: 'Управление',
+                              fill: '#f3e5f5',
+                              stroke: '#7b1fa2',
+                              strokeWidth: 1,
+                              fontSize: 12,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Управление
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'rectangle',
+                              x: 100,
+                              y: 100,
+                              width: 100,
+                              height: 30,
+                              text: 'Механизм',
+                              fill: '#e8f5e9',
+                              stroke: '#388e3c',
+                              strokeWidth: 1,
+                              fontSize: 12,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Механизм
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'text',
+                              x: 100,
+                              y: 100,
+                              text: 'Текст',
+                              fill: '#000000',
+                              fontSize: 16,
+                              fontFamily: 'Inter, sans-serif',
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Текст
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={() => setComponentsExpanded(componentsExpanded === 'DFD' ? null : 'DFD')}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
+                    >
+                      <span>DFD</span>
+                      <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
+                    </button>
+                    {componentsExpanded === 'DFD' && (
+                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[200px]">
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'dfd-external',
+                              x: 100,
+                              y: 100,
+                              width: 100,
+                              height: 60,
+                              text: 'Внешняя сущность',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Внешние сущности
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'dfd-data-store',
+                              x: 100,
+                              y: 100,
+                              width: 100,
+                              height: 60,
+                              text: 'Хранилище',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Хранилища
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'dfd-process',
+                              x: 100,
+                              y: 100,
+                              width: 120,
+                              height: 80,
+                              text: 'Процесс',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Процессы
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'arrow',
+                              x: 100,
+                              y: 100,
+                              width: 100,
+                              height: 0,
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Поток данных
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={() => setComponentsExpanded(componentsExpanded === 'BPMN' ? null : 'BPMN')}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
+                    >
+                      <span>BPMN</span>
+                      <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
+                    </button>
+                    {componentsExpanded === 'BPMN' && (
+                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[250px] max-h-96 overflow-y-auto">
+                        <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">События</div>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-event',
+                              x: 100,
+                              y: 100,
+                              width: 40,
+                              height: 40,
+                              fill: '#4caf50',
+                              stroke: '#2e7d32',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Стартовые
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-event',
+                              x: 100,
+                              y: 100,
+                              width: 40,
+                              height: 40,
+                              fill: '#2196f3',
+                              stroke: '#1565c0',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Промежуточные
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-event',
+                              x: 100,
+                              y: 100,
+                              width: 40,
+                              height: 40,
+                              fill: '#f44336',
+                              stroke: '#c62828',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Завершающие
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-event',
+                              x: 100,
+                              y: 100,
+                              width: 40,
+                              height: 40,
+                              fill: '#ff9800',
+                              stroke: '#e65100',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Сообщение
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-event',
+                              x: 100,
+                              y: 100,
+                              width: 40,
+                              height: 40,
+                              fill: '#9c27b0',
+                              stroke: '#6a1b9a',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Таймер
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-event',
+                              x: 100,
+                              y: 100,
+                              width: 40,
+                              height: 40,
+                              fill: '#e91e63',
+                              stroke: '#880e4f',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Ошибка
+                        </button>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">Действия</div>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-task',
+                              x: 100,
+                              y: 100,
+                              width: 120,
+                              height: 60,
+                              text: 'Задача',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Обычные
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-task',
+                              x: 100,
+                              y: 100,
+                              width: 120,
+                              height: 60,
+                              text: 'Подпроцесс',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 3,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Подпроцессы
+                        </button>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">Шлюзы</div>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-gateway',
+                              x: 100,
+                              y: 100,
+                              width: 50,
+                              height: 50,
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Исключающее ИЛИ
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-gateway',
+                              x: 100,
+                              y: 100,
+                              width: 50,
+                              height: 50,
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          И
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'bpmn-gateway',
+                              x: 100,
+                              y: 100,
+                              width: 50,
+                              height: 50,
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          ИЛИ
+                        </button>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'arrow',
+                              x: 100,
+                              y: 100,
+                              width: 100,
+                              height: 0,
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Потоки
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newElement: EditorElement = {
+                              id: `element_${Date.now()}`,
+                              type: 'rectangle',
+                              x: 100,
+                              y: 100,
+                              width: 200,
+                              height: 100,
+                              text: 'Пул',
+                              fill: '#ffffff',
+                              stroke: '#000000',
+                              strokeWidth: 2,
+                              zIndex: currentPage.elements.length,
+                              opacity: 1,
+                            };
+                            saveToHistory();
+                            onAddElement(newElement);
+                            onSelectElement(newElement.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Пулы
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Девайдер */}
+            <div className="border-t border-gray-200 my-3"></div>
+
+          {/* Блок "Слои" */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-900">Слои</span>
+              <button
+                onClick={() => setLayersOpen(!layersOpen)}
+                className="p-1 text-gray-400 hover:text-gray-600"
+              >
+                <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs`}></i>
+              </button>
+            </div>
+            {layersOpen && (
+              <div className="pb-2">
+                {currentPage.elements.length === 0 ? (
+                  <div className="text-sm text-gray-500 px-2 py-4 text-center">
+                    Нет элементов
+                  </div>
+                ) : (
+                  currentPage.elements
+                    .slice()
+                    .reverse()
+                    .map((element) => (
+                      <div
+                        key={element.id}
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 group ${
+                          element.id === selectedElementId ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
+                        onClick={() => onSelectElement(element.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center flex-1 min-w-0">
+                            {element.locked && (
+                              <i className="fas fa-lock text-xs mr-1 text-gray-400"></i>
+                            )}
+                            <i className={`fas fa-${
+                              element.type === 'rectangle' ? 'square' :
+                              element.type === 'circle' ? 'circle' :
+                              element.type === 'line' ? 'minus' :
+                              element.type === 'arrow' ? 'arrow-right' :
+                              'font'
+                            } mr-2 flex-shrink-0`}></i>
+                            {editingLayerName === element.id ? (
+                              <input
+                                type="text"
+                                value={element.name || ''}
+                                onBlur={() => {
+                                  if (element.name !== undefined) {
+                                    onUpdateElement(element.id, { name: element.name });
+                                  }
+                                  setEditingLayerName(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (element.name !== undefined) {
+                                      onUpdateElement(element.id, { name: element.name });
+                                    }
+                                    setEditingLayerName(null);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingLayerName(null);
+                                  }
+                                }}
+                                onChange={(e) => onUpdateElement(element.id, { name: e.target.value })}
+                                className="flex-1 text-xs border border-blue-300 rounded px-1"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <span
+                                className="truncate flex-1"
+                                onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingLayerName(element.id);
+                                }}
+                              >
+                                {element.name || (element.type === 'text' ? element.text || 'Текст' : element.type)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateElement(element.id, { locked: !element.locked });
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                              title={element.locked ? 'Разблокировать' : 'Заблокировать'}
+                            >
+                              <i className={`fas fa-${element.locked ? 'unlock' : 'lock'} text-xs`}></i>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveToHistory();
+                                onDeleteElement(element.id);
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                              title="Удалить"
+                            >
+                              <i className="fas fa-trash text-xs"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                )}
               </div>
             )}
           </div>
-
-          {/* Библиотека компонентов (показывается при выборе типа диаграммы) */}
-          {diagramTypeFilter !== 'all' && (
-            <div className="border-b border-gray-200">
-              <div className="px-4 py-3 text-sm font-medium text-gray-900">Библиотека компонентов</div>
-              <div className="px-4 pb-3 space-y-2">
-                {diagramTypeFilter === 'IDEF0' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'idef0-box',
-                          x: 100,
-                          y: 100,
-                          width: 200,
-                          height: 120,
-                          text: 'Функция',
-                          fill: '#ffffff',
-                          stroke: '#000000',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-square mr-2"></i> Блок функции
-                    </button>
-                  </>
-                )}
-                {diagramTypeFilter === 'DFD' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'dfd-process',
-                          x: 100,
-                          y: 100,
-                          width: 120,
-                          height: 80,
-                          text: 'Процесс',
-                          fill: '#ffffff',
-                          stroke: '#000000',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-circle mr-2"></i> Процесс
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'dfd-data-store',
-                          x: 100,
-                          y: 100,
-                          width: 100,
-                          height: 60,
-                          text: 'Хранилище',
-                          fill: '#ffffff',
-                          stroke: '#000000',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-database mr-2"></i> Хранилище данных
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'dfd-external',
-                          x: 100,
-                          y: 100,
-                          width: 100,
-                          height: 60,
-                          text: 'Внешняя сущность',
-                          fill: '#ffffff',
-                          stroke: '#000000',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-user mr-2"></i> Внешняя сущность
-                    </button>
-                  </>
-                )}
-                {diagramTypeFilter === 'BPMN' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'bpmn-event',
-                          x: 100,
-                          y: 100,
-                          width: 40,
-                          height: 40,
-                          fill: '#4caf50',
-                          stroke: '#2e7d32',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-circle mr-2"></i> Событие
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'bpmn-task',
-                          x: 100,
-                          y: 100,
-                          width: 120,
-                          height: 60,
-                          text: 'Задача',
-                          fill: '#ffffff',
-                          stroke: '#000000',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-square mr-2"></i> Задача
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newElement: EditorElement = {
-                          id: `element_${Date.now()}`,
-                          type: 'bpmn-gateway',
-                          x: 100,
-                          y: 100,
-                          width: 50,
-                          height: 50,
-                          fill: '#ffffff',
-                          stroke: '#000000',
-                          strokeWidth: 2,
-                          zIndex: currentPage.elements.length,
-                          opacity: 1,
-                        };
-                        saveToHistory();
-                        onAddElement(newElement);
-                        onSelectElement(newElement.id);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-all hover:scale-105"
-                    >
-                      <i className="fas fa-times mr-2"></i> Шлюз
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Слои */}
-          <div className="flex-1 overflow-y-auto">
-            <button
-              onClick={() => setLayersOpen(!layersOpen)}
-              className="w-full px-4 py-3 text-left flex items-center justify-between text-sm font-medium text-gray-900 hover:bg-gray-50 border-b border-gray-200"
-            >
-              <span>Слои</span>
-              <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs`}></i>
-            </button>
             {layersOpen && (
               <div className="p-2">
                 {currentPage.elements.length === 0 ? (
@@ -1950,107 +2406,119 @@ export default function EditorCanvas({
 
       {/* Диалог экспорта */}
       {showExportDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Экспорт диаграммы</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Блюр фон */}
+          <div 
+            className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+            onClick={() => setShowExportDialog(false)}
+          />
+          
+          {/* Модальное окно */}
+          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-medium text-gray-900">Экспорт диаграммы</h2>
               <button
                 onClick={() => setShowExportDialog(false)}
-                className="p-2 text-gray-500 hover:text-gray-700"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <i className="fas fa-times"></i>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Формат</label>
-                <div className="grid grid-cols-2 gap-2">
+                <label className="block text-gray-900 font-medium mb-3">Формат</label>
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setExportFormat('svg')}
-                    className={`p-3 border rounded-lg text-sm transition-colors ${
-                      exportFormat === 'svg' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    className={`p-4 border rounded-lg text-base transition-colors flex items-center justify-center gap-2 ${
+                      exportFormat === 'svg' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <i className="fas fa-file-code mr-2"></i> SVG
+                    <i className="fas fa-file-code text-xl"></i>
+                    <span className="font-medium">SVG</span>
                   </button>
                   <button
                     onClick={() => setExportFormat('png')}
-                    className={`p-3 border rounded-lg text-sm transition-colors ${
-                      exportFormat === 'png' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    className={`p-4 border rounded-lg text-base transition-colors flex items-center justify-center gap-2 ${
+                      exportFormat === 'png' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <i className="fas fa-image mr-2"></i> PNG
+                    <i className="fas fa-image text-xl"></i>
+                    <span className="font-medium">PNG</span>
                   </button>
                   <button
                     onClick={() => setExportFormat('pdf')}
-                    className={`p-3 border rounded-lg text-sm transition-colors ${
-                      exportFormat === 'pdf' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    className={`p-4 border rounded-lg text-base transition-colors flex items-center justify-center gap-2 ${
+                      exportFormat === 'pdf' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <i className="fas fa-file-pdf mr-2"></i> PDF
+                    <i className="fas fa-file-pdf text-xl"></i>
+                    <span className="font-medium">PDF</span>
                   </button>
                   <button
                     onClick={() => setExportFormat('ctxdr')}
-                    className={`p-3 border rounded-lg text-sm transition-colors ${
-                      exportFormat === 'ctxdr' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    className={`p-4 border rounded-lg text-base transition-colors flex items-center justify-center gap-2 ${
+                      exportFormat === 'ctxdr' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <i className="fas fa-file-code mr-2"></i> .ctxdr
+                    <i className="fas fa-file-code text-xl"></i>
+                    <span className="font-medium">.ctxdr</span>
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Область экспорта</label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
+                <label className="block text-gray-900 font-medium mb-3">Область экспорта</label>
+                <div className="space-y-3">
+                  <label className="flex items-center cursor-pointer">
                     <input
                       type="radio"
                       value="page"
                       checked={exportScope === 'page'}
                       onChange={(e) => setExportScope(e.target.value as 'page')}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">Текущая страница</span>
+                    <span className="text-base text-gray-900">Текущая страница</span>
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center cursor-pointer">
                     <input
                       type="radio"
                       value="all"
                       checked={exportScope === 'all'}
                       onChange={(e) => setExportScope(e.target.value as 'all')}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">Все страницы</span>
+                    <span className="text-base text-gray-900">Все страницы</span>
                   </label>
-                  <label className="flex items-center">
+                  <label className={`flex items-center ${selectedElementId ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
                     <input
                       type="radio"
                       value="selection"
                       checked={exportScope === 'selection'}
                       onChange={(e) => setExportScope(e.target.value as 'selection')}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       disabled={!selectedElementId}
                     />
-                    <span className={`text-sm ${selectedElementId ? 'text-gray-700' : 'text-gray-400'}`}>
+                    <span className="text-base text-gray-900">
                       Выделенная область {!selectedElementId && '(ничего не выбрано)'}
                     </span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => setShowExportDialog(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                 >
                   Отмена
                 </button>
                 <button
                   onClick={() => {
                     if (exportFormat === 'ctxdr') {
-                      // Экспорт в собственный формат
                       const exportData = {
                         diagram: diagram,
                         version: '1.0',
@@ -2068,7 +2536,7 @@ export default function EditorCanvas({
                     }
                     setShowExportDialog(false);
                   }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   Экспортировать
                 </button>
