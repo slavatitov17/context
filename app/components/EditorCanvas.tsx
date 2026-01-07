@@ -97,6 +97,12 @@ export default function EditorCanvas({
     }
   };
 
+  // Привязка к сетке (объявлена раньше, так как используется в handleMouseMove)
+  const snapToGridValue = useCallback((value: number) => {
+    if (!snapToGrid) return value;
+    return Math.round(value / gridSize) * gridSize;
+  }, [snapToGrid, gridSize]);
+
   const handleElementMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
     if (tool === 'select') {
@@ -260,12 +266,6 @@ export default function EditorCanvas({
       setHistoryIndex(0);
     }
   }, [currentPage, history.length]);
-
-  // Привязка к сетке
-  const snapToGridValue = useCallback((value: number) => {
-    if (!snapToGrid) return value;
-    return Math.round(value / gridSize) * gridSize;
-  }, [snapToGrid, gridSize]);
 
   // История действий (Undo/Redo)
   const saveToHistory = useCallback(() => {
