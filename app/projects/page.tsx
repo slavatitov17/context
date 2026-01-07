@@ -4,8 +4,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function ProjectsPage() {
+  const { t } = useLanguage();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -91,7 +93,7 @@ export default function ProjectsPage() {
   const handleDelete = (projectId: string) => {
     if (!user) return;
     
-    if (!confirm('Вы уверены, что хотите удалить этот проект?')) {
+    if (!confirm(t.projects.confirmDelete)) {
       return;
     }
 
@@ -106,7 +108,7 @@ export default function ProjectsPage() {
         });
         setOpenMenuId(null);
       } else {
-        alert('Не удалось удалить проект. Попробуйте еще раз.');
+        alert(t.projects.deleteFailed);
       }
     } catch (error) {
       console.error('Ошибка при удалении проекта:', error);
@@ -118,7 +120,7 @@ export default function ProjectsPage() {
     if (!user || selectedProjects.size === 0) return;
     
     const count = selectedProjects.size;
-    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'проект' : count < 5 ? 'проекта' : 'проектов'}?`)) {
+    if (!confirm(t.projects.confirmDelete)) {
       return;
     }
 
@@ -137,11 +139,11 @@ export default function ProjectsPage() {
       }
 
       if (successCount < count) {
-        alert(`Удалено ${successCount} из ${count} проектов.`);
+        alert(t.projects.bulkDeleteSuccess.replace('{count}', successCount.toString()).replace('{total}', count.toString()));
       }
     } catch (error) {
       console.error('Ошибка при массовом удалении проектов:', error);
-      alert('Произошла ошибка при удалении проектов.');
+      alert(t.projects.bulkDeleteFailed);
     }
   };
 
@@ -195,13 +197,13 @@ export default function ProjectsPage() {
       {/* Верхний блок: заголовок, описание и кнопка */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-medium mb-2">Проекты</h1>
-          <p className="text-gray-600">Создавайте проекты и получайте ответы на вопросы по ним</p>
+          <h1 className="text-3xl font-medium mb-2">{t.projects.title}</h1>
+          <p className="text-gray-600">{t.projects.description}</p>
         </div>
         {hasProjects && (
           <Link href="/projects/new">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              + Создать проект
+              {t.projects.createProject}
             </button>
           </Link>
         )}
@@ -210,7 +212,7 @@ export default function ProjectsPage() {
       {/* Контент: пустое состояние или таблица */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-medium">Мои проекты</h2>
+          <h2 className="text-2xl font-medium">{t.projects.myProjects}</h2>
           
           {hasProjects && (
             <div className="flex items-center gap-4">
@@ -220,7 +222,7 @@ export default function ProjectsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск по названию..."
+                  placeholder={t.projects.searchPlaceholder}
                   className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -235,8 +237,8 @@ export default function ProjectsPage() {
                   onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'date')}
                   className="border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
                 >
-                  <option value="date">По дате создания</option>
-                  <option value="alphabet">По алфавиту</option>
+                  <option value="date">{t.projects.sortByDate}</option>
+                  <option value="alphabet">{t.projects.sortByAlphabet}</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -255,14 +257,14 @@ export default function ProjectsPage() {
               <i className="fas fa-folder-plus text-6xl text-gray-400"></i>
             </div>
             <h3 className="text-xl font-medium text-gray-900 mb-3">
-              Проекты отсутствуют...
+              {t.projects.noProjects}
             </h3>
             <p className="text-gray-600 text-center max-w-md mb-6">
-              Создайте свой первый проект, загрузите документы и получите ответы на вопросы по ним
+              {t.projects.noProjectsDescription}
             </p>
             <Link href="/projects/new">
               <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                + Создать проект
+                {t.projects.createProject}
               </button>
             </Link>
           </div>
@@ -271,12 +273,12 @@ export default function ProjectsPage() {
           <div>
             {someSelected && (
               <div className="mb-4 flex items-center gap-4">
-                <button
+                  <button
                   onClick={handleBulkDelete}
                   className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
                 >
                   <i className="fas fa-trash"></i>
-                  <span>Удалить выбранное ({selectedProjects.size})</span>
+                  <span>{t.projects.deleteSelected} ({selectedProjects.size})</span>
                 </button>
               </div>
             )}
@@ -293,9 +295,9 @@ export default function ProjectsPage() {
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.projects.name}</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.projects.shortDescription}</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.projects.creationDate}</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
                   </tr>
                 </thead>
@@ -353,7 +355,7 @@ export default function ProjectsPage() {
                                 title="Редактировать"
                               >
                                 <i className="fas fa-edit text-gray-500 text-sm"></i>
-                                <span className="text-sm">Редактировать</span>
+                                <span className="text-sm">{t.common.edit}</span>
                               </button>
                               <button
                                 onClick={(e) => {
@@ -361,10 +363,10 @@ export default function ProjectsPage() {
                                   handleDelete(project.id);
                                 }}
                                 className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
-                                title="Удалить"
+                                title={t.common.delete}
                               >
                                 <i className="fas fa-trash text-red-600 text-sm"></i>
-                                <span className="text-sm">Удалить</span>
+                                <span className="text-sm">{t.common.delete}</span>
                               </button>
                             </div>
                           )}

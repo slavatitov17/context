@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { projects as projectsStorage, diagrams as diagramsStorage } from '@/lib/storage';
 import { auth } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface BreadcrumbItem {
   label: string;
@@ -13,6 +14,7 @@ interface BreadcrumbItem {
 
 export default function Breadcrumbs() {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,13 +40,13 @@ export default function Breadcrumbs() {
       if (segments.length > 0) {
         // Определяем тип страницы (projects, diagrams или privacy)
         if (segments[0] === 'projects') {
-          items.push({ label: 'Проекты', href: '/projects' });
+          items.push({ label: t.breadcrumbs.projects, href: '/projects' });
         } else if (segments[0] === 'diagrams') {
-          items.push({ label: 'Диаграммы', href: '/diagrams' });
+          items.push({ label: t.breadcrumbs.diagrams, href: '/diagrams' });
         } else if (segments[0] === 'privacy') {
           // Для страницы privacy добавляем ссылку на "О системе"
-          items.push({ label: 'О системе', href: '/about' });
-          items.push({ label: 'Политика конфиденциальности', href: '/privacy' });
+          items.push({ label: t.breadcrumbs.about, href: '/about' });
+          items.push({ label: t.breadcrumbs.privacyPolicy, href: '/privacy' });
           setBreadcrumbs(items);
           setIsLoading(false);
           return;
@@ -55,9 +57,9 @@ export default function Breadcrumbs() {
           if (segments[1] === 'new') {
             // Страница создания
             if (segments[0] === 'projects') {
-              items.push({ label: 'Создание проекта', href: '/projects/new' });
+              items.push({ label: t.breadcrumbs.createProject, href: '/projects/new' });
             } else if (segments[0] === 'diagrams') {
-              items.push({ label: 'Создание диаграммы', href: '/diagrams/new' });
+              items.push({ label: t.breadcrumbs.createDiagram, href: '/diagrams/new' });
             }
           } else if (segments[1] && segments[1] !== 'new') {
             // Страница с ID (детальная страница или редактирование)
@@ -70,11 +72,11 @@ export default function Breadcrumbs() {
                   const project = projectsStorage.getById(id, currentUser.id);
                   if (project) {
                     items.push({ 
-                      label: project.name || 'Проект', 
+                      label: project.name || t.breadcrumbs.projects, 
                       href: `/projects/${id}` 
                     });
                   } else {
-                    items.push({ label: 'Проект', href: `/projects/${id}` });
+                    items.push({ label: t.breadcrumbs.projects, href: `/projects/${id}` });
                   }
                 } else if (segments[0] === 'diagrams') {
                   const diagram = diagramsStorage.getById(id, currentUser.id);
@@ -91,62 +93,62 @@ export default function Breadcrumbs() {
                     // Если чат виден, показываем только Диаграммы - Название диаграммы
                     if (isChatVisible) {
                       items.push({ 
-                        label: diagram.name || 'Диаграмма', 
+                        label: diagram.name || t.breadcrumbs.diagrams, 
                         href: `/diagrams/${id}` 
                       });
                     } else {
                       // Всегда добавляем "Создание диаграммы" как кликабельный элемент
                       items.push({ 
-                        label: 'Создание диаграммы', 
+                        label: t.breadcrumbs.createDiagram, 
                         href: `/diagrams/${id}` 
                       });
                       
                       // Если нет типа диаграммы - этап "Тип диаграммы"
                       if (!hasDiagramType) {
                         items.push({ 
-                          label: 'Тип диаграммы', 
+                          label: t.breadcrumbs.diagramType, 
                           href: `/diagrams/${id}` 
                         });
                       } else {
                         // Всегда показываем "Тип диаграммы" как отдельную крошку
                         items.push({ 
-                          label: 'Тип диаграммы', 
+                          label: t.breadcrumbs.diagramType, 
                           href: `/diagrams/${id}` 
                         });
                         
                         // ВСЕГДА показываем "Способ создания" если есть тип диаграммы
                         // (независимо от того, выбран способ или нет)
                         items.push({ 
-                          label: 'Способ создания', 
+                          label: t.breadcrumbs.creationMethod, 
                           href: `/diagrams/${id}` 
                         });
                       }
                     }
                   } else {
-                    items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
+                    items.push({ label: t.breadcrumbs.diagrams, href: `/diagrams/${id}` });
                   }
                 }
               } catch (error) {
                 console.error('Ошибка при загрузке данных для хлебных крошек:', error);
                 // Используем дефолтные значения
                 if (segments[0] === 'projects') {
-                  items.push({ label: 'Проект', href: `/projects/${id}` });
+                  items.push({ label: t.breadcrumbs.projects, href: `/projects/${id}` });
                 } else if (segments[0] === 'diagrams') {
-                  items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
+                  items.push({ label: t.breadcrumbs.diagrams, href: `/diagrams/${id}` });
                 }
               }
             } else {
               // Если пользователь не загружен, используем дефолтные значения
               if (segments[0] === 'projects') {
-                items.push({ label: 'Проект', href: `/projects/${id}` });
+                items.push({ label: t.breadcrumbs.projects, href: `/projects/${id}` });
               } else if (segments[0] === 'diagrams') {
-                items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
+                items.push({ label: t.breadcrumbs.diagrams, href: `/diagrams/${id}` });
               }
             }
 
             // Если есть третий сегмент (например, edit)
             if (segments.length > 2 && segments[2] === 'edit') {
-              items.push({ label: 'Редактирование', href: `${pathname}` });
+              items.push({ label: t.breadcrumbs.editing, href: `${pathname}` });
             }
           }
         }
@@ -166,7 +168,7 @@ export default function Breadcrumbs() {
       
       return () => clearInterval(interval);
     }
-  }, [pathname]);
+  }, [pathname, t]);
 
   // Не показываем хлебные крошки на страницах первого уровня или если они пустые
   if (firstLevelPages.includes(pathname) || breadcrumbs.length === 0 || isLoading) {

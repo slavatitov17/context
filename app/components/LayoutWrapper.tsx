@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { auth, type User } from '@/lib/storage';
 import Breadcrumbs from './Breadcrumbs';
 import ProfileModal from './ProfileModal';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLanguage();
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPrivacyPage = pathname === '/privacy';
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -129,7 +131,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return (
       <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
         <main className="flex-1 p-8 overflow-auto bg-white text-gray-900 flex items-center justify-center">
-          <div className="text-gray-500">Загрузка...</div>
+          <div className="text-gray-500">{t.common.loading}</div>
         </main>
       </body>
     );
@@ -164,28 +166,28 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-folder mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
-              <span className="font-medium">Проекты</span>
+              <span className="font-medium">{t.nav.projects}</span>
             </Link>
             <Link
               href="/diagrams"
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-sitemap mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
-              <span className="font-medium">Диаграммы</span>
+              <span className="font-medium">{t.nav.diagrams}</span>
             </Link>
             <Link
               href="/settings"
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-cog mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
-              <span className="font-medium">Настройки</span>
+              <span className="font-medium">{t.nav.settings}</span>
             </Link>
             <Link
               href="/about"
               className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-info-circle mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
-              <span className="font-medium">О системе</span>
+              <span className="font-medium">{t.nav.about}</span>
             </Link>
           </nav>
 

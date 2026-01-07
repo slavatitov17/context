@@ -1,5 +1,6 @@
 import './globals.css';
 import LayoutWrapper from './components/LayoutWrapper';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 export const metadata = {
   title: 'Context: анализ файлов и создание диаграмм',
@@ -20,9 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
       </head>
-      <LayoutWrapper>
-        {children}
-      </LayoutWrapper>
+      <LanguageProvider>
+        <LayoutWrapper>
+          {children}
+        </LayoutWrapper>
+      </LanguageProvider>
     </html>
   );
 }

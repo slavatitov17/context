@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +33,7 @@ export default function LoginPage() {
       const { user, error: authError } = await auth.signIn(trimmedEmail, password);
 
       if (authError) {
-        setError(authError.message || 'Ошибка при входе. Проверьте email и пароль');
+        setError(authError.message || t.login.error);
         setLoading(false);
         return;
       }
@@ -40,11 +42,11 @@ export default function LoginPage() {
         router.push('/projects');
         router.refresh();
       } else {
-        setError('Не удалось войти. Попробуйте еще раз');
+        setError(t.login.error);
         setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Произошла ошибка при входе. Попробуйте еще раз');
+      setError(err.message || t.login.error);
       setLoading(false);
     }
   };
@@ -60,7 +62,7 @@ export default function LoginPage() {
 
         {/* Приветствие */}
         <p className="text-gray-600 text-base mb-8 text-center">
-          Войдите в систему для продолжения работы
+          {t.login.welcome}
         </p>
 
         {/* Форма */}
@@ -68,7 +70,7 @@ export default function LoginPage() {
           {/* Поле Email */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
-              Эл. почта
+              {t.login.email}
             </label>
             <input
               type="email"
@@ -77,7 +79,7 @@ export default function LoginPage() {
                 setEmail(e.target.value);
                 setError('');
               }}
-              placeholder="slava-titov173@yandex.ru"
+              placeholder={t.login.emailPlaceholder}
               className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
             />
           </div>
@@ -85,7 +87,7 @@ export default function LoginPage() {
           {/* Поле Пароль */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
-              Пароль
+              {t.login.password}
             </label>
             <div className="relative">
               <input
@@ -124,9 +126,9 @@ export default function LoginPage() {
               className="mt-1 mr-3 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <label htmlFor="privacy" className="text-base text-gray-900">
-              Я согласен с{' '}
+              {t.login.privacyAgreement}{' '}
               <Link href="/privacy" className="text-blue-600 hover:underline">
-                Политикой конфиденциальности
+                {t.login.privacyPolicy}
               </Link>
             </label>
           </div>
@@ -137,14 +139,14 @@ export default function LoginPage() {
             disabled={!isFormValid || loading}
             className="w-full bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
-            {loading ? 'Вход...' : 'Войти'}
+            {loading ? t.login.loggingIn : t.login.loginButton}
           </button>
 
           {/* Ссылка на регистрацию */}
           <p className="text-center text-base text-gray-600">
-            Нет аккаунта?{' '}
+            {t.login.noAccount}{' '}
             <Link href="/register" className="text-blue-600 hover:underline">
-              Зарегистрироваться
+              {t.login.register}
             </Link>
           </p>
         </div>

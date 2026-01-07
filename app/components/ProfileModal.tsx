@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -111,12 +113,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      alert(t.profile.selectImage);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Размер файла не должен превышать 5 МБ');
+      alert(t.profile.fileTooLarge);
       return;
     }
 
@@ -157,7 +159,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       newValue: JSON.stringify(profile),
     }));
     setHasChanges(false);
-    alert('Профиль успешно сохранен');
+    alert(t.profile.profileSaved);
     onClose();
   };
 
@@ -184,7 +186,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       {/* Модальное окно */}
       <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-medium text-gray-900">Мой профиль</h2>
+          <h2 className="text-xl font-medium text-gray-900">{t.profile.title}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -213,10 +215,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
             <div className="flex-1">
               <label className="block text-gray-900 font-medium mb-2">
-                Фото профиля
+                {t.profile.photo}
               </label>
               <p className="text-sm text-gray-500 mb-3">
-                Загрузите ваше фото. Рекомендуемый масштаб фото: 200x200. Максимальный размер фото: 5 МБ.
+                {t.profile.photoDescription}
               </p>
               <div className="flex gap-3">
                 <input
@@ -232,14 +234,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer font-medium"
                 >
                   <i className="fas fa-pencil-alt"></i>
-                  {profilePhoto ? 'Изменить фото' : 'Загрузить фото'}
+                  {profilePhoto ? t.profile.changePhoto : t.profile.uploadPhoto}
                 </label>
                 {profilePhoto && (
                   <button
                     onClick={handleRemovePhoto}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                   >
-                    Удалить
+                    {t.profile.remove}
                   </button>
                 )}
               </div>
@@ -253,39 +255,39 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-gray-900 font-medium mb-2">
-                    Фамилия
+                    {t.profile.lastName}
                   </label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Иванов"
+                    placeholder={t.profile.lastNamePlaceholder}
                     className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-gray-900 font-medium mb-2">
-                    Имя
+                    {t.profile.firstName}
                   </label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Иван"
+                    placeholder={t.profile.firstNamePlaceholder}
                     className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-gray-900 font-medium mb-2">
-                    Отчество
+                    {t.profile.middleName}
                   </label>
                   <input
                     type="text"
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
-                    placeholder="Иванович"
+                    placeholder={t.profile.middleNamePlaceholder}
                     className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -294,7 +296,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Дата рождения */}
               <div>
                 <label className="block text-gray-900 font-medium mb-2">
-                  Дата рождения
+                  {t.profile.birthDate}
                 </label>
                 <input
                   type="date"
@@ -307,7 +309,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Эл. почта */}
               <div>
                 <label className="block text-gray-900 font-medium mb-2">
-                  Эл. почта
+                  {t.profile.email}
                 </label>
                 <input
                   type="email"
@@ -320,13 +322,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Телефон */}
               <div>
                 <label className="block text-gray-900 font-medium mb-2">
-                  Телефон
+                  {t.profile.phone}
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={handlePhoneChange}
-                  placeholder="+7 (999) 123-45-67"
+                  placeholder={t.profile.phonePlaceholder}
                   className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -340,14 +342,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               disabled={!hasChanges}
               className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
             >
-              Сохранить изменения
+              {t.profile.saveChanges}
             </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
             >
               <i className="fas fa-sign-out-alt"></i>
-              Выйти из аккаунта
+              {t.profile.logout}
             </button>
           </div>
         </div>

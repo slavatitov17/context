@@ -4,8 +4,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage, type Diagram, type DiagramType } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function DiagramsPage() {
+  const { t } = useLanguage();
   const [diagrams, setDiagrams] = useState<Diagram[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -91,7 +93,7 @@ export default function DiagramsPage() {
   const handleDelete = (diagramId: string) => {
     if (!user) return;
     
-    if (!confirm('Вы уверены, что хотите удалить эту диаграмму?')) {
+    if (!confirm(t.diagrams.confirmDelete)) {
       return;
     }
 
@@ -106,7 +108,7 @@ export default function DiagramsPage() {
         });
         setOpenMenuId(null);
       } else {
-        alert('Не удалось удалить диаграмму. Попробуйте еще раз.');
+        alert(t.diagrams.deleteFailed);
       }
     } catch (error) {
       console.error('Ошибка при удалении диаграммы:', error);
@@ -118,7 +120,7 @@ export default function DiagramsPage() {
     if (!user || selectedDiagrams.size === 0) return;
     
     const count = selectedDiagrams.size;
-    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`)) {
+    if (!confirm(t.diagrams.confirmDelete)) {
       return;
     }
 
@@ -137,11 +139,11 @@ export default function DiagramsPage() {
       }
 
       if (successCount < count) {
-        alert(`Удалено ${successCount} из ${count} диаграмм.`);
+        alert(t.diagrams.bulkDeleteSuccess.replace('{count}', successCount.toString()).replace('{total}', count.toString()));
       }
     } catch (error) {
       console.error('Ошибка при массовом удалении диаграмм:', error);
-      alert('Произошла ошибка при удалении диаграмм.');
+      alert(t.diagrams.bulkDeleteFailed);
     }
   };
 
@@ -238,13 +240,13 @@ export default function DiagramsPage() {
       {/* Верхний блок: заголовок, описание и кнопка */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-medium mb-2">Диаграммы</h1>
-          <p className="text-gray-600">Описывайте объекты и получайте готовые диаграммы</p>
+          <h1 className="text-3xl font-medium mb-2">{t.diagrams.title}</h1>
+          <p className="text-gray-600">{t.diagrams.description}</p>
         </div>
         {hasDiagrams && (
           <Link href="/diagrams/new">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              + Создать диаграмму
+              {t.diagrams.createDiagram}
             </button>
           </Link>
         )}
@@ -253,7 +255,7 @@ export default function DiagramsPage() {
       {/* Контент: пустое состояние или таблица */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-medium">Мои диаграммы</h2>
+          <h2 className="text-2xl font-medium">{t.diagrams.myDiagrams}</h2>
           
           {hasDiagrams && (
             <div className="flex items-center gap-4">
@@ -263,7 +265,7 @@ export default function DiagramsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск по названию..."
+                  placeholder={t.diagrams.searchPlaceholder}
                   className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -278,8 +280,8 @@ export default function DiagramsPage() {
                   onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'date')}
                   className="border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
                 >
-                  <option value="date">По дате создания</option>
-                  <option value="alphabet">По алфавиту</option>
+                  <option value="date">{t.diagrams.sortByDate}</option>
+                  <option value="alphabet">{t.diagrams.sortByAlphabet}</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -298,14 +300,14 @@ export default function DiagramsPage() {
               <i className="fas fa-sitemap text-6xl text-gray-400"></i>
             </div>
             <h3 className="text-xl font-medium text-gray-900 mb-3">
-              Диаграммы отсутствуют...
+              {t.diagrams.noDiagrams}
             </h3>
             <p className="text-gray-600 text-center max-w-md mb-6">
-              Создайте свою первую диаграмму, описав предметную область и выбрав тип диаграммы
+              {t.diagrams.noDiagramsDescription}
             </p>
             <Link href="/diagrams/new">
               <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                + Создать диаграмму
+                {t.diagrams.createDiagram}
               </button>
             </Link>
           </div>
@@ -319,7 +321,7 @@ export default function DiagramsPage() {
                   className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
                 >
                   <i className="fas fa-trash"></i>
-                  <span>Удалить выбранное ({selectedDiagrams.size})</span>
+                  <span>{t.diagrams.deleteSelected} ({selectedDiagrams.size})</span>
                 </button>
               </div>
             )}
@@ -336,9 +338,9 @@ export default function DiagramsPage() {
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Тип диаграммы</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.diagrams.name}</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.breadcrumbs.diagramType}</th>
+                    <th className="text-left py-4 px-6 font-medium text-gray-900">{t.diagrams.creationDate}</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
                   </tr>
                 </thead>
@@ -393,10 +395,10 @@ export default function DiagramsPage() {
                                   handleEdit(diagram.id);
                                 }}
                                 className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
-                                title="Редактировать"
+                                title={t.common.edit}
                               >
                                 <i className="fas fa-edit text-gray-500 text-sm"></i>
-                                <span className="text-sm">Редактировать</span>
+                                <span className="text-sm">{t.common.edit}</span>
                               </button>
                               <button
                                 onClick={(e) => {
@@ -404,10 +406,10 @@ export default function DiagramsPage() {
                                   handleDelete(diagram.id);
                                 }}
                                 className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
-                                title="Удалить"
+                                title={t.common.delete}
                               >
                                 <i className="fas fa-trash text-red-600 text-sm"></i>
-                                <span className="text-sm">Удалить</span>
+                                <span className="text-sm">{t.common.delete}</span>
                               </button>
                             </div>
                           )}

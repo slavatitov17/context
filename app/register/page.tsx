@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/storage';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function RegisterPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,22 +30,22 @@ export default function RegisterPage() {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
-      setError('Введите email адрес');
+      setError(t.register.error);
       return;
     }
 
     if (!emailRegex.test(trimmedEmail)) {
-      setError('Введите корректный email адрес (например: user@example.com)');
+      setError(t.register.error);
       return;
     }
 
     if (!passwordsMatch) {
-      setError('Пароли не совпадают. Проверьте введенные данные');
+      setError(t.register.passwordsDontMatch);
       return;
     }
 
     if (password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов');
+      setError(t.register.error);
       return;
     }
 
@@ -54,7 +56,7 @@ export default function RegisterPage() {
       const { user, error: authError } = await auth.signUp(trimmedEmail, password);
 
       if (authError) {
-        setError(authError.message || 'Ошибка при регистрации');
+        setError(authError.message || t.register.error);
         setLoading(false);
         return;
       }
@@ -63,11 +65,11 @@ export default function RegisterPage() {
         router.push('/projects');
         router.refresh();
       } else {
-        setError('Не удалось создать пользователя. Попробуйте еще раз');
+        setError(t.register.error);
         setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Произошла ошибка при регистрации. Попробуйте еще раз');
+      setError(err.message || t.register.error);
       setLoading(false);
     }
   };
@@ -83,7 +85,7 @@ export default function RegisterPage() {
 
         {/* Приветствие */}
         <p className="text-gray-600 text-base mb-8 text-center">
-          Создайте аккаунт для начала работы
+          {t.register.welcome}
         </p>
 
         {/* Форма */}
@@ -91,7 +93,7 @@ export default function RegisterPage() {
           {/* Поле Email */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
-              Эл. почта
+              {t.register.email}
             </label>
             <input
               type="email"
@@ -100,7 +102,7 @@ export default function RegisterPage() {
                 setEmail(e.target.value);
                 setError('');
               }}
-              placeholder="slava-titov173@yandex.ru"
+              placeholder={t.register.emailPlaceholder}
               className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
             />
           </div>
@@ -108,7 +110,7 @@ export default function RegisterPage() {
           {/* Поле Пароль */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
-              Пароль (минимум 6 символов)
+              {t.register.password}
             </label>
             <div className="relative">
               <input
@@ -133,7 +135,7 @@ export default function RegisterPage() {
           {/* Поле Подтверждение пароля */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
-              Подтверждение пароля
+              {t.register.confirmPassword}
             </label>
             <div className="relative">
               <input
@@ -158,7 +160,7 @@ export default function RegisterPage() {
               </button>
             </div>
             {confirmPassword.length > 0 && password !== confirmPassword && (
-              <p className="mt-2 text-sm text-red-600">Пароли не совпадают</p>
+              <p className="mt-2 text-sm text-red-600">{t.register.passwordsDontMatch}</p>
             )}
           </div>
 
@@ -179,9 +181,9 @@ export default function RegisterPage() {
               className="mt-1 mr-3 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <label htmlFor="privacy" className="text-base text-gray-900">
-              Я согласен с{' '}
+              {t.register.privacyAgreement}{' '}
               <Link href="/privacy" className="text-blue-600 hover:underline">
-                Политикой конфиденциальности
+                {t.register.privacyPolicy}
               </Link>
             </label>
           </div>
@@ -192,14 +194,14 @@ export default function RegisterPage() {
             disabled={!isFormValid || loading}
             className="w-full bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
-            {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+            {loading ? t.register.registering : t.register.registerButton}
           </button>
 
           {/* Ссылка на вход */}
           <p className="text-center text-base text-gray-600">
-            Уже есть аккаунт?{' '}
+            {t.register.hasAccount}{' '}
             <Link href="/login" className="text-blue-600 hover:underline">
-              Войти
+              {t.register.login}
             </Link>
           </p>
         </div>

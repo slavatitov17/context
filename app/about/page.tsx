@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function AboutPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const formRef = useRef<HTMLDivElement>(null);
@@ -21,9 +23,9 @@ export default function AboutPage() {
     <div className="max-w-2xl">
       {/* Верхний блок: заголовок, описание */}
       <div className="mb-8 pb-6 border-b border-gray-200">
-        <h1 className="text-3xl font-medium mb-2">О системе</h1>
+        <h1 className="text-3xl font-medium mb-2">{t.about.title}</h1>
         <p className="text-gray-600 text-base">
-          Свяжитесь с поддержкой в случае возникновения вопросов
+          {t.about.description}
         </p>
       </div>
 
@@ -46,11 +48,11 @@ export default function AboutPage() {
           </div>
           <div className="space-y-4">
             <div>
-              <p className="text-xl font-medium text-gray-900 mb-1">Версия</p>
+              <p className="text-xl font-medium text-gray-900 mb-1">{t.about.version}</p>
               <p className="text-gray-500 text-base">1.0.0</p>
             </div>
             <div>
-              <p className="text-xl font-medium text-gray-900 mb-1">Дата сборки</p>
+              <p className="text-xl font-medium text-gray-900 mb-1">{t.about.buildDate}</p>
               <p className="text-gray-500 text-base">01.12.2025</p>
             </div>
           </div>
@@ -58,13 +60,13 @@ export default function AboutPage() {
 
         {/* Блок 2: Форма поддержки (вместо кнопки) */}
         <div className="bg-white border border-gray-200 rounded-xl p-6" ref={formRef}>
-          <h2 className="text-xl font-medium text-gray-900 mb-4">Обратиться в поддержку</h2>
+          <h2 className="text-xl font-medium text-gray-900 mb-4">{t.about.contactSupport}</h2>
           
           <form onSubmit={handleSubmit}>
             {/* Поле Email */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium mb-2">
-                Ваша электронная почта
+                {t.about.yourEmail}
               </label>
               <input
                 type="email"
@@ -79,7 +81,7 @@ export default function AboutPage() {
             {/* Поле Сообщение */}
             <div className="mb-6">
               <label className="block text-gray-900 font-medium mb-2">
-                Ваше сообщение
+                {t.about.yourMessage}
               </label>
               <textarea
                 value={message}
@@ -87,7 +89,7 @@ export default function AboutPage() {
                 required
                 rows={3}
                 className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="Опишите вашу проблему или вопрос..."
+                placeholder={t.about.messagePlaceholder}
               />
               <div className="flex justify-end mt-2">
                 <button
@@ -96,7 +98,7 @@ export default function AboutPage() {
                   onClick={() => alert('Функция прикрепления файла (заглушка)')}
                 >
                   <i className="fas fa-paperclip mr-2 text-lg"></i>
-                  Прикрепить файл
+                  {t.about.attachFile}
                 </button>
               </div>
             </div>
@@ -111,7 +113,7 @@ export default function AboutPage() {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Отправить
+              {t.about.send}
             </button>
           </form>
         </div>
