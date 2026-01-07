@@ -261,12 +261,11 @@ export default function EditorCanvas({
     }
   }, [currentPage, history.length]);
 
-  const handleDelete = useCallback(() => {
-    if (selectedElementId) {
-      saveToHistory();
-      onDeleteElement(selectedElementId);
-    }
-  }, [selectedElementId, onDeleteElement]);
+  // Привязка к сетке
+  const snapToGridValue = useCallback((value: number) => {
+    if (!snapToGrid) return value;
+    return Math.round(value / gridSize) * gridSize;
+  }, [snapToGrid, gridSize]);
 
   // История действий (Undo/Redo)
   const saveToHistory = useCallback(() => {
@@ -313,11 +312,12 @@ export default function EditorCanvas({
     }
   }, [copiedElement, onAddElement, onSelectElement, saveToHistory]);
 
-  // Привязка к сетке
-  const snapToGridValue = useCallback((value: number) => {
-    if (!snapToGrid) return value;
-    return Math.round(value / gridSize) * gridSize;
-  }, [snapToGrid, gridSize]);
+  const handleDelete = useCallback(() => {
+    if (selectedElementId) {
+      saveToHistory();
+      onDeleteElement(selectedElementId);
+    }
+  }, [selectedElementId, onDeleteElement, saveToHistory]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
