@@ -592,7 +592,6 @@ export default function EditorCanvas({
             fill={element.fill || '#3b82f6'}
             stroke={isSelected ? '#ef4444' : (element.stroke || '#1e40af')}
             strokeWidth={strokeWidth}
-            opacity={opacity}
             rx={4}
             ry={4}
             opacity={opacity}
