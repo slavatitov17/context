@@ -62,6 +62,11 @@ export default function NewEditorDiagramPage() {
 
   return (
     <div className="max-w-2xl">
+      <div className="mb-8 pb-6 border-b border-gray-200">
+        <h1 className="text-3xl font-medium mb-2">Создание диаграммы</h1>
+        <p className="text-gray-600 text-base">Заполните основную информацию о диаграмме</p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Информация о полях */}
         <p className="text-gray-500 text-base">* - обязательные поля</p>
