@@ -80,10 +80,15 @@ export default function EditorCanvas({
   useEffect(() => {
     const currentState = JSON.stringify(currentPage);
     if (initialPageStateRef.current === '') {
+      // Первая загрузка - устанавливаем начальное состояние
       initialPageStateRef.current = currentState;
       setIsSaved(true);
     } else if (initialPageStateRef.current !== currentState) {
+      // Есть изменения - помечаем как несохраненное
       setIsSaved(false);
+    } else {
+      // Состояние совпадает с сохраненным - помечаем как сохраненное
+      setIsSaved(true);
     }
   }, [currentPage]);
 
@@ -1006,9 +1011,14 @@ export default function EditorCanvas({
                 <div className="relative">
                   <button 
                     onClick={() => {
+                      // Сохраняем в историю для undo/redo
                       saveToHistory();
+                      // Сохраняем изменения в диаграмму
+                      onUpdatePage(currentPage);
+                      // Обновляем состояние сохраненности
                       initialPageStateRef.current = JSON.stringify(currentPage);
                       setIsSaved(true);
+                      // Показываем тултип
                       setShowSaveTooltip(true);
                       setTimeout(() => {
                         setShowSaveTooltip(false);
@@ -1021,7 +1031,7 @@ export default function EditorCanvas({
                     {!leftMenuCollapsed && <span className="font-medium">Сохранить</span>}
                   </button>
                   {showSaveTooltip && (
-                    <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50 transition-all duration-300 ${showSaveTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                    <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50 transition-all duration-300 ease-in-out ${showSaveTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
                       <i className="fas fa-check text-green-400"></i>
                       <span>Изменения сохранены</span>
                     </div>
@@ -2411,11 +2421,18 @@ export default function EditorCanvas({
                 </button>
                 <button
                   onClick={() => {
+                    // Сохраняем в историю для undo/redo
                     saveToHistory();
+                    // Сохраняем изменения в диаграмму
+                    onUpdatePage(currentPage);
+                    // Обновляем состояние сохраненности
                     initialPageStateRef.current = JSON.stringify(currentPage);
                     setIsSaved(true);
                     setShowExitModal(false);
-                    onBack();
+                    // Небольшая задержка для сохранения перед выходом
+                    setTimeout(() => {
+                      onBack();
+                    }, 100);
                   }}
                   className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
