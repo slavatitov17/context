@@ -70,8 +70,22 @@ export default function EditorCanvas({
   const [componentsOpen, setComponentsOpen] = useState(true);
   const [componentsExpanded, setComponentsExpanded] = useState<'IDEF0' | 'DFD' | 'BPMN' | null>(null);
   const [leftMenuCollapsed, setLeftMenuCollapsed] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [isSaved, setIsSaved] = useState(true);
+  const initialPageStateRef = useRef<string>('');
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
+
+  // Отслеживание изменений
+  useEffect(() => {
+    const currentState = JSON.stringify(currentPage);
+    if (initialPageStateRef.current === '') {
+      initialPageStateRef.current = currentState;
+      setIsSaved(true);
+    } else if (initialPageStateRef.current !== currentState) {
+      setIsSaved(false);
+    }
+  }, [currentPage]);
 
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (tool === 'select') {
@@ -993,8 +1007,12 @@ export default function EditorCanvas({
                   <button 
                     onClick={() => {
                       saveToHistory();
+                      initialPageStateRef.current = JSON.stringify(currentPage);
+                      setIsSaved(true);
                       setShowSaveTooltip(true);
-                      setTimeout(() => setShowSaveTooltip(false), 2000);
+                      setTimeout(() => {
+                        setShowSaveTooltip(false);
+                      }, 2000);
                     }}
                     className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
                     title={leftMenuCollapsed ? 'Сохранить' : ''}
@@ -1002,10 +1020,10 @@ export default function EditorCanvas({
                     <i className="fas fa-save text-gray-600 group-hover:text-white transition-colors"></i>
                     {!leftMenuCollapsed && <span className="font-medium">Сохранить</span>}
                   </button>
-                  {showSaveTooltip && !leftMenuCollapsed && (
-                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50">
+                  {showSaveTooltip && (
+                    <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50 transition-all duration-300 ${showSaveTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
                       <i className="fas fa-check text-green-400"></i>
-                      <span>Сохранено</span>
+                      <span>Изменения сохранены</span>
                     </div>
                   )}
                 </div>
@@ -1759,7 +1777,13 @@ export default function EditorCanvas({
           {/* Кнопка "Выйти из редактора" */}
           <div className="mt-auto pt-2 pb-2 px-2">
             <button
-              onClick={onBack}
+              onClick={() => {
+                if (isSaved) {
+                  onBack();
+                } else {
+                  setShowExitModal(true);
+                }
+              }}
               className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
               title={leftMenuCollapsed ? 'Выйти из редактора' : ''}
             >
@@ -2347,6 +2371,58 @@ export default function EditorCanvas({
           >
             <i className="fas fa-chevron-left"></i>
           </button>
+        </div>
+      )}
+
+      {/* Модальное окно выхода */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Блюр фон */}
+          <div 
+            className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+            onClick={() => setShowExitModal(false)}
+          />
+          
+          {/* Модальное окно */}
+          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-medium text-gray-900">Выйти из редактора?</h2>
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              <p className="text-base text-gray-600">
+                Все несохраненные данные будут утеряны
+              </p>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowExitModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={() => {
+                    saveToHistory();
+                    setIsSaved(true);
+                    setShowExitModal(false);
+                    onBack();
+                  }}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Сохранить и выйти
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

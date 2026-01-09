@@ -308,17 +308,17 @@ export default function EditorPage() {
                         />
                       </td>
                       <td className="py-4 px-6 text-gray-900 font-medium">
-                        <Link href={`/editor/${diagram.id}`} className="block w-full h-full hover:text-blue-600 transition-colors">
+                        <Link href={`/editor/${diagram.id}/edit`} className="block w-full h-full hover:text-blue-600 transition-colors">
                           {diagram.name}
                         </Link>
                       </td>
                       <td className="py-4 px-6 text-gray-600">
-                        <Link href={`/editor/${diagram.id}`} className="block w-full h-full">
+                        <Link href={`/editor/${diagram.id}/edit`} className="block w-full h-full">
                           {getDiagramTypeName(diagram.diagramType)}
                         </Link>
                       </td>
                       <td className="py-4 px-6 text-gray-500">
-                        <Link href={`/editor/${diagram.id}`} className="block w-full h-full">
+                        <Link href={`/editor/${diagram.id}/edit`} className="block w-full h-full">
                           {formatDate(diagram.created_at)}
                         </Link>
                       </td>
