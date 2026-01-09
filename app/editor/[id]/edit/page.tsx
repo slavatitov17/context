@@ -66,16 +66,15 @@ export default function EditorEditPage() {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    saveTimeoutRef.current = setTimeout(() => {
-      try {
-        editorDiagrams.update(diagram.id, user.id, {
-          pages: diagram.pages,
-          currentPageId: currentPage?.id,
-        });
-      } catch (error) {
-        console.error('Ошибка при сохранении диаграммы:', error);
-      }
-    }, 500);
+    // Сохраняем сразу, без задержки, чтобы элементы не исчезали
+    try {
+      editorDiagrams.update(diagram.id, user.id, {
+        pages: diagram.pages,
+        currentPageId: currentPage?.id,
+      });
+    } catch (error) {
+      console.error('Ошибка при сохранении диаграммы:', error);
+    }
   }, [diagram, user, currentPage]);
 
   const updatePage = useCallback((updatedPage: EditorPage) => {

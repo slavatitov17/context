@@ -95,6 +95,7 @@ export default function EditorCanvas({
     }
   }, [currentPage]);
 
+
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (tool === 'select') {
       const target = e.target as SVGElement;
@@ -1080,7 +1081,7 @@ export default function EditorCanvas({
                       className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <i className="fas fa-sitemap text-gray-600 group-hover:text-white transition-colors"></i>
+                        <i className="fas fa-project-diagram text-gray-600 group-hover:text-white transition-colors"></i>
                         <span className="font-medium">IDEF0</span>
                       </div>
                       <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
@@ -1352,7 +1353,7 @@ export default function EditorCanvas({
                       className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <i className="fas fa-diagram-project text-gray-600 group-hover:text-white transition-colors"></i>
+                        <i className="fas fa-project-diagram text-gray-600 group-hover:text-white transition-colors"></i>
                         <span className="font-medium">BPMN</span>
                       </div>
                       <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
@@ -1718,9 +1719,9 @@ export default function EditorCanvas({
                                 element.type === 'circle' ? 'circle' :
                                 element.type === 'line' ? 'minus' :
                                 element.type === 'arrow' ? 'arrow-right' :
-                                element.type === 'idef0-box' ? 'sitemap' :
+                                element.type === 'idef0-box' ? 'project-diagram' :
                                 element.type === 'dfd-process' || element.type === 'dfd-data-store' || element.type === 'dfd-external' ? 'project-diagram' :
-                                element.type === 'bpmn-task' || element.type === 'bpmn-event' || element.type === 'bpmn-gateway' ? 'diagram-project' :
+                                element.type === 'bpmn-task' || element.type === 'bpmn-event' || element.type === 'bpmn-gateway' ? 'project-diagram' :
                                 'font'
                               } mr-2 flex-shrink-0`}></i>
                               {editingLayerName === element.id ? (
