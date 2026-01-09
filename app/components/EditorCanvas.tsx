@@ -918,7 +918,7 @@ export default function EditorCanvas({
     <div className="flex h-screen w-screen bg-gray-50">
       {/* Левое меню */}
       {leftMenuOpen && (
-        <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${leftMenuCollapsed ? 'w-16' : 'w-64'}`}>
+        <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${leftMenuCollapsed ? 'w-16' : 'w-64'}`} style={{ overflow: 'visible' }}>
           {/* Заголовок с названием диаграммы и иконкой скрытия */}
           {!leftMenuCollapsed && (
             <div className="p-4 border-b border-gray-200">
@@ -960,9 +960,6 @@ export default function EditorCanvas({
                   <i className="fas fa-chevron-left text-sm"></i>
                 </button>
               </div>
-              
-              {/* Девайдер */}
-              <div className="border-t border-gray-200 my-3"></div>
             </div>
           )}
           
@@ -979,7 +976,7 @@ export default function EditorCanvas({
           )}
 
             {/* Блок "Действия" */}
-            <div className="px-2">
+            <div className="px-2 mt-3">
               {!leftMenuCollapsed && (
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">Действия</span>
@@ -999,11 +996,11 @@ export default function EditorCanvas({
                       setShowSaveTooltip(true);
                       setTimeout(() => setShowSaveTooltip(false), 2000);
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : ''}`}
+                    className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
                     title={leftMenuCollapsed ? 'Сохранить' : ''}
                   >
-                    <i className="fas fa-save"></i>
-                    {!leftMenuCollapsed && <span>Сохранить</span>}
+                    <i className="fas fa-save text-gray-600 group-hover:text-white transition-colors"></i>
+                    {!leftMenuCollapsed && <span className="font-medium">Сохранить</span>}
                   </button>
                   {showSaveTooltip && !leftMenuCollapsed && (
                     <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50">
@@ -1014,11 +1011,11 @@ export default function EditorCanvas({
                 </div>
                 <button
                   onClick={() => setShowExportDialog(true)}
-                  className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : ''}`}
+                  className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
                   title={leftMenuCollapsed ? 'Экспорт' : ''}
                 >
-                  <i className="fas fa-download"></i>
-                  {!leftMenuCollapsed && <span>Экспорт</span>}
+                  <i className="fas fa-download text-gray-600 group-hover:text-white transition-colors"></i>
+                  {!leftMenuCollapsed && <span className="font-medium">Экспорт</span>}
                 </button>
               </div>
             </div>
@@ -1029,8 +1026,8 @@ export default function EditorCanvas({
             )}
 
             {/* Блок "Компоненты" */}
-            <div className="px-2">
-              {!leftMenuCollapsed && (
+            {!leftMenuCollapsed && (
+              <div className="px-2">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">Компоненты</span>
                   <button
@@ -1040,24 +1037,20 @@ export default function EditorCanvas({
                     <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
                   </button>
                 </div>
-              )}
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${componentsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="relative">
-                  <button
-                    onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
-                    className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : 'justify-between'}`}
-                    title={leftMenuCollapsed ? 'IDEF0' : ''}
-                  >
-                    <i className="fas fa-sitemap"></i>
-                    {!leftMenuCollapsed && (
-                      <>
-                        <span className="flex-1">IDEF0</span>
-                        <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
-                      </>
-                    )}
-                  </button>
-                    {componentsExpanded === 'IDEF0' && !leftMenuCollapsed && (
-                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[200px]">
+                <div className={`space-y-1 transition-all duration-300 ease-in-out ${componentsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`} style={{ position: 'relative' }}>
+                  <div className="relative" style={{ zIndex: componentsExpanded ? 10 : 1 }}>
+                    <button
+                      onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
+                      className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <i className="fas fa-sitemap text-gray-600 group-hover:text-white transition-colors"></i>
+                        <span className="font-medium">IDEF0</span>
+                      </div>
+                      <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
+                    </button>
+                    {componentsExpanded === 'IDEF0' && (
+                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
                         <button
                           onClick={() => {
                             const newElement: EditorElement = {
@@ -1210,19 +1203,16 @@ export default function EditorCanvas({
                   <div className="relative">
                     <button
                       onClick={() => setComponentsExpanded(componentsExpanded === 'DFD' ? null : 'DFD')}
-                      className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : 'justify-between'}`}
-                      title={leftMenuCollapsed ? 'DFD' : ''}
+                      className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                     >
-                      <i className="fas fa-project-diagram"></i>
-                      {!leftMenuCollapsed && (
-                        <>
-                          <span className="flex-1">DFD</span>
-                          <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
-                        </>
-                      )}
+                      <div className="flex items-center gap-3">
+                        <i className="fas fa-project-diagram text-gray-600 group-hover:text-white transition-colors"></i>
+                        <span className="font-medium">DFD</span>
+                      </div>
+                      <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
                     </button>
-                    {componentsExpanded === 'DFD' && !leftMenuCollapsed && (
-                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[200px]">
+                    {componentsExpanded === 'DFD' && (
+                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
                         <button
                           onClick={() => {
                             const newElement: EditorElement = {
@@ -1323,19 +1313,16 @@ export default function EditorCanvas({
                   <div className="relative">
                     <button
                       onClick={() => setComponentsExpanded(componentsExpanded === 'BPMN' ? null : 'BPMN')}
-                      className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : 'justify-between'}`}
-                      title={leftMenuCollapsed ? 'BPMN' : ''}
+                      className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                     >
-                      <i className="fas fa-diagram-project"></i>
-                      {!leftMenuCollapsed && (
-                        <>
-                          <span className="flex-1">BPMN</span>
-                          <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
-                        </>
-                      )}
+                      <div className="flex items-center gap-3">
+                        <i className="fas fa-diagram-project text-gray-600 group-hover:text-white transition-colors"></i>
+                        <span className="font-medium">BPMN</span>
+                      </div>
+                      <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
                     </button>
-                    {componentsExpanded === 'BPMN' && !leftMenuCollapsed && (
-                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[250px] max-h-96 overflow-y-auto">
+                    {componentsExpanded === 'BPMN' && (
+                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[250px] max-h-96 overflow-y-auto">
                         <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">События</div>
                         <button
                           onClick={() => {
@@ -1655,8 +1642,8 @@ export default function EditorCanvas({
             )}
 
           {/* Блок "Слои" */}
-          <div className="flex-1 overflow-y-auto flex flex-col px-2">
-            {!leftMenuCollapsed && (
+          {!leftMenuCollapsed && (
+            <div className="flex-1 overflow-y-auto flex flex-col px-2">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-900">Слои</span>
                 <button
@@ -1666,38 +1653,24 @@ export default function EditorCanvas({
                   <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
                 </button>
               </div>
-            )}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${layersOpen ? 'flex-1 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <div className="pb-2">
-                {currentPage.elements.length === 0 ? (
-                  <div className={`text-sm text-gray-500 px-2 py-4 text-center ${leftMenuCollapsed ? 'hidden' : ''}`}>
-                    Нет элементов
-                  </div>
-                ) : (
-                  currentPage.elements
-                    .slice()
-                    .reverse()
-                    .map((element) => (
-                      <div
-                        key={element.id}
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 group transition-colors ${
-                          element.id === selectedElementId ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                        } ${leftMenuCollapsed ? 'flex justify-center' : ''}`}
-                        onClick={() => onSelectElement(element.id)}
-                        title={leftMenuCollapsed ? (element.name || (element.type === 'text' ? element.text || 'Текст' : element.type)) : ''}
-                      >
-                        {leftMenuCollapsed ? (
-                          <i className={`fas fa-${
-                            element.type === 'rectangle' ? 'square' :
-                            element.type === 'circle' ? 'circle' :
-                            element.type === 'line' ? 'minus' :
-                            element.type === 'arrow' ? 'arrow-right' :
-                            element.type === 'idef0-box' ? 'sitemap' :
-                            element.type === 'dfd-process' || element.type === 'dfd-data-store' || element.type === 'dfd-external' ? 'project-diagram' :
-                            element.type === 'bpmn-task' || element.type === 'bpmn-event' || element.type === 'bpmn-gateway' ? 'diagram-project' :
-                            'font'
-                          }`}></i>
-                        ) : (
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${layersOpen ? 'flex-1 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="pb-2">
+                  {currentPage.elements.length === 0 ? (
+                    <div className="text-sm text-gray-500 px-2 py-4 text-center">
+                      Нет элементов
+                    </div>
+                  ) : (
+                    currentPage.elements
+                      .slice()
+                      .reverse()
+                      .map((element) => (
+                        <div
+                          key={element.id}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 group transition-colors ${
+                            element.id === selectedElementId ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          }`}
+                          onClick={() => onSelectElement(element.id)}
+                        >
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center flex-1 min-w-0">
                               {element.locked && (
@@ -1774,24 +1747,24 @@ export default function EditorCanvas({
                               </button>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    ))
-                )}
+                        </div>
+                      ))
+                  )}
+                </div>
               </div>
             </div>
+          )}
             
-            {/* Кнопка "Выйти из редактора" */}
-            <div className="mt-auto pt-2 pb-2">
-              <button
-                onClick={onBack}
-                className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : ''}`}
-                title={leftMenuCollapsed ? 'Выйти из редактора' : ''}
-              >
-                <i className="fas fa-sign-out-alt"></i>
-                {!leftMenuCollapsed && <span>Выйти из редактора</span>}
-              </button>
-            </div>
+          {/* Кнопка "Выйти из редактора" */}
+          <div className="mt-auto pt-2 pb-2 px-2">
+            <button
+              onClick={onBack}
+              className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
+              title={leftMenuCollapsed ? 'Выйти из редактора' : ''}
+            >
+              <i className="fas fa-sign-out-alt text-gray-600 group-hover:text-white transition-colors"></i>
+              {!leftMenuCollapsed && <span className="font-medium">Выйти из редактора</span>}
+            </button>
           </div>
         </div>
       )}
