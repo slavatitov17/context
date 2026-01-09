@@ -2385,20 +2385,20 @@ export default function EditorCanvas({
           
           {/* Модальное окно */}
           <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-medium text-gray-900">Выйти из редактора?</h2>
+            <div className="relative mb-6">
               <button
                 onClick={() => setShowExitModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-0 top-0 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+              <h2 className="text-xl font-medium text-gray-900 text-center">Выйти из редактора?</h2>
             </div>
             
             <div className="space-y-6">
-              <p className="text-base text-gray-600">
+              <p className="text-base text-gray-600 text-center">
                 Все несохраненные данные будут утеряны
               </p>
 
@@ -2412,6 +2412,7 @@ export default function EditorCanvas({
                 <button
                   onClick={() => {
                     saveToHistory();
+                    initialPageStateRef.current = JSON.stringify(currentPage);
                     setIsSaved(true);
                     setShowExitModal(false);
                     onBack();
