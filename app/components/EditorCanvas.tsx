@@ -83,12 +83,15 @@ export default function EditorCanvas({
       // Первая загрузка - устанавливаем начальное состояние
       initialPageStateRef.current = currentState;
       setIsSaved(true);
+      console.log('Initial state set, isSaved: true');
     } else if (initialPageStateRef.current !== currentState) {
       // Есть изменения - помечаем как несохраненное
       setIsSaved(false);
+      console.log('Changes detected, isSaved: false');
     } else {
       // Состояние совпадает с сохраненным - помечаем как сохраненное
       setIsSaved(true);
+      console.log('State matches saved, isSaved: true');
     }
   }, [currentPage]);
 
@@ -1007,10 +1010,11 @@ export default function EditorCanvas({
                   </button>
                 </div>
               )}
-              <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${actionsOpen ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="relative">
+              <div className={`space-y-1 transition-all duration-300 ease-in-out ${actionsOpen ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'} ${actionsOpen ? '' : 'overflow-hidden'}`} style={{ position: 'relative' }}>
+                <div className="relative" style={{ zIndex: showSaveTooltip ? 100 : 1 }}>
                   <button 
                     onClick={() => {
+                      console.log('Save button clicked');
                       // Сохраняем в историю для undo/redo
                       saveToHistory();
                       // Сохраняем изменения в диаграмму
@@ -1019,8 +1023,10 @@ export default function EditorCanvas({
                       initialPageStateRef.current = JSON.stringify(currentPage);
                       setIsSaved(true);
                       // Показываем тултип
+                      console.log('Setting showSaveTooltip to true');
                       setShowSaveTooltip(true);
                       setTimeout(() => {
+                        console.log('Hiding tooltip');
                         setShowSaveTooltip(false);
                       }, 2000);
                     }}
@@ -1031,7 +1037,7 @@ export default function EditorCanvas({
                     {!leftMenuCollapsed && <span className="font-medium">Сохранить</span>}
                   </button>
                   {showSaveTooltip && (
-                    <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50 transition-all duration-300 ease-in-out ${showSaveTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 shadow-lg" style={{ zIndex: 1000, pointerEvents: 'none' }}>
                       <i className="fas fa-check text-green-400"></i>
                       <span>Изменения сохранены</span>
                     </div>
@@ -1788,9 +1794,12 @@ export default function EditorCanvas({
           <div className="mt-auto pt-2 pb-2 px-2">
             <button
               onClick={() => {
+                console.log('Exit button clicked, isSaved:', isSaved);
                 if (isSaved) {
+                  console.log('Direct exit');
                   onBack();
                 } else {
+                  console.log('Showing exit modal');
                   setShowExitModal(true);
                 }
               }}
