@@ -69,6 +69,7 @@ export default function EditorCanvas({
   const [actionsOpen, setActionsOpen] = useState(true);
   const [componentsOpen, setComponentsOpen] = useState(true);
   const [componentsExpanded, setComponentsExpanded] = useState<'IDEF0' | 'DFD' | 'BPMN' | null>(null);
+  const [leftMenuCollapsed, setLeftMenuCollapsed] = useState(false);
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
 
@@ -917,121 +918,145 @@ export default function EditorCanvas({
     <div className="flex h-screen w-screen bg-gray-50">
       {/* Левое меню */}
       {leftMenuOpen && (
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${leftMenuCollapsed ? 'w-16' : 'w-64'}`}>
           {/* Заголовок с названием диаграммы и иконкой скрытия */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              {editingDiagramName ? (
-                <input
-                  type="text"
-                  value={diagram.name}
-                  onBlur={() => {
-                    setEditingDiagramName(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+          {!leftMenuCollapsed && (
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                {editingDiagramName ? (
+                  <input
+                    type="text"
+                    value={diagram.name}
+                    onBlur={() => {
                       setEditingDiagramName(false);
-                    } else if (e.key === 'Escape') {
-                      setEditingDiagramName(false);
-                    }
-                  }}
-                  onChange={(e) => {
-                    // Обновление названия через callback если нужен
-                  }}
-                  className="flex-1 text-base text-gray-600 border border-blue-300 rounded px-2 py-1"
-                  autoFocus
-                />
-              ) : (
-                <span
-                  className="text-base text-gray-600 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
-                  onDoubleClick={() => setEditingDiagramName(true)}
-                  title="Двойной клик для редактирования"
-                >
-                  {diagram.name}
-                </span>
-              )}
-              <button
-                onClick={() => setLeftMenuOpen(false)}
-                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2"
-                title="Скрыть меню"
-              >
-                <div className="w-4 h-4 border border-gray-400 flex items-center justify-center">
-                  <div className="w-px h-3 bg-gray-400"></div>
-                </div>
-              </button>
-            </div>
-            
-            {/* Девайдер */}
-            <div className="border-t border-gray-200 my-3"></div>
-
-            {/* Блок "Действия" */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Действия</span>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setEditingDiagramName(false);
+                      } else if (e.key === 'Escape') {
+                        setEditingDiagramName(false);
+                      }
+                    }}
+                    onChange={(e) => {
+                      // Обновление названия через callback если нужен
+                    }}
+                    className="flex-1 text-base text-gray-600 border border-blue-300 rounded px-2 py-1"
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    className="text-base text-gray-600 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
+                    onDoubleClick={() => setEditingDiagramName(true)}
+                    title="Двойной клик для редактирования"
+                  >
+                    {diagram.name}
+                  </span>
+                )}
                 <button
-                  onClick={() => setActionsOpen(!actionsOpen)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
+                  onClick={() => setLeftMenuCollapsed(true)}
+                  className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2 transition-colors"
+                  title="Скрыть меню"
                 >
-                  <i className={`fas fa-chevron-${actionsOpen ? 'down' : 'right'} text-xs`}></i>
+                  <i className="fas fa-chevron-left text-sm"></i>
                 </button>
               </div>
-              {actionsOpen && (
-                <div className="space-y-1">
-                  <div className="relative">
-                    <button 
-                      onClick={() => {
-                        saveToHistory();
-                        setShowSaveTooltip(true);
-                        setTimeout(() => setShowSaveTooltip(false), 2000);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                    >
-                      <i className="fas fa-save"></i>
-                      <span>Сохранить</span>
-                    </button>
-                    {showSaveTooltip && (
-                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50">
-                        <i className="fas fa-check text-green-400"></i>
-                        <span>Сохранено</span>
-                      </div>
-                    )}
-                  </div>
+              
+              {/* Девайдер */}
+              <div className="border-t border-gray-200 my-3"></div>
+            </div>
+          )}
+          
+          {leftMenuCollapsed && (
+            <div className="p-2 border-b border-gray-200">
+              <button
+                onClick={() => setLeftMenuCollapsed(false)}
+                className="w-full p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center justify-center"
+                title="Развернуть меню"
+              >
+                <i className="fas fa-chevron-right text-sm"></i>
+              </button>
+            </div>
+          )}
+
+            {/* Блок "Действия" */}
+            <div className="px-2">
+              {!leftMenuCollapsed && (
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">Действия</span>
                   <button
-                    onClick={() => setShowExportDialog(true)}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                    onClick={() => setActionsOpen(!actionsOpen)}
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <i className="fas fa-download"></i>
-                    <span>Экспорт</span>
+                    <i className={`fas fa-chevron-${actionsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
                   </button>
                 </div>
               )}
+              <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${actionsOpen ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="relative">
+                  <button 
+                    onClick={() => {
+                      saveToHistory();
+                      setShowSaveTooltip(true);
+                      setTimeout(() => setShowSaveTooltip(false), 2000);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : ''}`}
+                    title={leftMenuCollapsed ? 'Сохранить' : ''}
+                  >
+                    <i className="fas fa-save"></i>
+                    {!leftMenuCollapsed && <span>Сохранить</span>}
+                  </button>
+                  {showSaveTooltip && !leftMenuCollapsed && (
+                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 z-50">
+                      <i className="fas fa-check text-green-400"></i>
+                      <span>Сохранено</span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowExportDialog(true)}
+                  className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : ''}`}
+                  title={leftMenuCollapsed ? 'Экспорт' : ''}
+                >
+                  <i className="fas fa-download"></i>
+                  {!leftMenuCollapsed && <span>Экспорт</span>}
+                </button>
+              </div>
             </div>
 
             {/* Девайдер */}
-            <div className="border-t border-gray-200 my-3"></div>
+            {!leftMenuCollapsed && (
+              <div className="border-t border-gray-200 my-3"></div>
+            )}
 
             {/* Блок "Компоненты" */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Компоненты</span>
-                <button
-                  onClick={() => setComponentsOpen(!componentsOpen)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs`}></i>
-                </button>
-              </div>
-              {componentsOpen && (
-                <div className="space-y-1">
-                  <div className="relative">
-                    <button
-                      onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
-                    >
-                      <span>IDEF0</span>
-                      <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
-                    </button>
-                    {componentsExpanded === 'IDEF0' && (
+            <div className="px-2">
+              {!leftMenuCollapsed && (
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">Компоненты</span>
+                  <button
+                    onClick={() => setComponentsOpen(!componentsOpen)}
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
+                  </button>
+                </div>
+              )}
+              <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${componentsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="relative">
+                  <button
+                    onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
+                    className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : 'justify-between'}`}
+                    title={leftMenuCollapsed ? 'IDEF0' : ''}
+                  >
+                    <i className="fas fa-sitemap"></i>
+                    {!leftMenuCollapsed && (
+                      <>
+                        <span className="flex-1">IDEF0</span>
+                        <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
+                      </>
+                    )}
+                  </button>
+                    {componentsExpanded === 'IDEF0' && !leftMenuCollapsed && (
                       <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[200px]">
                         <button
                           onClick={() => {
@@ -1185,12 +1210,18 @@ export default function EditorCanvas({
                   <div className="relative">
                     <button
                       onClick={() => setComponentsExpanded(componentsExpanded === 'DFD' ? null : 'DFD')}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
+                      className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : 'justify-between'}`}
+                      title={leftMenuCollapsed ? 'DFD' : ''}
                     >
-                      <span>DFD</span>
-                      <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
+                      <i className="fas fa-project-diagram"></i>
+                      {!leftMenuCollapsed && (
+                        <>
+                          <span className="flex-1">DFD</span>
+                          <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
+                        </>
+                      )}
                     </button>
-                    {componentsExpanded === 'DFD' && (
+                    {componentsExpanded === 'DFD' && !leftMenuCollapsed && (
                       <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[200px]">
                         <button
                           onClick={() => {
@@ -1292,12 +1323,18 @@ export default function EditorCanvas({
                   <div className="relative">
                     <button
                       onClick={() => setComponentsExpanded(componentsExpanded === 'BPMN' ? null : 'BPMN')}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-between"
+                      className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : 'justify-between'}`}
+                      title={leftMenuCollapsed ? 'BPMN' : ''}
                     >
-                      <span>BPMN</span>
-                      <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
+                      <i className="fas fa-diagram-project"></i>
+                      {!leftMenuCollapsed && (
+                        <>
+                          <span className="flex-1">BPMN</span>
+                          <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
+                        </>
+                      )}
                     </button>
-                    {componentsExpanded === 'BPMN' && (
+                    {componentsExpanded === 'BPMN' && !leftMenuCollapsed && (
                       <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[250px] max-h-96 overflow-y-auto">
                         <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">События</div>
                         <button
@@ -1614,23 +1651,27 @@ export default function EditorCanvas({
             </div>
 
             {/* Девайдер */}
-            <div className="border-t border-gray-200 my-3"></div>
+            {!leftMenuCollapsed && (
+              <div className="border-t border-gray-200 my-3"></div>
+            )}
 
           {/* Блок "Слои" */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-900">Слои</span>
-              <button
-                onClick={() => setLayersOpen(!layersOpen)}
-                className="p-1 text-gray-400 hover:text-gray-600"
-              >
-                <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs`}></i>
-              </button>
-            </div>
-            {layersOpen && (
+          <div className="flex-1 overflow-y-auto flex flex-col px-2">
+            {!leftMenuCollapsed && (
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-900">Слои</span>
+                <button
+                  onClick={() => setLayersOpen(!layersOpen)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
+                </button>
+              </div>
+            )}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${layersOpen ? 'flex-1 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="pb-2">
                 {currentPage.elements.length === 0 ? (
-                  <div className="text-sm text-gray-500 px-2 py-4 text-center">
+                  <div className={`text-sm text-gray-500 px-2 py-4 text-center ${leftMenuCollapsed ? 'hidden' : ''}`}>
                     Нет элементов
                   </div>
                 ) : (
@@ -1640,89 +1681,118 @@ export default function EditorCanvas({
                     .map((element) => (
                       <div
                         key={element.id}
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 group ${
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded mb-1 group transition-colors ${
                           element.id === selectedElementId ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                        }`}
+                        } ${leftMenuCollapsed ? 'flex justify-center' : ''}`}
                         onClick={() => onSelectElement(element.id)}
+                        title={leftMenuCollapsed ? (element.name || (element.type === 'text' ? element.text || 'Текст' : element.type)) : ''}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center flex-1 min-w-0">
-                            {element.locked && (
-                              <i className="fas fa-lock text-xs mr-1 text-gray-400"></i>
-                            )}
-                            <i className={`fas fa-${
-                              element.type === 'rectangle' ? 'square' :
-                              element.type === 'circle' ? 'circle' :
-                              element.type === 'line' ? 'minus' :
-                              element.type === 'arrow' ? 'arrow-right' :
-                              'font'
-                            } mr-2 flex-shrink-0`}></i>
-                            {editingLayerName === element.id ? (
-                              <input
-                                type="text"
-                                value={element.name || ''}
-                                onBlur={() => {
-                                  if (element.name !== undefined) {
-                                    onUpdateElement(element.id, { name: element.name });
-                                  }
-                                  setEditingLayerName(null);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
+                        {leftMenuCollapsed ? (
+                          <i className={`fas fa-${
+                            element.type === 'rectangle' ? 'square' :
+                            element.type === 'circle' ? 'circle' :
+                            element.type === 'line' ? 'minus' :
+                            element.type === 'arrow' ? 'arrow-right' :
+                            element.type === 'idef0-box' ? 'sitemap' :
+                            element.type === 'dfd-process' || element.type === 'dfd-data-store' || element.type === 'dfd-external' ? 'project-diagram' :
+                            element.type === 'bpmn-task' || element.type === 'bpmn-event' || element.type === 'bpmn-gateway' ? 'diagram-project' :
+                            'font'
+                          }`}></i>
+                        ) : (
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center flex-1 min-w-0">
+                              {element.locked && (
+                                <i className="fas fa-lock text-xs mr-1 text-gray-400"></i>
+                              )}
+                              <i className={`fas fa-${
+                                element.type === 'rectangle' ? 'square' :
+                                element.type === 'circle' ? 'circle' :
+                                element.type === 'line' ? 'minus' :
+                                element.type === 'arrow' ? 'arrow-right' :
+                                element.type === 'idef0-box' ? 'sitemap' :
+                                element.type === 'dfd-process' || element.type === 'dfd-data-store' || element.type === 'dfd-external' ? 'project-diagram' :
+                                element.type === 'bpmn-task' || element.type === 'bpmn-event' || element.type === 'bpmn-gateway' ? 'diagram-project' :
+                                'font'
+                              } mr-2 flex-shrink-0`}></i>
+                              {editingLayerName === element.id ? (
+                                <input
+                                  type="text"
+                                  value={element.name || ''}
+                                  onBlur={() => {
                                     if (element.name !== undefined) {
                                       onUpdateElement(element.id, { name: element.name });
                                     }
                                     setEditingLayerName(null);
-                                  } else if (e.key === 'Escape') {
-                                    setEditingLayerName(null);
-                                  }
-                                }}
-                                onChange={(e) => onUpdateElement(element.id, { name: e.target.value })}
-                                className="flex-1 text-xs border border-blue-300 rounded px-1"
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            ) : (
-                              <span
-                                className="truncate flex-1"
-                                onDoubleClick={(e) => {
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      if (element.name !== undefined) {
+                                        onUpdateElement(element.id, { name: element.name });
+                                      }
+                                      setEditingLayerName(null);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingLayerName(null);
+                                    }
+                                  }}
+                                  onChange={(e) => onUpdateElement(element.id, { name: e.target.value })}
+                                  className="flex-1 text-xs border border-blue-300 rounded px-1"
+                                  autoFocus
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              ) : (
+                                <span
+                                  className="truncate flex-1"
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingLayerName(element.id);
+                                  }}
+                                >
+                                  {element.name || (element.type === 'text' ? element.text || 'Текст' : element.type)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingLayerName(element.id);
+                                  onUpdateElement(element.id, { locked: !element.locked });
                                 }}
+                                className="text-gray-500 hover:text-gray-700"
+                                title={element.locked ? 'Разблокировать' : 'Заблокировать'}
                               >
-                                {element.name || (element.type === 'text' ? element.text || 'Текст' : element.type)}
-                              </span>
-                            )}
+                                <i className={`fas fa-${element.locked ? 'unlock' : 'lock'} text-xs`}></i>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  saveToHistory();
+                                  onDeleteElement(element.id);
+                                }}
+                                className="text-red-500 hover:text-red-700"
+                                title="Удалить"
+                              >
+                                <i className="fas fa-trash text-xs"></i>
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUpdateElement(element.id, { locked: !element.locked });
-                              }}
-                              className="text-gray-500 hover:text-gray-700"
-                              title={element.locked ? 'Разблокировать' : 'Заблокировать'}
-                            >
-                              <i className={`fas fa-${element.locked ? 'unlock' : 'lock'} text-xs`}></i>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveToHistory();
-                                onDeleteElement(element.id);
-                              }}
-                              className="text-red-500 hover:text-red-700"
-                              title="Удалить"
-                            >
-                              <i className="fas fa-trash text-xs"></i>
-                            </button>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     ))
                 )}
               </div>
-            )}
+            </div>
+            
+            {/* Кнопка "Выйти из редактора" */}
+            <div className="mt-auto pt-2 pb-2">
+              <button
+                onClick={onBack}
+                className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 transition-colors ${leftMenuCollapsed ? 'justify-center' : ''}`}
+                title={leftMenuCollapsed ? 'Выйти из редактора' : ''}
+              >
+                <i className="fas fa-sign-out-alt"></i>
+                {!leftMenuCollapsed && <span>Выйти из редактора</span>}
+              </button>
+            </div>
           </div>
             {layersOpen && (
               <div className="p-2">

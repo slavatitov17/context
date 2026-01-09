@@ -36,11 +36,13 @@ export default function Breadcrumbs() {
 
       // Добавляем корневой элемент (если не на главной)
       if (segments.length > 0) {
-        // Определяем тип страницы (projects, diagrams или privacy)
+        // Определяем тип страницы (projects, diagrams, editor или privacy)
         if (segments[0] === 'projects') {
           items.push({ label: 'Проекты', href: '/projects' });
         } else if (segments[0] === 'diagrams') {
           items.push({ label: 'Диаграммы', href: '/diagrams' });
+        } else if (segments[0] === 'editor') {
+          items.push({ label: 'Редактор', href: '/editor' });
         } else if (segments[0] === 'privacy') {
           // Для страницы privacy добавляем ссылку на "О системе"
           items.push({ label: 'О системе', href: '/about' });
@@ -58,6 +60,8 @@ export default function Breadcrumbs() {
               items.push({ label: 'Создание проекта', href: '/projects/new' });
             } else if (segments[0] === 'diagrams') {
               items.push({ label: 'Создание диаграммы', href: '/diagrams/new' });
+            } else if (segments[0] === 'editor') {
+              items.push({ label: 'Создание диаграммы', href: '/editor/new' });
             }
           } else if (segments[1] && segments[1] !== 'new') {
             // Страница с ID (детальная страница или редактирование)
