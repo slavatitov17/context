@@ -1634,7 +1634,8 @@ export default function EditorCanvas({
                     )}
                   </div>
                 </div>
-            </div>
+              </div>
+            )}
 
             {/* Девайдер */}
             {!leftMenuCollapsed && (
