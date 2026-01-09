@@ -127,11 +127,13 @@ export default function EditorCanvas({
         opacity: 1,
       };
 
-      saveToHistory();
-
+      // Сначала добавляем элемент, потом сохраняем в историю
       onAddElement(newElement);
       onSelectElement(newElement.id);
       setTool('select');
+      
+      // Сохраняем в историю после обновления страницы
+      // Это будет сделано автоматически через onUpdatePage в родительском компоненте
     }
   };
 
@@ -375,13 +377,13 @@ export default function EditorCanvas({
     }
   }, [zoom, pan]);
 
-  // Инициализация истории
+  // Инициализация истории - только при первой загрузке
   useEffect(() => {
     if (history.length === 0) {
       setHistory([{ ...currentPage }]);
       setHistoryIndex(0);
     }
-  }, [currentPage, history.length]);
+  }, []); // Инициализируем только один раз при монтировании компонента
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -408,7 +410,6 @@ export default function EditorCanvas({
 
   const handlePaste = useCallback(() => {
     if (copiedElement) {
-      saveToHistory();
       const newElement: EditorElement = {
         ...copiedElement,
         id: `element_${Date.now()}`,
@@ -417,8 +418,9 @@ export default function EditorCanvas({
       };
       onAddElement(newElement);
       onSelectElement(newElement.id);
+      // История сохранится автоматически через onUpdatePage
     }
-  }, [copiedElement, onAddElement, onSelectElement, saveToHistory]);
+  }, [copiedElement, onAddElement, onSelectElement]);
 
   const handleDelete = useCallback(() => {
     if (selectedElementId) {
@@ -1101,9 +1103,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1126,9 +1128,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1151,9 +1153,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1176,9 +1178,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1201,9 +1203,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1223,9 +1225,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1263,9 +1265,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1287,9 +1289,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1311,9 +1313,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1333,9 +1335,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1373,9 +1375,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1396,9 +1398,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1419,9 +1421,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1442,9 +1444,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1465,9 +1467,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1488,9 +1490,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1514,9 +1516,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1538,9 +1540,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1563,9 +1565,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1586,9 +1588,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1609,9 +1611,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1632,9 +1634,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -1656,9 +1658,9 @@ export default function EditorCanvas({
                               zIndex: currentPage.elements.length,
                               opacity: 1,
                             };
-                            saveToHistory();
                             onAddElement(newElement);
                             onSelectElement(newElement.id);
+                            // История сохранится автоматически через onUpdatePage
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
