@@ -1647,7 +1647,6 @@ export default function EditorCanvas({
                     )}
                   </div>
                 </div>
-              )}
             </div>
 
             {/* Девайдер */}
