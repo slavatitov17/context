@@ -17,7 +17,7 @@ export default function Breadcrumbs() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Страницы первого уровня, где хлебные крошки не нужны
-  const firstLevelPages = ['/projects', '/diagrams', '/settings', '/about', '/profile'];
+  const firstLevelPages = ['/projects', '/diagrams', '/editor', '/settings', '/about', '/profile'];
 
   useEffect(() => {
     const generateBreadcrumbs = async () => {

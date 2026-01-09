@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, editorDiagrams, type EditorDiagramType } from '@/lib/storage';
-import { createIDEF0Template, createDFDTemplate, createBPMNTemplate } from '@/lib/editor-templates';
+import { auth, editorDiagrams } from '@/lib/storage';
 
 export default function NewEditorDiagramPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [diagramType, setDiagramType] = useState<EditorDiagramType>('Custom');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
@@ -38,21 +36,12 @@ export default function NewEditorDiagramPage() {
 
     setLoading(true);
     try {
-      let initialPage;
-      if (diagramType === 'IDEF0') {
-        initialPage = createIDEF0Template();
-      } else if (diagramType === 'DFD') {
-        initialPage = createDFDTemplate();
-      } else if (diagramType === 'BPMN') {
-        initialPage = createBPMNTemplate();
-      }
-
       const newDiagram = editorDiagrams.create({
         name: name.trim(),
         description: description.trim(),
         user_id: user.id,
-        diagramType,
-        pages: initialPage ? [initialPage] : [],
+        diagramType: 'Custom',
+        pages: [],
       });
 
       router.push(`/editor/${newDiagram.id}/edit`);
@@ -73,11 +62,6 @@ export default function NewEditorDiagramPage() {
 
   return (
     <div className="max-w-2xl">
-      <div className="mb-8 pb-6 border-b border-gray-200">
-        <h1 className="text-3xl font-medium mb-2">Создание диаграммы</h1>
-        <p className="text-gray-600 text-base">Заполните основную информацию о диаграмме</p>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Информация о полях */}
         <p className="text-gray-500 text-base">* - обязательные поля</p>
@@ -113,25 +97,6 @@ export default function NewEditorDiagramPage() {
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={loading}
           />
-        </div>
-
-        {/* Тип диаграммы */}
-        <div>
-          <label htmlFor="diagramType" className="block text-lg font-medium text-gray-900 mb-3">
-            Тип диаграммы
-          </label>
-          <select
-            id="diagramType"
-            value={diagramType}
-            onChange={(e) => setDiagramType(e.target.value as EditorDiagramType)}
-            className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white pr-10"
-            disabled={loading}
-          >
-            <option value="Custom">Пользовательская</option>
-            <option value="IDEF0">IDEF0</option>
-            <option value="DFD">DFD (Data Flow Diagram)</option>
-            <option value="BPMN">BPMN (Business Process Model and Notation)</option>
-          </select>
         </div>
 
         {/* Кнопка создания */}
