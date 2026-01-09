@@ -12,7 +12,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPrivacyPage = pathname === '/privacy';
-  const isEditorPage = pathname?.startsWith('/editor/') && pathname?.includes('/edit');
+  const isEditorPage = pathname?.startsWith('/editor/') && pathname?.includes('/edit') && !pathname?.includes('/new');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
