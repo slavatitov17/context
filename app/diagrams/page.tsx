@@ -276,12 +276,12 @@ export default function DiagramsPage() {
           <div className="flex gap-3">
             <Link href="/diagrams/new">
               <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Выбрать готовый тип
+                Выбрать тип диаграммы
               </button>
             </Link>
             <Link href="/editor/new">
               <button className="bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                Создать тип в редакторе
+                Создать тип диаграммы
               </button>
             </Link>
           </div>
@@ -344,12 +344,12 @@ export default function DiagramsPage() {
             <div className="flex gap-3">
               <Link href="/diagrams/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Выбрать готовый тип
+                  Выбрать тип диаграммы
                 </button>
               </Link>
               <Link href="/editor/new">
                 <button className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                  Создать тип в редакторе
+                  Создать тип диаграммы
                 </button>
               </Link>
             </div>

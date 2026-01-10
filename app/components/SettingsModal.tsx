@@ -65,7 +65,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         <div className="space-y-6">
           {/* Блок 1: Тема интерфейса */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 min-h-[80px] flex items-center">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 h-[96px] flex items-center">
             <div className="flex items-center justify-between w-full">
               <span className="text-base text-gray-900">
                 Тема интерфейса
@@ -88,7 +88,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Блок 2: Язык интерфейса */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 min-h-[80px] flex items-center">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 h-[96px] flex items-center">
             <div className="flex items-center justify-between w-full">
               <span className="text-base text-gray-900">
                 Язык интерфейса
@@ -97,7 +97,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <select
                   value={language}
                   onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
+                  className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white h-[48px]"
                 >
                   <option value="ru">Русский</option>
                   <option value="en">English</option>

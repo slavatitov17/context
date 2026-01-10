@@ -2233,22 +2233,22 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
           {/* Сообщение, если ничего не найдено или блок "Не нашли нужный тип?" */}
           {filteredAndSortedTypes.length === 0 ? (
-            <div className="mt-12 pt-8 border-t border-gray-200 text-center pb-8">
+            <div className="mt-12 text-center pb-8">
               <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
-              <p className="text-gray-600 mb-6">Перейдите в редактор, чтобы создать уникальный тип диаграммы</p>
+              <p className="text-gray-600 mb-6">Создайте уникальный тип диаграммы с помощью редактора</p>
               <Link href="/editor/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Создать тип в редакторе
+                  Создать тип диаграммы
                 </button>
               </Link>
             </div>
           ) : (
-            <div className="mt-12 pt-8 border-t border-gray-200 text-center pb-8">
+            <div className="mt-12 text-center pb-8">
               <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
-              <p className="text-gray-600 mb-6">Перейдите в редактор, чтобы создать уникальный тип диаграммы</p>
+              <p className="text-gray-600 mb-6">Создайте уникальный тип диаграммы с помощью редактора</p>
               <Link href="/editor/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Создать тип в редакторе
+                  Создать тип диаграммы
                 </button>
               </Link>
             </div>

@@ -173,7 +173,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               <div className="space-y-4">
                 <p className="text-gray-700 text-base leading-relaxed">
                   Ответы на вопросы по загруженным документам, создание диаграмм
-                  по предметной области. Используя систему Context, вы соглашаетесь
+                  по предметной области. Используя систему Context, вы соглашаетесь{' '}
                   с{' '}
                   <button
                     onClick={() => setShowPrivacy(true)}
