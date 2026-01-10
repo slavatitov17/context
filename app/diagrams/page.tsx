@@ -270,18 +270,18 @@ export default function DiagramsPage() {
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-medium mb-2">Диаграммы</h1>
-          <p className="text-gray-600">Описывайте объекты и получайте готовые диаграммы</p>
+          <p className="text-gray-600">Выберите готовый или создайте уникальный тип диаграммы</p>
         </div>
         {hasDiagrams && (
           <div className="flex gap-3">
             <Link href="/diagrams/new">
               <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Выбрать из каталога
+                Выбрать готовый тип
               </button>
             </Link>
             <Link href="/editor/new">
               <button className="bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                Создать в редакторе
+                Создать тип в редакторе
               </button>
             </Link>
           </div>
@@ -339,17 +339,17 @@ export default function DiagramsPage() {
               Диаграммы отсутствуют...
             </h3>
             <p className="text-gray-600 text-center max-w-md mb-6">
-              Создайте свою первую диаграмму, описав предметную область и выбрав тип диаграммы
+              Создайте свою первую диаграмму, выбрав готовый или создав свой уникальный тип
             </p>
             <div className="flex gap-3">
               <Link href="/diagrams/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Выбрать из каталога
+                  Выбрать готовый тип
                 </button>
               </Link>
               <Link href="/editor/new">
                 <button className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                  Создать в редакторе
+                  Создать тип в редакторе
                 </button>
               </Link>
             </div>

@@ -264,12 +264,12 @@ export default function EditorPage() {
           <div className="flex gap-3">
             <Link href="/diagrams/new">
               <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Выбрать из каталога
+                Выбрать готовый тип
               </button>
             </Link>
             <Link href="/editor/new">
               <button className="bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                Создать в редакторе
+                Создать тип в редакторе
               </button>
             </Link>
           </div>
@@ -323,17 +323,17 @@ export default function EditorPage() {
               Диаграммы отсутствуют...
             </h3>
             <p className="text-gray-600 text-center max-w-md mb-6">
-              Создайте свою первую диаграмму, описав предметную область и выбрав тип диаграммы
+              Создайте свою первую диаграмму, выбрав готовый или создав свой уникальный тип
             </p>
             <div className="flex gap-3">
               <Link href="/diagrams/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Выбрать из каталога
+                  Выбрать готовый тип
                 </button>
               </Link>
               <Link href="/editor/new">
                 <button className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                  Создать в редакторе
+                  Создать тип в редакторе
                 </button>
               </Link>
             </div>

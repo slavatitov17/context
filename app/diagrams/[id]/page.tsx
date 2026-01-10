@@ -2231,22 +2231,24 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             ))}
           </div>
 
-          {/* Сообщение, если ничего не найдено */}
-          {filteredAndSortedTypes.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">Диаграммы не найдены</p>
-              <p className="text-gray-400 text-sm mt-2">Попробуйте изменить параметры поиска или фильтры</p>
-            </div>
-          )}
-
-          {/* Блок "Не нашли нужное?" после каталога */}
-          {filteredAndSortedTypes.length > 0 && (
-            <div className="mt-12 pt-8 border-t border-gray-200 text-center">
-              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужное?</h3>
-              <p className="text-gray-600 mb-6">Перейдите в редактор, чтобы создать пользовательскую диаграмму</p>
+          {/* Сообщение, если ничего не найдено или блок "Не нашли нужный тип?" */}
+          {filteredAndSortedTypes.length === 0 ? (
+            <div className="mt-12 pt-8 border-t border-gray-200 text-center pb-8">
+              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
+              <p className="text-gray-600 mb-6">Перейдите в редактор, чтобы создать уникальный тип диаграммы</p>
               <Link href="/editor/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Перейти в редактор
+                  Создать тип в редакторе
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-12 pt-8 border-t border-gray-200 text-center pb-8">
+              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
+              <p className="text-gray-600 mb-6">Перейдите в редактор, чтобы создать уникальный тип диаграммы</p>
+              <Link href="/editor/new">
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Создать тип в редакторе
                 </button>
               </Link>
             </div>
