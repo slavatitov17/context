@@ -65,11 +65,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         <div className="space-y-6">
           {/* Блок 1: Тема интерфейса */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <label className="block text-gray-900 font-medium mb-2">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 min-h-[80px] flex items-center">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-base text-gray-900">
                 Тема интерфейса
-              </label>
+              </span>
               <div className="flex items-center gap-4">
                 <span className={`text-base ${!darkMode ? 'text-gray-900' : 'text-gray-500'}`}>
                   Светлая
@@ -88,11 +88,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Блок 2: Язык интерфейса */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <label className="block text-gray-900 font-medium mb-2">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 min-h-[80px] flex items-center">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-base text-gray-900">
                 Язык интерфейса
-              </label>
+              </span>
               <div className="relative">
                 <select
                   value={language}
