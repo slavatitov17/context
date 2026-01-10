@@ -16,7 +16,9 @@ export default function ProjectsPage() {
   const [foldersList, setFoldersList] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
-  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -338,7 +340,7 @@ export default function ProjectsPage() {
                     : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
-                <i className="fas fa-edit"></i>
+                <i className="far fa-edit"></i>
                 <span>Редактировать</span>
               </button>
               <button
@@ -350,7 +352,7 @@ export default function ProjectsPage() {
                     : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
-                <i className="fas fa-folder"></i>
+                <i className="far fa-folder"></i>
                 <span>Перенести в папку</span>
               </button>
               <button
@@ -362,7 +364,7 @@ export default function ProjectsPage() {
                     : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
-                <i className="fas fa-trash"></i>
+                <i className="far fa-trash-alt"></i>
                 <span>Удалить</span>
               </button>
             </div>

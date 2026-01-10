@@ -19,7 +19,9 @@ export default function DiagramsPage() {
   const [foldersList, setFoldersList] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
-  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -28,7 +30,12 @@ export default function DiagramsPage() {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
-        loadDiagrams(currentUser.id);
+        // Загружаем диаграммы при первом рендере, учитывая текущую папку
+        if (currentFolderId) {
+          loadDiagrams(currentUser.id, currentFolderId);
+        } else {
+          loadDiagrams(currentUser.id, null);
+        }
       } else {
         setLoading(false);
         router.push('/login');
@@ -52,17 +59,41 @@ export default function DiagramsPage() {
       setFoldersList(userFolders);
       setSelectedFolderId(null);
       setNewFolderName('');
-      setShowNewFolderInput(false);
+      setShowCreateFolder(false);
     }
   }, [showMoveToFolderModal, user]);
 
-  const loadDiagrams = (userId: string) => {
+  // Загрузка текущей папки
+  useEffect(() => {
+    if (user) {
+      if (currentFolderId) {
+        const folder = folders.getById(currentFolderId, user.id);
+        setCurrentFolder(folder);
+      } else {
+        setCurrentFolder(null);
+      }
+      loadDiagrams(user.id, currentFolderId);
+    }
+  }, [currentFolderId, user]);
+
+  const loadDiagrams = (userId: string, folderId: string | null = null) => {
     try {
       setLoading(true);
       // Загружаем обычные диаграммы
-      const catalogDiagrams = diagramsStorage.getAll(userId).map(d => ({ ...d, source: 'catalog' as const }));
+      let catalogDiagrams = diagramsStorage.getAll(userId).map(d => ({ ...d, source: 'catalog' as const }));
       // Загружаем редакторские диаграммы
-      const editorDiagrams = editorDiagramsStorage.getAll(userId).map(d => ({ ...d, source: 'editor' as const }));
+      let editorDiagrams = editorDiagramsStorage.getAll(userId).map(d => ({ ...d, source: 'editor' as const }));
+      
+      // Фильтруем по папке, если выбрана
+      if (folderId) {
+        catalogDiagrams = catalogDiagrams.filter(d => d.folder_id === folderId);
+        editorDiagrams = editorDiagrams.filter(d => d.folder_id === folderId);
+      } else {
+        // Если папка не выбрана, показываем только элементы без папки
+        catalogDiagrams = catalogDiagrams.filter(d => !d.folder_id);
+        editorDiagrams = editorDiagrams.filter(d => !d.folder_id);
+      }
+      
       // Объединяем и сортируем по дате создания (новые первые)
       const allDiagrams = [...catalogDiagrams, ...editorDiagrams].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -75,28 +106,41 @@ export default function DiagramsPage() {
     }
   };
 
-  // Фильтрация и сортировка диаграмм
-  const filteredAndSortedDiagrams = useMemo(() => {
-    let filtered = diagrams;
+  // Фильтрация и сортировка диаграмм и папок
+  const filteredAndSortedItems = useMemo(() => {
+    let filteredDiagrams = diagrams;
+    let filteredFolders: Folder[] = [];
+
+    // Загружаем папки только если мы в корне (currentFolderId === null)
+    if (!currentFolderId && user) {
+      filteredFolders = folders.getAll(user.id);
+    }
 
     // Фильтрация по поисковому запросу
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(diagram =>
+      filteredDiagrams = filteredDiagrams.filter(diagram =>
         diagram.name.toLowerCase().includes(query)
+      );
+      filteredFolders = filteredFolders.filter(folder =>
+        folder.name.toLowerCase().includes(query)
       );
     }
 
     // Сортировка
-    const sorted = [...filtered];
+    const sortedDiagrams = [...filteredDiagrams];
+    const sortedFolders = [...filteredFolders];
+    
     if (sortBy === 'alphabet') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      sortedDiagrams.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      sortedFolders.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
     } else {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedDiagrams.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedFolders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
-    return sorted;
-  }, [diagrams, searchQuery, sortBy]);
+    return { diagrams: sortedDiagrams, folders: sortedFolders };
+  }, [diagrams, searchQuery, sortBy, currentFolderId, user]);
 
   const handleDelete = (diagramId: string, source: 'catalog' | 'editor') => {
     if (!user) return;
@@ -188,9 +232,37 @@ export default function DiagramsPage() {
         user_id: user.id,
       });
       setFoldersList(prev => [...prev, newFolder]);
-      setNewFolderName('');
-      setShowNewFolderInput(false);
       setSelectedFolderId(newFolder.id);
+      
+      // Автоматически перемещаем выбранные диаграммы в созданную папку
+      if (selectedDiagrams.size > 0) {
+        let successCount = 0;
+        selectedDiagrams.forEach(diagramId => {
+          const diagram = diagrams.find(d => d.id === diagramId);
+          if (diagram) {
+            const success = diagram.source === 'catalog' 
+              ? diagramsStorage.update(diagramId, user.id, { folder_id: newFolder.id })
+              : editorDiagramsStorage.update(diagramId, user.id, { folder_id: newFolder.id });
+            if (success) {
+              successCount++;
+            }
+          }
+        });
+        
+        if (successCount > 0) {
+          // Перезагружаем диаграммы после перемещения
+          if (currentFolderId) {
+            loadDiagrams(user.id, currentFolderId);
+          } else {
+            loadDiagrams(user.id, null);
+          }
+          setSelectedDiagrams(new Set());
+        }
+      }
+      
+      setShowMoveToFolderModal(false);
+      setShowCreateFolder(false);
+      setNewFolderName('');
     } catch (error) {
       console.error('Ошибка при создании папки:', error);
       alert('Не удалось создать папку. Попробуйте еще раз.');
@@ -215,7 +287,12 @@ export default function DiagramsPage() {
       });
 
       if (successCount > 0) {
-        loadDiagrams(user.id);
+        // Перезагружаем диаграммы после перемещения
+        if (currentFolderId) {
+          loadDiagrams(user.id, currentFolderId);
+        } else {
+          loadDiagrams(user.id, null);
+        }
         setSelectedDiagrams(new Set());
         setShowMoveToFolderModal(false);
       }
@@ -238,7 +315,7 @@ export default function DiagramsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedDiagrams(new Set(filteredAndSortedDiagrams.map(d => d.id)));
+      setSelectedDiagrams(new Set(filteredAndSortedItems.diagrams.map(d => d.id)));
     } else {
       setSelectedDiagrams(new Set());
     }
@@ -327,8 +404,8 @@ export default function DiagramsPage() {
     );
   }
 
-  const hasDiagrams = diagrams.length > 0;
-  const allSelected = filteredAndSortedDiagrams.length > 0 && filteredAndSortedDiagrams.every(d => selectedDiagrams.has(d.id));
+  const hasDiagrams = (user && (diagrams.length > 0 || (!currentFolderId && folders.getAll(user.id).length > 0))) || false;
+  const allSelected = filteredAndSortedItems.diagrams.length > 0 && filteredAndSortedItems.diagrams.every(d => selectedDiagrams.has(d.id));
   const someSelected = selectedDiagrams.size > 0;
 
   return (
@@ -336,7 +413,24 @@ export default function DiagramsPage() {
       {/* Верхний блок: заголовок, описание и кнопки */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-medium mb-2">Диаграммы</h1>
+          {/* Breadcrumbs навигация */}
+          <div className="flex items-center gap-2 mb-2 text-gray-600">
+            <button
+              onClick={() => setCurrentFolderId(null)}
+              className="hover:text-blue-600 transition-colors"
+            >
+              Диаграммы
+            </button>
+            {currentFolder && (
+              <>
+                <span>›</span>
+                <span className="text-gray-900">{currentFolder.name}</span>
+              </>
+            )}
+          </div>
+          <h1 className="text-3xl font-medium mb-2">
+            {currentFolder ? currentFolder.name : 'Диаграммы'}
+          </h1>
           <p className="text-gray-600">Выберите готовый или создайте уникальный тип диаграммы</p>
         </div>
         {hasDiagrams && (
@@ -434,7 +528,7 @@ export default function DiagramsPage() {
                     : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
-                <i className="fas fa-edit"></i>
+                <i className="far fa-edit"></i>
                 <span>Редактировать</span>
               </button>
               <button
@@ -446,7 +540,7 @@ export default function DiagramsPage() {
                     : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
-                <i className="fas fa-folder"></i>
+                <i className="far fa-folder"></i>
                 <span>Перенести в папку</span>
               </button>
               <button
@@ -458,7 +552,7 @@ export default function DiagramsPage() {
                     : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
-                <i className="fas fa-trash"></i>
+                <i className="far fa-trash-alt"></i>
                 <span>Удалить</span>
               </button>
             </div>
@@ -481,7 +575,38 @@ export default function DiagramsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAndSortedDiagrams.map((diagram) => (
+                  {/* Отображение папок (только если мы в корне) */}
+                  {!currentFolderId && filteredAndSortedItems.folders.map((folder) => (
+                    <tr 
+                      key={folder.id} 
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setCurrentFolderId(folder.id);
+                      }}
+                    >
+                      <td className="py-4 px-6">
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-gray-900 font-medium flex items-center gap-3">
+                        <i className="far fa-folder text-yellow-500 text-xl"></i>
+                        <span className="hover:text-blue-600 transition-colors">{folder.name}</span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-600">
+                        <span>Папка</span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-500">
+                        {formatDate(folder.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Отображение диаграмм */}
+                  {filteredAndSortedItems.diagrams.map((diagram) => (
                     <tr 
                       key={diagram.id} 
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -525,15 +650,25 @@ export default function DiagramsPage() {
           {/* Блюр фон */}
           <div 
             className="absolute inset-0 bg-white/80 backdrop-blur-sm"
-            onClick={() => setShowMoveToFolderModal(false)}
+            onClick={() => {
+              setShowMoveToFolderModal(false);
+              setShowCreateFolder(false);
+              setNewFolderName('');
+            }}
           />
           
           {/* Модальное окно */}
           <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-medium text-gray-900">Куда переместить?</h2>
+              <h2 className="text-xl font-medium text-gray-900">
+                {showCreateFolder ? 'Создание папки' : 'Перенести в папку'}
+              </h2>
               <button
-                onClick={() => setShowMoveToFolderModal(false)}
+                onClick={() => {
+                  setShowMoveToFolderModal(false);
+                  setShowCreateFolder(false);
+                  setNewFolderName('');
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -542,33 +677,10 @@ export default function DiagramsPage() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto mb-6">
-              <div className="mb-4">
-                <label className="block text-gray-900 font-medium mb-3">Папки</label>
-                {foldersList.length === 0 ? (
-                  <p className="text-gray-500 text-base">Папки отсутствуют</p>
-                ) : (
-                  <div className="space-y-2">
-                    {foldersList.map((folder) => (
-                      <button
-                        key={folder.id}
-                        onClick={() => setSelectedFolderId(folder.id)}
-                        className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
-                          selectedFolderId === folder.id
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <i className="fas fa-folder text-yellow-500"></i>
-                        <span className="text-base text-gray-900">{folder.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {showNewFolderInput && (
-                <div className="mb-4">
+            {showCreateFolder ? (
+              /* Режим создания папки */
+              <>
+                <div className="flex-1 mb-6">
                   <input
                     type="text"
                     value={newFolderName}
@@ -577,39 +689,92 @@ export default function DiagramsPage() {
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'Enter' && newFolderName.trim()) {
                         handleCreateFolder();
                       } else if (e.key === 'Escape') {
-                        setShowNewFolderInput(false);
+                        setShowCreateFolder(false);
                         setNewFolderName('');
                       }
                     }}
                   />
                 </div>
-              )}
-            </div>
 
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setShowNewFolderInput(true);
-                }}
-                className="flex-1 px-6 py-3 border-2 border-blue-600 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors font-medium"
-              >
-                Создать новую папку
-              </button>
-              <button
-                onClick={handleMove}
-                disabled={!selectedFolderId && foldersList.length > 0}
-                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
-                  selectedFolderId || foldersList.length === 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Переместить
-              </button>
-            </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowCreateFolder(false);
+                      setNewFolderName('');
+                    }}
+                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    onClick={handleCreateFolder}
+                    disabled={!newFolderName.trim()}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      newFolderName.trim()
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Создать папку
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Обычный режим - список папок */
+              <>
+                <div className="flex-1 overflow-y-auto mb-6">
+                  {foldersList.length === 0 ? (
+                    <p className="text-gray-500 text-base">Папки отсутствуют</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {foldersList.map((folder) => (
+                        <button
+                          key={folder.id}
+                          onClick={() => setSelectedFolderId(folder.id)}
+                          className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
+                            selectedFolderId === folder.id
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <i className="far fa-folder text-yellow-500 text-xl"></i>
+                          <span className="text-base text-gray-900">{folder.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowCreateFolder(true);
+                    }}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      foldersList.length === 0
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
+                    Создать новую папку
+                  </button>
+                  <button
+                    onClick={handleMove}
+                    disabled={!selectedFolderId && foldersList.length > 0}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      selectedFolderId || foldersList.length === 0
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    Переместить
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
