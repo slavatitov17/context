@@ -369,7 +369,7 @@ export default function DiagramsPage() {
               </div>
             )}
             
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-lg overflow-x-auto overflow-y-visible">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-200">
@@ -417,7 +417,7 @@ export default function DiagramsPage() {
                           {formatDate(diagram.created_at)}
                         </Link>
                       </td>
-                      <td className="py-4 px-6 relative">
+                      <td className="py-4 px-6 relative overflow-visible">
                         <div className="relative" ref={openMenuId === diagram.id ? menuRef : null}>
                           <button
                             onClick={(e) => {
@@ -431,7 +431,7 @@ export default function DiagramsPage() {
                           </button>
                           
                           {openMenuId === diagram.id && (
-                            <div className="absolute right-0 bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 min-w-[160px] transition-all duration-200 flex flex-col">
+                            <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-[100] py-1 min-w-[160px] transition-all duration-200 flex flex-col">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
