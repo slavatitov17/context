@@ -1057,6 +1057,63 @@ export default function EditorCanvas({
               </div>
             </div>
 
+            {/* Блок "Страницы" */}
+            <div className="px-2 mt-3">
+              {!leftMenuCollapsed && (
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">Страницы</span>
+                  <button
+                    onClick={() => setPagesOpen(!pagesOpen)}
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <i className={`fas fa-chevron-${pagesOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
+                  </button>
+                </div>
+              )}
+              <div className={`space-y-1 transition-all duration-300 ease-in-out ${pagesOpen ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'} ${pagesOpen ? '' : 'overflow-hidden'}`}>
+                {editingPageName === currentPage.id ? (
+                  <input
+                    type="text"
+                    value={currentPage.name || 'Страница 1'}
+                    onBlur={() => {
+                      setEditingPageName(null);
+                      // Сохраняем изменения при потере фокуса
+                      if (onUpdatePageName) {
+                        onUpdatePageName(currentPage.id, currentPage.name || 'Страница 1');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      } else if (e.key === 'Escape') {
+                        // Отменяем изменения при нажатии Escape
+                        const originalPage = diagram.pages.find(p => p.id === currentPage.id);
+                        if (originalPage) {
+                          onUpdatePage({ ...currentPage, name: originalPage.name });
+                        }
+                        setEditingPageName(null);
+                      }
+                    }}
+                    onChange={(e) => {
+                      const updatedPage = { ...currentPage, name: e.target.value };
+                      onUpdatePage(updatedPage);
+                    }}
+                    autoFocus
+                    className={`w-full py-3.5 px-4 rounded-xl text-gray-800 font-medium border-2 border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${leftMenuCollapsed ? 'text-center' : ''}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <div
+                    onDoubleClick={() => setEditingPageName(currentPage.id)}
+                    className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 cursor-pointer text-gray-800 hover:bg-blue-600 hover:text-white ${leftMenuCollapsed ? 'justify-center' : ''}`}
+                    title={leftMenuCollapsed ? currentPage.name || 'Страница 1' : ''}
+                  >
+                    {!leftMenuCollapsed && <span className="font-medium">{currentPage.name || 'Страница 1'}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Девайдер */}
             {!leftMenuCollapsed && (
               <div className="border-t border-gray-200 my-3"></div>
