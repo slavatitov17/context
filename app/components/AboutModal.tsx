@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { auth } from '@/lib/storage';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -21,6 +22,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       setMessage('');
       setAttachedFiles([]);
       setShowPrivacy(false);
+    } else {
+      // Автоматическое подтягивание почты для авторизованного пользователя
+      const user = auth.getCurrentUser();
+      if (user && user.email) {
+        setEmail(user.email);
+      }
     }
   }, [isOpen]);
 
@@ -113,39 +120,51 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       
       {/* Модальное окно */}
       <div 
-        className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-4xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar" 
+        className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-[36rem] w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar" 
         onClick={(e) => e.stopPropagation()}
       >
-        {showPrivacy && (
-          <div className="mb-4">
+        {showPrivacy ? (
+          <div className="grid grid-cols-3 items-center mb-6">
             <button
               onClick={() => setShowPrivacy(false)}
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative justify-self-start"
             >
               <i className="fas fa-arrow-left text-sm"></i>
               <span className="relative z-10">Назад</span>
               <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
             </button>
+            <h2 className="text-xl font-medium text-gray-900 text-center justify-self-center">
+              Политика конфиденциальности
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors justify-self-end"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-medium text-gray-900">
+              О системе
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-medium text-gray-900">
-            {showPrivacy ? 'Политика конфиденциальности' : 'О системе'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
         
         {!showPrivacy ? (
           <div className="space-y-6">
             {/* Блок 1: О системе */}
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 Context (рус. Контекст)
               </h3>
@@ -167,7 +186,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             </div>
 
             {/* Блок 2: Форма поддержки */}
-            <div className="bg-white border border-gray-200 rounded-xl p-8" ref={formRef}>
+            <div className="bg-white border border-gray-200 rounded-xl p-6" ref={formRef}>
               <h3 className="text-xl font-medium text-gray-900 mb-4">Обратиться в поддержку</h3>
               
               <form onSubmit={handleSubmit}>
@@ -266,7 +285,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
         ) : (
           <div className="space-y-6">
             {/* Политика конфиденциальности */}
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 1. Общие положения
               </h3>
@@ -281,7 +300,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 2. Собираемые данные
               </h3>
@@ -297,7 +316,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 3. Цели использования данных
               </h3>
@@ -315,7 +334,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 4. Защита персональных данных
               </h3>
@@ -331,7 +350,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 5. Передача данных третьим лицам
               </h3>
@@ -347,7 +366,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 6. Права пользователей
               </h3>
@@ -365,7 +384,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 7. Использование Cookies
               </h3>
@@ -380,7 +399,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 8. Изменения в Политике конфиденциальности
               </h3>
@@ -395,9 +414,9 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
-                9. Контактная информация
+                9. Обратиться в поддержку
               </h3>
               <div className="space-y-4 text-gray-700 text-base leading-relaxed">
                 <p>

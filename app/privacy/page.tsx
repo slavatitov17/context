@@ -15,6 +15,10 @@ export default function PrivacyPage() {
     const checkAuth = () => {
       const user = auth.getCurrentUser();
       setIsAuthenticated(!!user && auth.hasSession());
+      // Автоматическое подтягивание почты для авторизованного пользователя
+      if (user && user.email) {
+        setEmail(user.email);
+      }
     };
     checkAuth();
   }, []);
@@ -198,7 +202,7 @@ export default function PrivacyPage() {
         {/* Блок 9: Контакты */}
         <div className="bg-white border border-gray-200 rounded-xl p-6" ref={formRef}>
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            9. Контактная информация
+            9. Обратиться в поддержку
           </h2>
           <div className="space-y-4 text-gray-700 text-base leading-relaxed">
             <p>

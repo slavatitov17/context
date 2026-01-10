@@ -24,6 +24,12 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       setEmail('');
       setMessage('');
       setAttachedFiles([]);
+    } else {
+      // Автоматическое подтягивание почты для авторизованного пользователя
+      const user = auth.getCurrentUser();
+      if (user && user.email) {
+        setEmail(user.email);
+      }
     }
   }, [isOpen]);
 
