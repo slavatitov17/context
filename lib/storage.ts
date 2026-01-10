@@ -8,12 +8,21 @@ export interface ProcessedDocument {
   chunks: string[];
 }
 
+export interface Folder {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
   members?: string;
   user_id: string;
+  folder_id?: string | null;
   files?: any[];
   messages?: any[];
   processedDocuments?: ProcessedDocument[];
@@ -68,6 +77,7 @@ export interface Diagram {
   name: string;
   description: string;
   user_id: string;
+  folder_id?: string | null;
   selectedOption?: 'projects' | 'scratch' | null;
   selectedProject?: string | null;
   diagramType?: DiagramType | null;
@@ -128,6 +138,7 @@ export interface EditorDiagram {
   name: string;
   description: string;
   user_id: string;
+  folder_id?: string | null;
   diagramType: EditorDiagramType;
   pages: EditorPage[];
   currentPageId?: string;
@@ -142,6 +153,7 @@ const STORAGE_KEYS = {
   USERS: 'context_users', // База пользователей
   PROJECTS: 'context_projects',
   DIAGRAMS: 'context_diagrams',
+  FOLDERS: 'context_folders',
   EDITOR_DIAGRAMS: 'context_editor_diagrams',
 };
 
@@ -596,6 +608,99 @@ export const editorDiagrams = {
     if (filtered.length === allDiagrams.length) return false;
 
     localStorage.setItem(STORAGE_KEYS.EDITOR_DIAGRAMS, JSON.stringify(filtered));
+    return true;
+  },
+};
+
+// Работа с папками (каждый пользователь видит только свои папки)
+export const folders = {
+  // Получить все папки пользователя
+  getAll: (userId: string): Folder[] => {
+    if (typeof window === 'undefined') return [];
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return [];
+    try {
+      const allFolders: Folder[] = JSON.parse(foldersStr);
+      return allFolders.filter(f => f.user_id === userId);
+    } catch {
+      return [];
+    }
+  },
+
+  // Получить папку по ID (только если она принадлежит пользователю)
+  getById: (folderId: string, userId: string): Folder | null => {
+    if (typeof window === 'undefined') return null;
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return null;
+    try {
+      const allFolders: Folder[] = JSON.parse(foldersStr);
+      const folder = allFolders.find(f => f.id === folderId && f.user_id === userId);
+      return folder || null;
+    } catch {
+      return null;
+    }
+  },
+
+  // Создать папку
+  create: (folder: Omit<Folder, 'id' | 'created_at' | 'updated_at'>): Folder => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const newFolder: Folder = {
+      ...folder,
+      id: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    const allFolders: Folder[] = foldersStr ? JSON.parse(foldersStr) : [];
+    allFolders.push(newFolder);
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(allFolders));
+
+    return newFolder;
+  },
+
+  // Обновить папку (только если она принадлежит пользователю)
+  update: (folderId: string, userId: string, updates: Partial<Folder>): Folder | null => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return null;
+
+    const allFolders: Folder[] = JSON.parse(foldersStr);
+    const index = allFolders.findIndex(f => f.id === folderId && f.user_id === userId);
+    
+    if (index === -1) return null;
+
+    allFolders[index] = {
+      ...allFolders[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(allFolders));
+    return allFolders[index];
+  },
+
+  // Удалить папку (только если она принадлежит пользователю)
+  delete: (folderId: string, userId: string): boolean => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return false;
+
+    const allFolders: Folder[] = JSON.parse(foldersStr);
+    const filtered = allFolders.filter(f => !(f.id === folderId && f.user_id === userId));
+    
+    if (filtered.length === allFolders.length) return false;
+
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(filtered));
     return true;
   },
 };

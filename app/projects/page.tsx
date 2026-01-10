@@ -3,17 +3,20 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+import { auth, projects as projectsStorage, folders, type Project, type Folder } from '@/lib/storage';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'alphabet' | 'date'>('date');
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false);
+  const [foldersList, setFoldersList] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,17 +42,16 @@ export default function ProjectsPage() {
     };
   }, [router]);
 
-  // Закрытие меню при клике вне его
+  // Загрузка папок при открытии модального окна
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (showMoveToFolderModal && user) {
+      const userFolders = folders.getAll(user.id);
+      setFoldersList(userFolders);
+      setSelectedFolderId(null);
+      setNewFolderName('');
+      setShowNewFolderInput(false);
+    }
+  }, [showMoveToFolderModal, user]);
 
   const loadProjects = (userId: string) => {
     try {
@@ -104,7 +106,6 @@ export default function ProjectsPage() {
           newSet.delete(projectId);
           return newSet;
         });
-        setOpenMenuId(null);
       } else {
         alert('Не удалось удалить проект. Попробуйте еще раз.');
       }
@@ -145,9 +146,67 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleEdit = (projectId: string) => {
-    setOpenMenuId(null);
+  const handleEdit = () => {
+    if (selectedProjects.size !== 1 || !user) return;
+    const projectId = Array.from(selectedProjects)[0];
     router.push(`/projects/${projectId}/edit`);
+  };
+
+  const handleMoveToFolder = () => {
+    if (selectedProjects.size === 0 || !user) return;
+    setShowMoveToFolderModal(true);
+  };
+
+  const handleCreateFolder = () => {
+    if (!user || !newFolderName.trim()) return;
+    
+    try {
+      const newFolder = folders.create({
+        name: newFolderName.trim(),
+        user_id: user.id,
+      });
+      setFoldersList(prev => [...prev, newFolder]);
+      setNewFolderName('');
+      setShowNewFolderInput(false);
+      setSelectedFolderId(newFolder.id);
+    } catch (error) {
+      console.error('Ошибка при создании папки:', error);
+      alert('Не удалось создать папку. Попробуйте еще раз.');
+    }
+  };
+
+  const handleMove = () => {
+    if (selectedProjects.size === 0 || !user) return;
+    
+    try {
+      let successCount = 0;
+      selectedProjects.forEach(projectId => {
+        const success = projectsStorage.update(projectId, user.id, { folder_id: selectedFolderId || null });
+        if (success) {
+          successCount++;
+        }
+      });
+
+      if (successCount > 0) {
+        loadProjects(user.id);
+        setSelectedProjects(new Set());
+        setShowMoveToFolderModal(false);
+      }
+    } catch (error) {
+      console.error('Ошибка при перемещении проектов:', error);
+      alert('Не удалось переместить проекты. Попробуйте еще раз.');
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedProjects.size === 0 || !user) return;
+    
+    const count = selectedProjects.size;
+    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'проект' : count < 5 ? 'проекта' : 'проектов'}?`)) {
+      return;
+    }
+
+    handleBulkDelete();
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -269,17 +328,44 @@ export default function ProjectsPage() {
         ) : (
           /* Таблица проектов */
           <div>
-            {someSelected && (
-              <div className="mb-4 flex items-center gap-4">
-                <button
-                  onClick={handleBulkDelete}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <i className="fas fa-trash"></i>
-                  <span>Удалить выбранное ({selectedProjects.size})</span>
-                </button>
-              </div>
-            )}
+            <div className="mb-4 flex items-center gap-3">
+              <button
+                onClick={handleEdit}
+                disabled={selectedProjects.size !== 1}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                  selectedProjects.size === 1
+                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <i className="fas fa-edit"></i>
+                <span>Редактировать</span>
+              </button>
+              <button
+                onClick={handleMoveToFolder}
+                disabled={selectedProjects.size === 0}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                  selectedProjects.size > 0
+                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <i className="fas fa-folder"></i>
+                <span>Перенести в папку</span>
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedProjects.size === 0}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                  selectedProjects.size > 0
+                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <i className="fas fa-trash"></i>
+                <span>Удалить</span>
+              </button>
+            </div>
             
             <div className="border border-gray-200 rounded-lg overflow-x-auto overflow-y-visible">
               <table className="w-full">
@@ -296,7 +382,6 @@ export default function ProjectsPage() {
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -329,47 +414,6 @@ export default function ProjectsPage() {
                           {formatDate(project.created_at)}
                         </Link>
                       </td>
-                      <td className="py-4 px-6 relative overflow-visible">
-                        <div className="relative" ref={openMenuId === project.id ? menuRef : null}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(openMenuId === project.id ? null : project.id);
-                            }}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105"
-                            title="Действия"
-                          >
-                            <i className="fas fa-ellipsis-v"></i>
-                          </button>
-                          
-                          {openMenuId === project.id && (
-                            <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-[100] py-1 min-w-[160px] transition-all duration-200 flex flex-col">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(project.id);
-                                }}
-                                className="px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 w-full text-left"
-                                title="Редактировать"
-                              >
-                                <i className="fas fa-edit text-gray-500 text-sm"></i>
-                                <span className="text-sm">Редактировать</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(project.id);
-                                }}
-                                className="px-4 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 w-full text-left"
-                                title="Удалить"
-                              >
-                                <i className="fas fa-trash text-red-600 text-sm"></i>
-                                <span className="text-sm">Удалить</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -378,6 +422,101 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* Модальное окно для перемещения в папку */}
+      {showMoveToFolderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Блюр фон */}
+          <div 
+            className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+            onClick={() => setShowMoveToFolderModal(false)}
+          />
+          
+          {/* Модальное окно */}
+          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-medium text-gray-900">Куда переместить?</h2>
+              <button
+                onClick={() => setShowMoveToFolderModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto mb-6">
+              <div className="mb-4">
+                <label className="block text-gray-900 font-medium mb-3">Папки</label>
+                {foldersList.length === 0 ? (
+                  <p className="text-gray-500 text-base">Папки отсутствуют</p>
+                ) : (
+                  <div className="space-y-2">
+                    {foldersList.map((folder) => (
+                      <button
+                        key={folder.id}
+                        onClick={() => setSelectedFolderId(folder.id)}
+                        className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
+                          selectedFolderId === folder.id
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <i className="fas fa-folder text-yellow-500"></i>
+                        <span className="text-base text-gray-900">{folder.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {showNewFolderInput && (
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Название папки"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateFolder();
+                      } else if (e.key === 'Escape') {
+                        setShowNewFolderInput(false);
+                        setNewFolderName('');
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowNewFolderInput(true);
+                }}
+                className="flex-1 px-6 py-3 border-2 border-blue-600 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+              >
+                Создать новую папку
+              </button>
+              <button
+                onClick={handleMove}
+                disabled={!selectedFolderId && foldersList.length > 0}
+                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  selectedFolderId || foldersList.length === 0
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Переместить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
