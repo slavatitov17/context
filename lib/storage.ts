@@ -8,10 +8,13 @@ export interface ProcessedDocument {
   chunks: string[];
 }
 
+export type FolderType = 'projects' | 'diagrams';
+
 export interface Folder {
   id: string;
   name: string;
   user_id: string;
+  type: FolderType;
   created_at: string;
   updated_at: string;
 }
@@ -614,7 +617,7 @@ export const editorDiagrams = {
 
 // Работа с папками (каждый пользователь видит только свои папки)
 export const folders = {
-  // Получить все папки пользователя
+  // Получить все папки пользователя (для обратной совместимости, но лучше использовать getAllByType)
   getAll: (userId: string): Folder[] => {
     if (typeof window === 'undefined') return [];
     const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
@@ -622,6 +625,19 @@ export const folders = {
     try {
       const allFolders: Folder[] = JSON.parse(foldersStr);
       return allFolders.filter(f => f.user_id === userId);
+    } catch {
+      return [];
+    }
+  },
+
+  // Получить все папки пользователя определенного типа
+  getAllByType: (userId: string, type: FolderType): Folder[] => {
+    if (typeof window === 'undefined') return [];
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return [];
+    try {
+      const allFolders: Folder[] = JSON.parse(foldersStr);
+      return allFolders.filter(f => f.user_id === userId && f.type === type);
     } catch {
       return [];
     }

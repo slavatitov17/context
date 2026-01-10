@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth, diagrams as diagramsStorage, editorDiagrams as editorDiagramsStorage, folders, type Diagram, type DiagramType, type EditorDiagram, type EditorDiagramType, type Folder } from '@/lib/storage';
+import { auth, diagrams as diagramsStorage, editorDiagrams as editorDiagramsStorage, folders, type Diagram, type DiagramType, type EditorDiagram, type EditorDiagramType, type Folder, type FolderType } from '@/lib/storage';
 
 // Объединенный тип для диаграмм
 type UnifiedDiagram = (Diagram & { source: 'catalog' }) | (EditorDiagram & { source: 'editor' });
@@ -54,12 +54,11 @@ export default function DiagramsPage() {
 
   // Загрузка папок при открытии модального окна
   useEffect(() => {
-    if (showMoveToFolderModal && user) {
-      const userFolders = folders.getAll(user.id);
+    if (showMoveToFolderModal && user && !showCreateFolder) {
+      const userFolders = folders.getAllByType(user.id, 'diagrams');
       setFoldersList(userFolders);
       setSelectedFolderId(null);
       setNewFolderName('');
-      setShowCreateFolder(false);
     }
   }, [showMoveToFolderModal, user]);
 
@@ -113,7 +112,7 @@ export default function DiagramsPage() {
 
     // Загружаем папки только если мы в корне (currentFolderId === null)
     if (!currentFolderId && user) {
-      filteredFolders = folders.getAll(user.id);
+      filteredFolders = folders.getAllByType(user.id, 'diagrams');
     }
 
     // Фильтрация по поисковому запросу
@@ -230,6 +229,7 @@ export default function DiagramsPage() {
       const newFolder = folders.create({
         name: newFolderName.trim(),
         user_id: user.id,
+        type: 'diagrams',
       });
       setFoldersList(prev => [...prev, newFolder]);
       setSelectedFolderId(newFolder.id);
@@ -404,7 +404,7 @@ export default function DiagramsPage() {
     );
   }
 
-  const hasDiagrams = (user && (diagrams.length > 0 || (!currentFolderId && folders.getAll(user.id).length > 0))) || false;
+  const hasDiagrams = (user && (diagrams.length > 0 || (!currentFolderId && folders.getAllByType(user.id, 'diagrams').length > 0))) || false;
   const allSelected = filteredAndSortedItems.diagrams.length > 0 && filteredAndSortedItems.diagrams.every(d => selectedDiagrams.has(d.id));
   const someSelected = selectedDiagrams.size > 0;
 
@@ -413,23 +413,21 @@ export default function DiagramsPage() {
       {/* Верхний блок: заголовок, описание и кнопки */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
-          {/* Breadcrumbs навигация */}
-          <div className="flex items-center gap-2 mb-2 text-gray-600">
-            <button
-              onClick={() => setCurrentFolderId(null)}
-              className="hover:text-blue-600 transition-colors"
-            >
-              Диаграммы
-            </button>
-            {currentFolder && (
+          <h1 className="text-3xl font-medium mb-2 flex items-center gap-2">
+            {currentFolder ? (
               <>
-                <span>›</span>
+                <button
+                  onClick={() => setCurrentFolderId(null)}
+                  className="opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  Диаграммы
+                </button>
+                <span className="text-gray-400">›</span>
                 <span className="text-gray-900">{currentFolder.name}</span>
               </>
+            ) : (
+              'Диаграммы'
             )}
-          </div>
-          <h1 className="text-3xl font-medium mb-2">
-            {currentFolder ? currentFolder.name : 'Диаграммы'}
           </h1>
           <p className="text-gray-600">Выберите готовый или создайте уникальный тип диаграммы</p>
         </div>
@@ -594,11 +592,11 @@ export default function DiagramsPage() {
                         />
                       </td>
                       <td className="py-4 px-6 text-gray-900 font-medium flex items-center gap-3">
-                        <i className="far fa-folder text-yellow-500 text-xl"></i>
+                          <i className="far fa-folder text-blue-600 text-xl"></i>
                         <span className="hover:text-blue-600 transition-colors">{folder.name}</span>
                       </td>
                       <td className="py-4 px-6 text-gray-600">
-                        <span>Папка</span>
+                        <span></span>
                       </td>
                       <td className="py-4 px-6 text-gray-500">
                         {formatDate(folder.created_at)}
@@ -651,30 +649,35 @@ export default function DiagramsPage() {
           <div 
             className="absolute inset-0 bg-white/80 backdrop-blur-sm"
             onClick={() => {
-              setShowMoveToFolderModal(false);
-              setShowCreateFolder(false);
-              setNewFolderName('');
+              if (!showCreateFolder) {
+                setShowMoveToFolderModal(false);
+                setShowCreateFolder(false);
+                setNewFolderName('');
+              }
             }}
           />
           
           {/* Модальное окно */}
-          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col">
+          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-medium text-gray-900">
                 {showCreateFolder ? 'Создание папки' : 'Перенести в папку'}
               </h2>
-              <button
-                onClick={() => {
-                  setShowMoveToFolderModal(false);
-                  setShowCreateFolder(false);
-                  setNewFolderName('');
-                }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {!showCreateFolder && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMoveToFolderModal(false);
+                    setShowCreateFolder(false);
+                    setNewFolderName('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
             
             {showCreateFolder ? (
@@ -701,7 +704,8 @@ export default function DiagramsPage() {
 
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShowCreateFolder(false);
                       setNewFolderName('');
                     }}
@@ -710,7 +714,10 @@ export default function DiagramsPage() {
                     Назад
                   </button>
                   <button
-                    onClick={handleCreateFolder}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCreateFolder();
+                    }}
                     disabled={!newFolderName.trim()}
                     className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
                       newFolderName.trim()
@@ -740,8 +747,8 @@ export default function DiagramsPage() {
                               : 'border-gray-300 hover:bg-gray-50'
                           }`}
                         >
-                          <i className="far fa-folder text-yellow-500 text-xl"></i>
-                          <span className="text-base text-gray-900">{folder.name}</span>
+                        <i className="far fa-folder text-blue-600 text-xl"></i>
+                        <span className="text-base text-gray-900">{folder.name}</span>
                         </button>
                       ))}
                     </div>
@@ -750,7 +757,8 @@ export default function DiagramsPage() {
 
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShowCreateFolder(true);
                     }}
                     className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
@@ -763,9 +771,11 @@ export default function DiagramsPage() {
                   </button>
                   <button
                     onClick={handleMove}
-                    disabled={!selectedFolderId && foldersList.length > 0}
+                    disabled={foldersList.length === 0 || (!selectedFolderId && foldersList.length > 0)}
                     className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
-                      selectedFolderId || foldersList.length === 0
+                      foldersList.length === 0
+                        ? 'bg-white border border-gray-300 text-gray-400 opacity-50 cursor-not-allowed'
+                        : selectedFolderId
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed'
                     }`}
