@@ -201,7 +201,7 @@ export default function ProjectsPage() {
         {hasProjects && (
           <Link href="/projects/new">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              + Создать проект
+              Создать проект
             </button>
           </Link>
         )}
@@ -262,7 +262,7 @@ export default function ProjectsPage() {
             </p>
             <Link href="/projects/new">
               <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                + Создать проект
+                Создать проект
               </button>
             </Link>
           </div>
@@ -343,13 +343,13 @@ export default function ProjectsPage() {
                           </button>
                           
                           {openMenuId === project.id && (
-                            <div className="absolute right-full top-0 mr-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 transition-all duration-200 flex items-center gap-1">
+                            <div className="absolute right-0 bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 min-w-[160px] transition-all duration-200 flex flex-col">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEdit(project.id);
                                 }}
-                                className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
+                                className="px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 w-full text-left"
                                 title="Редактировать"
                               >
                                 <i className="fas fa-edit text-gray-500 text-sm"></i>
@@ -360,7 +360,7 @@ export default function ProjectsPage() {
                                   e.stopPropagation();
                                   handleDelete(project.id);
                                 }}
-                                className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
+                                className="px-4 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 w-full text-left"
                                 title="Удалить"
                               >
                                 <i className="fas fa-trash text-red-600 text-sm"></i>
