@@ -165,7 +165,7 @@ export default function DiagramsPage() {
     if (source === 'catalog') {
       router.push(`/diagrams/${diagramId}/edit`);
     } else {
-      router.push(`/editor/${diagramId}/edit`);
+      router.push(`/editor/${diagramId}/edit-info`);
     }
   };
 

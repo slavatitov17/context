@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { auth, type User } from '@/lib/storage';
 import BackButton from './BackButton';
 import ProfileModal from './ProfileModal';
+import AboutModal from './AboutModal';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,6 +18,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -181,13 +183,13 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               <i className="fas fa-cog mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">Настройки</span>
             </Link>
-            <Link
-              href="/about"
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+            <button
+              onClick={() => setShowAboutModal(true)}
+              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-info-circle mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">О системе</span>
-            </Link>
+            </button>
           </nav>
 
           {/* Блок профиля внизу */}
@@ -244,6 +246,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               }
             }
           }} 
+        />
+      )}
+      
+      {/* Модальное окно "О системе" */}
+      {isAuthenticated && (
+        <AboutModal 
+          isOpen={showAboutModal} 
+          onClose={() => setShowAboutModal(false)} 
         />
       )}
     </body>
