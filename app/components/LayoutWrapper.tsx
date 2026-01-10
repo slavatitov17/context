@@ -7,6 +7,7 @@ import { auth, type User } from '@/lib/storage';
 import BackButton from './BackButton';
 import ProfileModal from './ProfileModal';
 import AboutModal from './AboutModal';
+import SettingsModal from './SettingsModal';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,6 +20,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [user, setUser] = useState<User | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -176,13 +178,13 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               <i className="fas fa-sitemap mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">Диаграммы</span>
             </Link>
-            <Link
-              href="/settings"
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-cog mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">Настройки</span>
-            </Link>
+            </button>
             <button
               onClick={() => setShowAboutModal(true)}
               className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
@@ -254,6 +256,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         <AboutModal 
           isOpen={showAboutModal} 
           onClose={() => setShowAboutModal(false)} 
+        />
+      )}
+      
+      {/* Модальное окно "Настройки" */}
+      {isAuthenticated && (
+        <SettingsModal 
+          isOpen={showSettingsModal} 
+          onClose={() => setShowSettingsModal(false)} 
         />
       )}
     </body>

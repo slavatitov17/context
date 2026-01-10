@@ -120,30 +120,32 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       
       {/* Модальное окно */}
       <div 
-        className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-[36rem] w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar" 
+        className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar" 
         onClick={(e) => e.stopPropagation()}
       >
         {showPrivacy ? (
-          <div className="grid grid-cols-3 items-center mb-6">
+          <div className="mb-6">
             <button
               onClick={() => setShowPrivacy(false)}
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative justify-self-start"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative mb-4"
             >
               <i className="fas fa-arrow-left text-sm"></i>
               <span className="relative z-10">Назад</span>
               <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
             </button>
-            <h2 className="text-xl font-medium text-gray-900 text-center justify-self-center">
-              Политика конфиденциальности
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors justify-self-end"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-medium text-gray-900">
+                Политика конфиденциальности
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex justify-between items-center mb-6">
@@ -170,7 +172,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className="space-y-4">
                 <p className="text-gray-700 text-base leading-relaxed">
-                  Ответы на вопросы по загруженным документам, автоматическое создание диаграмм. Используя Context, вы соглашаетесь с{' '}
+                  Ответы на вопросы по загруженным документам, создание диаграмм по предметной области. Используя систему Context, вы соглашаетесь с{' '}
                   <button
                     onClick={() => setShowPrivacy(true)}
                     className="text-blue-600 hover:underline"
