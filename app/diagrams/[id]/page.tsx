@@ -2232,6 +2232,19 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               <p className="text-gray-400 text-sm mt-2">Попробуйте изменить параметры поиска или фильтры</p>
             </div>
           )}
+
+          {/* Блок "Не нашли нужное?" после каталога */}
+          {filteredAndSortedTypes.length > 0 && (
+            <div className="mt-12 pt-8 border-t border-gray-200 text-center">
+              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужное?</h3>
+              <p className="text-gray-600 mb-6">Перейдите в редактор, чтобы создать пользовательскую диаграмму</p>
+              <Link href="/editor/new">
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Перейти в редактор
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col h-full min-h-0">
