@@ -125,18 +125,15 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       >
         {showPrivacy ? (
           <div className="mb-6">
-            <button
-              onClick={() => setShowPrivacy(false)}
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative mb-4"
-            >
-              <i className="fas fa-arrow-left text-sm"></i>
-              <span className="relative z-10">Назад</span>
-              <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
-            </button>
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-medium text-gray-900">
-                Политика конфиденциальности
-              </h2>
+            <div className="flex justify-between items-center mb-4">
+              <button
+                onClick={() => setShowPrivacy(false)}
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
+              >
+                <i className="fas fa-arrow-left text-sm"></i>
+                <span className="relative z-10">Назад</span>
+                <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
+              </button>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -146,6 +143,9 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </svg>
               </button>
             </div>
+            <h2 className="text-xl font-medium text-gray-900">
+              Политика конфиденциальности
+            </h2>
           </div>
         ) : (
           <div className="flex justify-between items-center mb-6">
@@ -172,7 +172,9 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className="space-y-4">
                 <p className="text-gray-700 text-base leading-relaxed">
-                  Ответы на вопросы по загруженным документам, создание диаграмм по предметной области. Используя систему Context, вы соглашаетесь с{' '}
+                  Ответы на вопросы по загруженным документам, создание диаграмм
+                  по предметной области. Используя систему Context, вы соглашаетесь
+                  с{' '}
                   <button
                     onClick={() => setShowPrivacy(true)}
                     className="text-blue-600 hover:underline"
