@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { auth, type User } from '@/lib/storage';
-import Breadcrumbs from './Breadcrumbs';
+import BackButton from './BackButton';
 import ProfileModal from './ProfileModal';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -216,8 +216,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
       <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
-        {/* Хлебные крошки - показываются только на страницах не первого уровня, включая privacy для авторизованных, но не в редакторе */}
-        {!isAuthPage && !isEditorPage && isAuthenticated && <Breadcrumbs />}
+        {/* Кнопка "Назад" - показывается только на страницах не первого уровня, но не в редакторе и не на страницах авторизации */}
+        {/* На странице privacy кнопка "Назад" уже встроена в компонент, поэтому здесь не показываем */}
+        {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
         {children}
       </main>
       
