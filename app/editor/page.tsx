@@ -3,10 +3,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth, editorDiagrams, type EditorDiagram } from '@/lib/storage';
+import { auth, editorDiagrams, diagrams as diagramsStorage, type EditorDiagram, type Diagram, type DiagramType, type EditorDiagramType } from '@/lib/storage';
+
+// Объединенный тип для диаграмм
+type UnifiedDiagram = (Diagram & { source: 'catalog' }) | (EditorDiagram & { source: 'editor' });
 
 export default function EditorPage() {
-  const [diagrams, setDiagrams] = useState<EditorDiagram[]>([]);
+  const [diagrams, setDiagrams] = useState<UnifiedDiagram[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -47,9 +50,15 @@ export default function EditorPage() {
   const loadDiagrams = (userId: string) => {
     try {
       setLoading(true);
-      const userDiagrams = editorDiagrams.getAll(userId);
-      userDiagrams.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setDiagrams(userDiagrams);
+      // Загружаем обычные диаграммы
+      const catalogDiagrams = diagramsStorage.getAll(userId).map(d => ({ ...d, source: 'catalog' as const }));
+      // Загружаем редакторские диаграммы
+      const editorDiagramsList = editorDiagrams.getAll(userId).map(d => ({ ...d, source: 'editor' as const }));
+      // Объединяем и сортируем по дате создания (новые первые)
+      const allDiagrams = [...catalogDiagrams, ...editorDiagramsList].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setDiagrams(allDiagrams);
     } catch (error) {
       console.error('Ошибка при загрузке диаграмм:', error);
     } finally {
@@ -77,7 +86,7 @@ export default function EditorPage() {
     return sorted;
   }, [diagrams, searchQuery, sortBy]);
 
-  const handleDelete = (diagramId: string) => {
+  const handleDelete = (diagramId: string, source: 'catalog' | 'editor') => {
     if (!user) return;
     
     if (!confirm('Вы уверены, что хотите удалить эту диаграмму?')) {
@@ -85,7 +94,9 @@ export default function EditorPage() {
     }
 
     try {
-      const success = editorDiagrams.delete(diagramId, user.id);
+      const success = source === 'catalog' 
+        ? diagramsStorage.delete(diagramId, user.id)
+        : editorDiagrams.delete(diagramId, user.id);
       if (success) {
         setDiagrams(diagrams.filter(d => d.id !== diagramId));
         setSelectedDiagrams(prev => {
@@ -114,9 +125,14 @@ export default function EditorPage() {
     try {
       let successCount = 0;
       selectedDiagrams.forEach(diagramId => {
-        const success = editorDiagrams.delete(diagramId, user.id);
-        if (success) {
-          successCount++;
+        const diagram = diagrams.find(d => d.id === diagramId);
+        if (diagram) {
+          const success = diagram.source === 'catalog' 
+            ? diagramsStorage.delete(diagramId, user.id)
+            : editorDiagrams.delete(diagramId, user.id);
+          if (success) {
+            successCount++;
+          }
         }
       });
 
@@ -134,9 +150,13 @@ export default function EditorPage() {
     }
   };
 
-  const handleEdit = (diagramId: string) => {
+  const handleEdit = (diagramId: string, source: 'catalog' | 'editor') => {
     setOpenMenuId(null);
-    router.push(`/editor/${diagramId}/edit`);
+    if (source === 'catalog') {
+      router.push(`/diagrams/${diagramId}/edit`);
+    } else {
+      router.push(`/editor/${diagramId}/edit`);
+    }
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -167,14 +187,58 @@ export default function EditorPage() {
     return `${day}.${month}.${year}`;
   };
 
-  const getDiagramTypeName = (diagramType: string): string => {
-    const typeNames: Record<string, string> = {
-      'IDEF0': 'IDEF0',
-      'DFD': 'DFD',
-      'BPMN': 'BPMN',
-      'Custom': 'Пользовательская',
-    };
-    return typeNames[diagramType] || diagramType;
+  const getDiagramTypeName = (diagram: UnifiedDiagram): string => {
+    if (diagram.source === 'catalog') {
+      const diagramType = (diagram as Diagram).diagramType;
+      if (!diagramType) return '—';
+      
+      const typeNames: Record<DiagramType, string> = {
+        'UseCase': 'Use Case',
+        'UseCasePlantUML': 'Use Case',
+        'Object': 'Object',
+        'ObjectPlantUML': 'Object',
+        'MindMap2': 'MindMap',
+        'MindMapMax': 'MindMap',
+        'MindMapPlantUML': 'MindMap',
+        'Sequence2': 'Sequence',
+        'SequencePlantUML': 'Sequence',
+        'Class2': 'Class',
+        'ClassPlantUML': 'Class',
+        'State2': 'Statechart',
+        'StatechartPlantUML': 'Statechart',
+        'Activity2': 'Activity',
+        'ActivityMax': 'Activity',
+        'ActivityPlantUML': 'Activity',
+        'ComponentPlantUML': 'Component',
+        'DeploymentPlantUML': 'Deployment',
+        'Gantt2': 'Gantt',
+        'GanttPlantUML': 'Gantt',
+        'ER2': 'Entity-Relationships',
+        'ERPlantUML': 'Entity-Relationships',
+        'WBSPlantUML': 'WBS',
+        'JSONPlantUML': 'JSON',
+        'Architecture': 'Architecture',
+        'C4': 'C4',
+        'Git': 'Git',
+        'Kanban': 'Kanban',
+        'Pie': 'Pie',
+        'Quadrant': 'Quadrant',
+        'Radar': 'Radar',
+        'UserJourney': 'User Journey',
+        'XY': 'XY',
+      };
+      
+      return typeNames[diagramType] || '—';
+    } else {
+      const editorDiagram = diagram as EditorDiagram;
+      const typeNames: Record<EditorDiagramType, string> = {
+        'IDEF0': 'IDEF0',
+        'DFD': 'DFD',
+        'BPMN': 'BPMN',
+        'Custom': 'Пользовательская',
+      };
+      return typeNames[editorDiagram.diagramType] || '—';
+    }
   };
 
   if (loading) {
@@ -193,15 +257,22 @@ export default function EditorPage() {
     <div>
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-medium mb-2">Редактор</h1>
-          <p className="text-gray-600">Создавайте диаграммы в векторном формате</p>
+          <h1 className="text-3xl font-medium mb-2">Диаграммы</h1>
+          <p className="text-gray-600">Создавайте диаграммы по предметной области</p>
         </div>
         {hasDiagrams && (
-          <Link href="/editor/new">
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              + Создать диаграмму
-            </button>
-          </Link>
+          <div className="flex gap-3">
+            <Link href="/diagrams/new">
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                Выбрать из каталога
+              </button>
+            </Link>
+            <Link href="/editor/new">
+              <button className="bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
+                Создать в редакторе
+              </button>
+            </Link>
+          </div>
         )}
       </div>
 
@@ -252,13 +323,20 @@ export default function EditorPage() {
               Диаграммы отсутствуют...
             </h3>
             <p className="text-gray-600 text-center max-w-md mb-6">
-              Создайте свою первую диаграмму в векторном редакторе
+              Создайте свою первую диаграмму, описав предметную область и выбрав тип диаграммы
             </p>
-            <Link href="/editor/new">
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                + Создать диаграмму
-              </button>
-            </Link>
+            <div className="flex gap-3">
+              <Link href="/diagrams/new">
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Выбрать из каталога
+                </button>
+              </Link>
+              <Link href="/editor/new">
+                <button className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
+                  Создать в редакторе
+                </button>
+              </Link>
+            </div>
           </div>
         ) : (
           <div>
@@ -308,17 +386,17 @@ export default function EditorPage() {
                         />
                       </td>
                       <td className="py-4 px-6 text-gray-900 font-medium">
-                        <Link href={`/editor/${diagram.id}/edit`} className="block w-full h-full hover:text-blue-600 transition-colors">
+                        <Link href={diagram.source === 'catalog' ? `/diagrams/${diagram.id}` : `/editor/${diagram.id}/edit`} className="block w-full h-full hover:text-blue-600 transition-colors">
                           {diagram.name}
                         </Link>
                       </td>
                       <td className="py-4 px-6 text-gray-600">
-                        <Link href={`/editor/${diagram.id}/edit`} className="block w-full h-full">
-                          {getDiagramTypeName(diagram.diagramType)}
+                        <Link href={diagram.source === 'catalog' ? `/diagrams/${diagram.id}` : `/editor/${diagram.id}/edit`} className="block w-full h-full">
+                          {getDiagramTypeName(diagram)}
                         </Link>
                       </td>
                       <td className="py-4 px-6 text-gray-500">
-                        <Link href={`/editor/${diagram.id}/edit`} className="block w-full h-full">
+                        <Link href={diagram.source === 'catalog' ? `/diagrams/${diagram.id}` : `/editor/${diagram.id}/edit`} className="block w-full h-full">
                           {formatDate(diagram.created_at)}
                         </Link>
                       </td>
@@ -340,7 +418,7 @@ export default function EditorPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleEdit(diagram.id);
+                                  handleEdit(diagram.id, diagram.source);
                                 }}
                                 className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
                                 title="Редактировать"
@@ -351,7 +429,7 @@ export default function EditorPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDelete(diagram.id);
+                                  handleDelete(diagram.id, diagram.source);
                                 }}
                                 className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
                                 title="Удалить"
