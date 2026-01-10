@@ -27,7 +27,12 @@ export default function ProjectsPage() {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
-        loadProjects(currentUser.id);
+        // Загружаем проекты при первом рендере, учитывая текущую папку
+        if (currentFolderId) {
+          loadProjects(currentUser.id, currentFolderId);
+        } else {
+          loadProjects(currentUser.id, null);
+        }
       } else {
         setLoading(false);
         router.push('/login');
@@ -51,14 +56,36 @@ export default function ProjectsPage() {
       setFoldersList(userFolders);
       setSelectedFolderId(null);
       setNewFolderName('');
-      setShowNewFolderInput(false);
+      setShowCreateFolder(false);
     }
   }, [showMoveToFolderModal, user]);
 
-  const loadProjects = (userId: string) => {
+  // Загрузка текущей папки
+  useEffect(() => {
+    if (user) {
+      if (currentFolderId) {
+        const folder = folders.getById(currentFolderId, user.id);
+        setCurrentFolder(folder);
+      } else {
+        setCurrentFolder(null);
+      }
+      loadProjects(user.id, currentFolderId);
+    }
+  }, [currentFolderId, user]);
+
+  const loadProjects = (userId: string, folderId: string | null = null) => {
     try {
       setLoading(true);
-      const userProjects = projectsStorage.getAll(userId);
+      let userProjects = projectsStorage.getAll(userId);
+      
+      // Фильтруем по папке, если выбрана
+      if (folderId) {
+        userProjects = userProjects.filter(p => p.folder_id === folderId);
+      } else {
+        // Если папка не выбрана, показываем только элементы без папки
+        userProjects = userProjects.filter(p => !p.folder_id);
+      }
+      
       // Сортируем по дате создания (новые первые)
       userProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setProjects(userProjects);
@@ -69,28 +96,41 @@ export default function ProjectsPage() {
     }
   };
 
-  // Фильтрация и сортировка проектов
-  const filteredAndSortedProjects = useMemo(() => {
-    let filtered = projects;
+  // Фильтрация и сортировка проектов и папок
+  const filteredAndSortedItems = useMemo(() => {
+    let filteredProjects = projects;
+    let filteredFolders: Folder[] = [];
+
+    // Загружаем папки только если мы в корне (currentFolderId === null)
+    if (!currentFolderId && user) {
+      filteredFolders = folders.getAll(user.id);
+    }
 
     // Фильтрация по поисковому запросу
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(project =>
+      filteredProjects = filteredProjects.filter(project =>
         project.name.toLowerCase().includes(query)
+      );
+      filteredFolders = filteredFolders.filter(folder =>
+        folder.name.toLowerCase().includes(query)
       );
     }
 
     // Сортировка
-    const sorted = [...filtered];
+    const sortedProjects = [...filteredProjects];
+    const sortedFolders = [...filteredFolders];
+    
     if (sortBy === 'alphabet') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      sortedProjects.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      sortedFolders.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
     } else {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedFolders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
-    return sorted;
-  }, [projects, searchQuery, sortBy]);
+    return { projects: sortedProjects, folders: sortedFolders };
+  }, [projects, searchQuery, sortBy, currentFolderId, user]);
 
   const handleDelete = (projectId: string) => {
     if (!user) return;
@@ -168,9 +208,32 @@ export default function ProjectsPage() {
         user_id: user.id,
       });
       setFoldersList(prev => [...prev, newFolder]);
-      setNewFolderName('');
-      setShowNewFolderInput(false);
       setSelectedFolderId(newFolder.id);
+      
+      // Автоматически перемещаем выбранные проекты в созданную папку
+      if (selectedProjects.size > 0) {
+        let successCount = 0;
+        selectedProjects.forEach(projectId => {
+          const success = projectsStorage.update(projectId, user.id, { folder_id: newFolder.id });
+          if (success) {
+            successCount++;
+          }
+        });
+        
+        if (successCount > 0) {
+          // Перезагружаем проекты после перемещения
+          if (currentFolderId) {
+            loadProjects(user.id, currentFolderId);
+          } else {
+            loadProjects(user.id, null);
+          }
+          setSelectedProjects(new Set());
+        }
+      }
+      
+      setShowMoveToFolderModal(false);
+      setShowCreateFolder(false);
+      setNewFolderName('');
     } catch (error) {
       console.error('Ошибка при создании папки:', error);
       alert('Не удалось создать папку. Попробуйте еще раз.');
@@ -190,7 +253,12 @@ export default function ProjectsPage() {
       });
 
       if (successCount > 0) {
-        loadProjects(user.id);
+        // Перезагружаем проекты после перемещения
+        if (currentFolderId) {
+          loadProjects(user.id, currentFolderId);
+        } else {
+          loadProjects(user.id, null);
+        }
         setSelectedProjects(new Set());
         setShowMoveToFolderModal(false);
       }
@@ -213,7 +281,7 @@ export default function ProjectsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProjects(new Set(filteredAndSortedProjects.map(p => p.id)));
+      setSelectedProjects(new Set(filteredAndSortedItems.projects.map(p => p.id)));
     } else {
       setSelectedProjects(new Set());
     }
@@ -247,8 +315,8 @@ export default function ProjectsPage() {
     );
   }
 
-  const hasProjects = projects.length > 0;
-  const allSelected = filteredAndSortedProjects.length > 0 && filteredAndSortedProjects.every(p => selectedProjects.has(p.id));
+  const hasProjects = (user && (projects.length > 0 || (!currentFolderId && folders.getAll(user.id).length > 0))) || false;
+  const allSelected = filteredAndSortedItems.projects.length > 0 && filteredAndSortedItems.projects.every(p => selectedProjects.has(p.id));
   const someSelected = selectedProjects.size > 0;
 
   return (
@@ -271,7 +339,26 @@ export default function ProjectsPage() {
       {/* Контент: пустое состояние или таблица */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-medium">Мои проекты</h2>
+          <div>
+            {/* Breadcrumbs навигация */}
+            <div className="flex items-center gap-2 mb-2 text-gray-600">
+              <button
+                onClick={() => setCurrentFolderId(null)}
+                className="hover:text-blue-600 transition-colors"
+              >
+                Мои проекты
+              </button>
+              {currentFolder && (
+                <>
+                  <span>›</span>
+                  <span className="text-gray-900">{currentFolder.name}</span>
+                </>
+              )}
+            </div>
+            <h2 className="text-2xl font-medium">
+              {currentFolder ? currentFolder.name : 'Мои проекты'}
+            </h2>
+          </div>
           
           {hasProjects && (
             <div className="flex items-center gap-4">
@@ -387,7 +474,38 @@ export default function ProjectsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAndSortedProjects.map((project) => (
+                  {/* Отображение папок (только если мы в корне) */}
+                  {!currentFolderId && filteredAndSortedItems.folders.map((folder) => (
+                    <tr 
+                      key={folder.id} 
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setCurrentFolderId(folder.id);
+                      }}
+                    >
+                      <td className="py-4 px-6">
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-gray-900 font-medium flex items-center gap-3">
+                        <i className="far fa-folder text-yellow-500 text-xl"></i>
+                        <span className="hover:text-blue-600 transition-colors">{folder.name}</span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-600">
+                        <span>Папка</span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-500">
+                        {formatDate(folder.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Отображение проектов */}
+                  {filteredAndSortedItems.projects.map((project) => (
                     <tr 
                       key={project.id} 
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -431,15 +549,25 @@ export default function ProjectsPage() {
           {/* Блюр фон */}
           <div 
             className="absolute inset-0 bg-white/80 backdrop-blur-sm"
-            onClick={() => setShowMoveToFolderModal(false)}
+            onClick={() => {
+              setShowMoveToFolderModal(false);
+              setShowCreateFolder(false);
+              setNewFolderName('');
+            }}
           />
           
           {/* Модальное окно */}
           <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-medium text-gray-900">Куда переместить?</h2>
+              <h2 className="text-xl font-medium text-gray-900">
+                {showCreateFolder ? 'Создание папки' : 'Перенести в папку'}
+              </h2>
               <button
-                onClick={() => setShowMoveToFolderModal(false)}
+                onClick={() => {
+                  setShowMoveToFolderModal(false);
+                  setShowCreateFolder(false);
+                  setNewFolderName('');
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,33 +576,10 @@ export default function ProjectsPage() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto mb-6">
-              <div className="mb-4">
-                <label className="block text-gray-900 font-medium mb-3">Папки</label>
-                {foldersList.length === 0 ? (
-                  <p className="text-gray-500 text-base">Папки отсутствуют</p>
-                ) : (
-                  <div className="space-y-2">
-                    {foldersList.map((folder) => (
-                      <button
-                        key={folder.id}
-                        onClick={() => setSelectedFolderId(folder.id)}
-                        className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
-                          selectedFolderId === folder.id
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <i className="fas fa-folder text-yellow-500"></i>
-                        <span className="text-base text-gray-900">{folder.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {showNewFolderInput && (
-                <div className="mb-4">
+            {showCreateFolder ? (
+              /* Режим создания папки */
+              <>
+                <div className="flex-1 mb-6">
                   <input
                     type="text"
                     value={newFolderName}
@@ -483,39 +588,92 @@ export default function ProjectsPage() {
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'Enter' && newFolderName.trim()) {
                         handleCreateFolder();
                       } else if (e.key === 'Escape') {
-                        setShowNewFolderInput(false);
+                        setShowCreateFolder(false);
                         setNewFolderName('');
                       }
                     }}
                   />
                 </div>
-              )}
-            </div>
 
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setShowNewFolderInput(true);
-                }}
-                className="flex-1 px-6 py-3 border-2 border-blue-600 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors font-medium"
-              >
-                Создать новую папку
-              </button>
-              <button
-                onClick={handleMove}
-                disabled={!selectedFolderId && foldersList.length > 0}
-                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
-                  selectedFolderId || foldersList.length === 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Переместить
-              </button>
-            </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowCreateFolder(false);
+                      setNewFolderName('');
+                    }}
+                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    onClick={handleCreateFolder}
+                    disabled={!newFolderName.trim()}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      newFolderName.trim()
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Создать папку
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Обычный режим - список папок */
+              <>
+                <div className="flex-1 overflow-y-auto mb-6">
+                  {foldersList.length === 0 ? (
+                    <p className="text-gray-500 text-base">Папки отсутствуют</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {foldersList.map((folder) => (
+                        <button
+                          key={folder.id}
+                          onClick={() => setSelectedFolderId(folder.id)}
+                          className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
+                            selectedFolderId === folder.id
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <i className="far fa-folder text-yellow-500 text-xl"></i>
+                          <span className="text-base text-gray-900">{folder.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowCreateFolder(true);
+                    }}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      foldersList.length === 0
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
+                    Создать новую папку
+                  </button>
+                  <button
+                    onClick={handleMove}
+                    disabled={!selectedFolderId && foldersList.length > 0}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      selectedFolderId || foldersList.length === 0
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    Переместить
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
