@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -11,13 +11,92 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setMessage('');
+      setAttachedFiles([]);
+      setShowPrivacy(false);
+    }
+  }, [isOpen]);
+
+  // Обработка Ctrl+V для вставки изображений из буфера обмена
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const id = `file-${Date.now()}-${Math.random()}`;
+              setAttachedFiles(prev => [...prev, {
+                id,
+                file: new File([file], `screenshot-${Date.now()}.png`, { type: file.type }),
+                preview: e.target?.result as string
+              }]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [isOpen]);
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const id = `file-${Date.now()}-${Math.random()}`;
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachedFiles(prev => [...prev, {
+            id,
+            file,
+            preview: e.target?.result as string
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachedFiles(prev => [...prev, { id, file }]);
+      }
+    });
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
+    const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
+    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
+    setAttachedFiles([]);
   };
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
@@ -33,37 +112,40 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       />
       
       {/* Модальное окно */}
-      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-4xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar" 
+        onClick={(e) => e.stopPropagation()}
+      >
+        {showPrivacy && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowPrivacy(false)}
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
+            >
+              <i className="fas fa-arrow-left text-sm"></i>
+              <span className="relative z-10">Назад</span>
+              <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
+            </button>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-medium text-gray-900">
             {showPrivacy ? 'Политика конфиденциальности' : 'О системе'}
           </h2>
-          <div className="flex items-center gap-4">
-            {showPrivacy && (
-              <button
-                onClick={() => setShowPrivacy(false)}
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
-              >
-                <i className="fas fa-arrow-left text-sm"></i>
-                <span className="relative z-10">Назад</span>
-                <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         
         {!showPrivacy ? (
           <div className="space-y-6">
             {/* Блок 1: О системе */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 Context (рус. Контекст)
               </h3>
@@ -81,15 +163,11 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   <p className="text-xl font-medium text-gray-900 mb-1">Версия</p>
                   <p className="text-gray-500 text-base">1.0.0</p>
                 </div>
-                <div>
-                  <p className="text-xl font-medium text-gray-900 mb-1">Дата сборки</p>
-                  <p className="text-gray-500 text-base">01.12.2025</p>
-                </div>
               </div>
             </div>
 
             {/* Блок 2: Форма поддержки */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6" ref={formRef}>
+            <div className="bg-white border border-gray-200 rounded-xl p-8" ref={formRef}>
               <h3 className="text-xl font-medium text-gray-900 mb-4">Обратиться в поддержку</h3>
               
               <form onSubmit={handleSubmit}>
@@ -103,7 +181,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="example@mail.com"
                   />
                 </div>
@@ -118,19 +196,56 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                     onChange={(e) => setMessage(e.target.value)}
                     required
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     placeholder="Опишите вашу проблему или вопрос..."
                   />
                   <div className="flex justify-end mt-2">
                     <button
                       type="button"
+                      onClick={() => fileInputRef.current?.click()}
                       className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
-                      onClick={() => alert('Функция прикрепления файла (заглушка)')}
                     >
                       <i className="fas fa-paperclip mr-2 text-lg"></i>
                       Прикрепить файл
                     </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      onChange={(e) => handleFileSelect(e.target.files)}
+                      className="hidden"
+                    />
                   </div>
+                  
+                  {/* Список прикрепленных файлов */}
+                  {attachedFiles.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {attachedFiles.map((fileData) => (
+                        <div key={fileData.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                          {fileData.preview ? (
+                            <img src={fileData.preview} alt={fileData.file.name} className="w-12 h-12 object-cover rounded" />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                              <i className="fas fa-file text-gray-400"></i>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">{fileData.file.name}</div>
+                            <div className="text-xs text-gray-500">{formatFileSize(fileData.file.size)}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(fileData.id)}
+                            className="text-gray-400 hover:text-red-600 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Кнопка отправки */}
@@ -151,7 +266,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
         ) : (
           <div className="space-y-6">
             {/* Политика конфиденциальности */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 1. Общие положения
               </h3>
@@ -166,7 +281,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 2. Собираемые данные
               </h3>
@@ -182,7 +297,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 3. Цели использования данных
               </h3>
@@ -200,7 +315,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 4. Защита персональных данных
               </h3>
@@ -216,7 +331,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 5. Передача данных третьим лицам
               </h3>
@@ -232,7 +347,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 6. Права пользователей
               </h3>
@@ -250,7 +365,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 7. Использование Cookies
               </h3>
@@ -265,7 +380,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 8. Изменения в Политике конфиденциальности
               </h3>
@@ -280,7 +395,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-8">
               <h3 className="text-xl font-medium text-gray-900 mb-4">
                 9. Контактная информация
               </h3>
