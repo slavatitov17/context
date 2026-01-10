@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { projects as projectsStorage, diagrams as diagramsStorage } from '@/lib/storage';
+import { projects as projectsStorage, diagrams as diagramsStorage, editorDiagrams } from '@/lib/storage';
 import { auth } from '@/lib/storage';
 
 interface BreadcrumbItem {
@@ -42,7 +42,7 @@ export default function Breadcrumbs() {
         } else if (segments[0] === 'diagrams') {
           items.push({ label: 'Диаграммы', href: '/diagrams' });
         } else if (segments[0] === 'editor') {
-          items.push({ label: 'Редактор', href: '/editor' });
+          items.push({ label: 'Диаграммы', href: '/editor' });
         } else if (segments[0] === 'privacy') {
           // Для страницы privacy добавляем ссылку на "О системе"
           items.push({ label: 'О системе', href: '/about' });
@@ -54,16 +54,8 @@ export default function Breadcrumbs() {
 
         // Обрабатываем остальные сегменты
         if (segments.length > 1) {
-          if (segments[1] === 'new') {
-            // Страница создания
-            if (segments[0] === 'projects') {
-              items.push({ label: 'Создание проекта', href: '/projects/new' });
-            } else if (segments[0] === 'diagrams') {
-              items.push({ label: 'Создание диаграммы', href: '/diagrams/new' });
-            } else if (segments[0] === 'editor') {
-              items.push({ label: 'Создание диаграммы', href: '/editor/new' });
-            }
-          } else if (segments[1] && segments[1] !== 'new') {
+          // Страницы /new теперь просто редиректят, поэтому не добавляем их в крошки
+          if (segments[1] && segments[1] !== 'new') {
             // Страница с ID (детальная страница или редактирование)
             const id = segments[1];
             const currentUser = auth.getCurrentUser();
@@ -99,12 +91,6 @@ export default function Breadcrumbs() {
                         href: `/diagrams/${id}` 
                       });
                     } else {
-                      // Всегда добавляем "Создание диаграммы" как кликабельный элемент
-                      items.push({ 
-                        label: 'Создание диаграммы', 
-                        href: `/diagrams/${id}` 
-                      });
-                      
                       // Если нет типа диаграммы - этап "Тип диаграммы"
                       if (!hasDiagramType) {
                         items.push({ 
@@ -112,22 +98,37 @@ export default function Breadcrumbs() {
                           href: `/diagrams/${id}` 
                         });
                       } else {
-                        // Всегда показываем "Тип диаграммы" как отдельную крошку
+                        // Показываем название диаграммы и "Тип диаграммы" как отдельную крошку
+                        items.push({ 
+                          label: diagram.name || 'Диаграмма', 
+                          href: `/diagrams/${id}` 
+                        });
                         items.push({ 
                           label: 'Тип диаграммы', 
                           href: `/diagrams/${id}` 
                         });
                         
-                        // ВСЕГДА показываем "Способ создания" если есть тип диаграммы
-                        // (независимо от того, выбран способ или нет)
-                        items.push({ 
-                          label: 'Способ создания', 
-                          href: `/diagrams/${id}` 
-                        });
+                        // Показываем "Способ создания" если есть тип диаграммы, но еще не выбран способ
+                        if (!hasSelectedOption) {
+                          items.push({ 
+                            label: 'Способ создания', 
+                            href: `/diagrams/${id}` 
+                          });
+                        }
                       }
                     }
                   } else {
                     items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
+                  }
+                } else if (segments[0] === 'editor') {
+                  const editorDiagram = editorDiagrams.getById(id, currentUser.id);
+                  if (editorDiagram) {
+                    items.push({ 
+                      label: editorDiagram.name || 'Диаграмма', 
+                      href: `/editor/${id}/edit` 
+                    });
+                  } else {
+                    items.push({ label: 'Диаграмма', href: `/editor/${id}/edit` });
                   }
                 }
               } catch (error) {
@@ -137,6 +138,8 @@ export default function Breadcrumbs() {
                   items.push({ label: 'Проект', href: `/projects/${id}` });
                 } else if (segments[0] === 'diagrams') {
                   items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
+                } else if (segments[0] === 'editor') {
+                  items.push({ label: 'Диаграмма', href: `/editor/${id}/edit` });
                 }
               }
             } else {
@@ -145,6 +148,8 @@ export default function Breadcrumbs() {
                 items.push({ label: 'Проект', href: `/projects/${id}` });
               } else if (segments[0] === 'diagrams') {
                 items.push({ label: 'Диаграмма', href: `/diagrams/${id}` });
+              } else if (segments[0] === 'editor') {
+                items.push({ label: 'Диаграмма', href: `/editor/${id}/edit` });
               }
             }
 
