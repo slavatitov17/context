@@ -23,6 +23,7 @@ export default function DiagramsPage() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const modalWasOpenRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,15 +31,20 @@ export default function DiagramsPage() {
     const checkUser = () => {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
+        const wasUserSet = !!user;
         setUser(currentUser);
-        // Загружаем диаграммы при первом рендере, учитывая текущую папку
-        if (currentFolderId) {
-          loadDiagrams(currentUser.id, currentFolderId);
-        } else {
-          loadDiagrams(currentUser.id, null);
+        // Загружаем диаграммы только при первом рендере
+        if (!initialLoadDoneRef.current && !wasUserSet) {
+          initialLoadDoneRef.current = true;
+          if (currentFolderId) {
+            loadDiagrams(currentUser.id, currentFolderId, true);
+          } else {
+            loadDiagrams(currentUser.id, null, true);
+          }
         }
       } else {
         setLoading(false);
+        initialLoadDoneRef.current = false;
         router.push('/login');
       }
     };
@@ -69,22 +75,25 @@ export default function DiagramsPage() {
     }
   }, [showMoveToFolderModal, user, showCreateFolder]);
 
-  // Загрузка текущей папки
+  // Загрузка текущей папки и данных при изменении папки
   useEffect(() => {
-    if (user) {
+    if (user && initialLoadDoneRef.current) {
       if (currentFolderId) {
         const folder = folders.getById(currentFolderId, user.id);
         setCurrentFolder(folder);
       } else {
         setCurrentFolder(null);
       }
-      loadDiagrams(user.id, currentFolderId);
+      // Загружаем данные без показа loader'а при навигации по папкам
+      loadDiagrams(user.id, currentFolderId, false);
     }
   }, [currentFolderId, user]);
 
-  const loadDiagrams = (userId: string, folderId: string | null = null) => {
+  const loadDiagrams = (userId: string, folderId: string | null = null, showLoader: boolean = false) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
       // Загружаем обычные диаграммы
       let catalogDiagrams = diagramsStorage.getAll(userId).map(d => ({ ...d, source: 'catalog' as const }));
       // Загружаем редакторские диаграммы
@@ -108,7 +117,9 @@ export default function DiagramsPage() {
     } catch (error) {
       console.error('Ошибка при загрузке диаграмм:', error);
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   };
 
@@ -257,11 +268,11 @@ export default function DiagramsPage() {
         });
         
         if (successCount > 0) {
-          // Перезагружаем диаграммы после перемещения
+          // Перезагружаем диаграммы после перемещения (без loader'а)
           if (currentFolderId) {
-            loadDiagrams(user.id, currentFolderId);
+            loadDiagrams(user.id, currentFolderId, false);
           } else {
-            loadDiagrams(user.id, null);
+            loadDiagrams(user.id, null, false);
           }
           setSelectedDiagrams(new Set());
         }
@@ -294,11 +305,11 @@ export default function DiagramsPage() {
       });
 
       if (successCount > 0) {
-        // Перезагружаем диаграммы после перемещения
+        // Перезагружаем диаграммы после перемещения (без loader'а)
         if (currentFolderId) {
-          loadDiagrams(user.id, currentFolderId);
+          loadDiagrams(user.id, currentFolderId, false);
         } else {
-          loadDiagrams(user.id, null);
+          loadDiagrams(user.id, null, false);
         }
         setSelectedDiagrams(new Set());
         setShowMoveToFolderModal(false);

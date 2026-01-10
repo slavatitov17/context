@@ -20,6 +20,7 @@ export default function ProjectsPage() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const modalWasOpenRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -27,15 +28,20 @@ export default function ProjectsPage() {
     const checkUser = () => {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
+        const wasUserSet = !!user;
         setUser(currentUser);
-        // Загружаем проекты при первом рендере, учитывая текущую папку
-        if (currentFolderId) {
-          loadProjects(currentUser.id, currentFolderId);
-        } else {
-          loadProjects(currentUser.id, null);
+        // Загружаем проекты только при первом рендере
+        if (!initialLoadDoneRef.current && !wasUserSet) {
+          initialLoadDoneRef.current = true;
+          if (currentFolderId) {
+            loadProjects(currentUser.id, currentFolderId, true);
+          } else {
+            loadProjects(currentUser.id, null, true);
+          }
         }
       } else {
         setLoading(false);
+        initialLoadDoneRef.current = false;
         router.push('/login');
       }
     };
@@ -66,22 +72,25 @@ export default function ProjectsPage() {
     }
   }, [showMoveToFolderModal, user, showCreateFolder]);
 
-  // Загрузка текущей папки
+  // Загрузка текущей папки и данных при изменении папки
   useEffect(() => {
-    if (user) {
+    if (user && initialLoadDoneRef.current) {
       if (currentFolderId) {
         const folder = folders.getById(currentFolderId, user.id);
         setCurrentFolder(folder);
       } else {
         setCurrentFolder(null);
       }
-      loadProjects(user.id, currentFolderId);
+      // Загружаем данные без показа loader'а при навигации по папкам
+      loadProjects(user.id, currentFolderId, false);
     }
   }, [currentFolderId, user]);
 
-  const loadProjects = (userId: string, folderId: string | null = null) => {
+  const loadProjects = (userId: string, folderId: string | null = null, showLoader: boolean = false) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
       let userProjects = projectsStorage.getAll(userId);
       
       // Фильтруем по папке, если выбрана
@@ -98,7 +107,9 @@ export default function ProjectsPage() {
     } catch (error) {
       console.error('Ошибка при загрузке проектов:', error);
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   };
 
@@ -228,11 +239,11 @@ export default function ProjectsPage() {
         });
         
         if (successCount > 0) {
-          // Перезагружаем проекты после перемещения
+          // Перезагружаем проекты после перемещения (без loader'а)
           if (currentFolderId) {
-            loadProjects(user.id, currentFolderId);
+            loadProjects(user.id, currentFolderId, false);
           } else {
-            loadProjects(user.id, null);
+            loadProjects(user.id, null, false);
           }
           setSelectedProjects(new Set());
         }
@@ -260,11 +271,11 @@ export default function ProjectsPage() {
       });
 
       if (successCount > 0) {
-        // Перезагружаем проекты после перемещения
+        // Перезагружаем проекты после перемещения (без loader'а)
         if (currentFolderId) {
-          loadProjects(user.id, currentFolderId);
+          loadProjects(user.id, currentFolderId, false);
         } else {
-          loadProjects(user.id, null);
+          loadProjects(user.id, null, false);
         }
         setSelectedProjects(new Set());
         setShowMoveToFolderModal(false);
