@@ -22,6 +22,7 @@ export default function DiagramsPage() {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const modalWasOpenRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -52,15 +53,21 @@ export default function DiagramsPage() {
     };
   }, [router]);
 
-  // Загрузка папок при открытии модального окна
+  // Загрузка папок при открытии модального окна (только при первом открытии)
   useEffect(() => {
     if (showMoveToFolderModal && user && !showCreateFolder) {
-      const userFolders = folders.getAllByType(user.id, 'diagrams');
-      setFoldersList(userFolders);
-      setSelectedFolderId(null);
-      setNewFolderName('');
+      // Сбрасываем selectedFolderId только при первом открытии модального окна
+      if (!modalWasOpenRef.current) {
+        const userFolders = folders.getAllByType(user.id, 'diagrams');
+        setFoldersList(userFolders);
+        setSelectedFolderId(null);
+        setNewFolderName('');
+        modalWasOpenRef.current = true;
+      }
+    } else if (!showMoveToFolderModal) {
+      modalWasOpenRef.current = false;
     }
-  }, [showMoveToFolderModal, user]);
+  }, [showMoveToFolderModal, user, showCreateFolder]);
 
   // Загрузка текущей папки
   useEffect(() => {
@@ -413,22 +420,7 @@ export default function DiagramsPage() {
       {/* Верхний блок: заголовок, описание и кнопки */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-medium mb-2 flex items-center gap-2">
-            {currentFolder ? (
-              <>
-                <button
-                  onClick={() => setCurrentFolderId(null)}
-                  className="opacity-50 hover:opacity-100 transition-opacity"
-                >
-                  Диаграммы
-                </button>
-                <span className="text-gray-400">›</span>
-                <span className="text-gray-900">{currentFolder.name}</span>
-              </>
-            ) : (
-              'Диаграммы'
-            )}
-          </h1>
+          <h1 className="text-3xl font-medium mb-2">Диаграммы</h1>
           <p className="text-gray-600">Выберите готовый или создайте уникальный тип диаграммы</p>
         </div>
         {hasDiagrams && (
@@ -450,7 +442,22 @@ export default function DiagramsPage() {
       {/* Контент: пустое состояние или таблица */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-medium">Мои диаграммы</h2>
+          <h2 className="text-2xl font-medium flex items-center gap-2">
+            {currentFolder ? (
+              <>
+                <button
+                  onClick={() => setCurrentFolderId(null)}
+                  className="opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  Мои диаграммы
+                </button>
+                <span className="text-gray-400">›</span>
+                <span className="text-gray-900">{currentFolder.name}</span>
+              </>
+            ) : (
+              'Мои диаграммы'
+            )}
+          </h2>
           
           {hasDiagrams && (
             <div className="flex items-center gap-4">

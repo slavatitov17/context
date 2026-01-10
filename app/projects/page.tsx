@@ -19,6 +19,7 @@ export default function ProjectsPage() {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const modalWasOpenRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,15 +50,21 @@ export default function ProjectsPage() {
     };
   }, [router]);
 
-  // Загрузка папок при открытии модального окна
+  // Загрузка папок при открытии модального окна (только при первом открытии)
   useEffect(() => {
     if (showMoveToFolderModal && user && !showCreateFolder) {
-      const userFolders = folders.getAllByType(user.id, 'projects');
-      setFoldersList(userFolders);
-      setSelectedFolderId(null);
-      setNewFolderName('');
+      // Сбрасываем selectedFolderId только при первом открытии модального окна
+      if (!modalWasOpenRef.current) {
+        const userFolders = folders.getAllByType(user.id, 'projects');
+        setFoldersList(userFolders);
+        setSelectedFolderId(null);
+        setNewFolderName('');
+        modalWasOpenRef.current = true;
+      }
+    } else if (!showMoveToFolderModal) {
+      modalWasOpenRef.current = false;
     }
-  }, [showMoveToFolderModal, user]);
+  }, [showMoveToFolderModal, user, showCreateFolder]);
 
   // Загрузка текущей папки
   useEffect(() => {
