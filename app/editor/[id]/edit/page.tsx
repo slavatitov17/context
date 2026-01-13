@@ -15,31 +15,6 @@ export default function EditorEditPage() {
   const router = useRouter();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const checkUser = () => {
-      const currentUser = auth.getCurrentUser();
-      if (currentUser) {
-        if (!user || user.id !== currentUser.id) {
-          setUser(currentUser);
-          loadDiagram(currentUser.id);
-        }
-      } else {
-        setLoading(false);
-        router.push('/login');
-      }
-    };
-
-    checkUser();
-    // Проверяем пользователя только при изменении, а не каждую секунду
-    const interval = setInterval(() => {
-      const currentUser = auth.getCurrentUser();
-      if (!currentUser) {
-        router.push('/login');
-      }
-    }, 5000); // Проверяем каждые 5 секунд только на выход пользователя
-    return () => clearInterval(interval);
-  }, [router, params.id, user, loadDiagram]);
-
   const loadDiagram = useCallback((userId: string) => {
     try {
       // Загружаем только если диаграмма еще не загружена или изменился ID
@@ -72,6 +47,31 @@ export default function EditorEditPage() {
       setLoading(false);
     }
   }, [params.id, router, diagram]);
+
+  useEffect(() => {
+    const checkUser = () => {
+      const currentUser = auth.getCurrentUser();
+      if (currentUser) {
+        if (!user || user.id !== currentUser.id) {
+          setUser(currentUser);
+          loadDiagram(currentUser.id);
+        }
+      } else {
+        setLoading(false);
+        router.push('/login');
+      }
+    };
+
+    checkUser();
+    // Проверяем пользователя только при изменении, а не каждую секунду
+    const interval = setInterval(() => {
+      const currentUser = auth.getCurrentUser();
+      if (!currentUser) {
+        router.push('/login');
+      }
+    }, 5000); // Проверяем каждые 5 секунд только на выход пользователя
+    return () => clearInterval(interval);
+  }, [router, params.id, user, loadDiagram]);
 
   const saveDiagram = useCallback(() => {
     if (!diagram || !user) return;
