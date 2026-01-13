@@ -19,8 +19,10 @@ export default function EditorEditPage() {
     const checkUser = () => {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
-        setUser(currentUser);
-        loadDiagram(currentUser.id);
+        if (!user || user.id !== currentUser.id) {
+          setUser(currentUser);
+          loadDiagram(currentUser.id);
+        }
       } else {
         setLoading(false);
         router.push('/login');
@@ -28,14 +30,26 @@ export default function EditorEditPage() {
     };
 
     checkUser();
-    const interval = setInterval(checkUser, 1000);
+    // Проверяем пользователя только при изменении, а не каждую секунду
+    const interval = setInterval(() => {
+      const currentUser = auth.getCurrentUser();
+      if (!currentUser) {
+        router.push('/login');
+      }
+    }, 5000); // Проверяем каждые 5 секунд только на выход пользователя
     return () => clearInterval(interval);
-  }, [router, params.id]);
+  }, [router, params.id, user, loadDiagram]);
 
-  const loadDiagram = (userId: string) => {
+  const loadDiagram = useCallback((userId: string) => {
     try {
-      setLoading(true);
+      // Загружаем только если диаграмма еще не загружена или изменился ID
       const diagramId = params.id as string;
+      if (diagram && diagram.id === diagramId) {
+        // Диаграмма уже загружена, не перезагружаем
+        return;
+      }
+      
+      setLoading(true);
       const foundDiagram = editorDiagrams.getById(diagramId, userId);
       
       if (!foundDiagram) {
@@ -57,7 +71,7 @@ export default function EditorEditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, router, diagram]);
 
   const saveDiagram = useCallback(() => {
     if (!diagram || !user) return;
@@ -68,6 +82,7 @@ export default function EditorEditPage() {
 
     // Сохраняем сразу, без задержки, чтобы элементы не исчезали
     try {
+      // Используем актуальное состояние diagram, которое уже обновлено через setDiagram
       editorDiagrams.update(diagram.id, user.id, {
         pages: diagram.pages,
         currentPageId: currentPage?.id,
@@ -84,17 +99,29 @@ export default function EditorEditPage() {
       p.id === updatedPage.id ? updatedPage : p
     );
 
-    setDiagram({
+    const updatedDiagram = {
       ...diagram,
       pages: updatedPages,
-    });
+    };
+
+    setDiagram(updatedDiagram);
 
     if (currentPage?.id === updatedPage.id) {
       setCurrentPage(updatedPage);
     }
 
-    saveDiagram();
-  }, [diagram, currentPage, saveDiagram]);
+    // Сохраняем с обновленным diagram сразу, без задержки
+    if (updatedDiagram && user) {
+      try {
+        editorDiagrams.update(updatedDiagram.id, user.id, {
+          pages: updatedPages,
+          currentPageId: updatedPage.id,
+        });
+      } catch (error) {
+        console.error('Ошибка при сохранении диаграммы:', error);
+      }
+    }
+  }, [diagram, currentPage, user]);
 
   const addElement = useCallback((element: EditorElement) => {
     if (!currentPage) return;
@@ -154,8 +181,19 @@ export default function EditorEditPage() {
 
     setCurrentPage(newPage);
     setSelectedElementId(null);
-    saveDiagram();
-  }, [diagram, saveDiagram]);
+    
+    // Сохраняем сразу
+    if (user) {
+      try {
+        editorDiagrams.update(diagram.id, user.id, {
+          pages: [...diagram.pages, newPage],
+          currentPageId: newPage.id,
+        });
+      } catch (error) {
+        console.error('Ошибка при сохранении диаграммы:', error);
+      }
+    }
+  }, [diagram, user]);
 
   const switchPage = useCallback((pageId: string) => {
     if (!diagram) return;
@@ -168,9 +206,20 @@ export default function EditorEditPage() {
         currentPageId: pageId,
       });
       setSelectedElementId(null);
-      saveDiagram();
+      
+      // Сохраняем сразу
+      if (user) {
+        try {
+          editorDiagrams.update(diagram.id, user.id, {
+            pages: diagram.pages,
+            currentPageId: pageId,
+          });
+        } catch (error) {
+          console.error('Ошибка при сохранении диаграммы:', error);
+        }
+      }
     }
-  }, [diagram, saveDiagram]);
+  }, [diagram, user]);
 
   const updatePageName = useCallback((pageId: string, name: string) => {
     if (!diagram) return;
@@ -188,8 +237,18 @@ export default function EditorEditPage() {
       setCurrentPage({ ...currentPage, name });
     }
 
-    saveDiagram();
-  }, [diagram, currentPage, saveDiagram]);
+    // Сохраняем сразу
+    if (user) {
+      try {
+        editorDiagrams.update(diagram.id, user.id, {
+          pages: updatedPages,
+          currentPageId: diagram.currentPageId,
+        });
+      } catch (error) {
+        console.error('Ошибка при сохранении диаграммы:', error);
+      }
+    }
+  }, [diagram, currentPage, user]);
 
   const deletePage = useCallback((pageId: string) => {
     if (!diagram || diagram.pages.length <= 1) return;
@@ -205,8 +264,19 @@ export default function EditorEditPage() {
 
     setCurrentPage(newCurrentPage);
     setSelectedElementId(null);
-    saveDiagram();
-  }, [diagram, saveDiagram]);
+    
+    // Сохраняем сразу
+    if (user) {
+      try {
+        editorDiagrams.update(diagram.id, user.id, {
+          pages: updatedPages,
+          currentPageId: newCurrentPage.id,
+        });
+      } catch (error) {
+        console.error('Ошибка при сохранении диаграммы:', error);
+      }
+    }
+  }, [diagram, user]);
 
   if (loading) {
     return (
