@@ -61,6 +61,7 @@ export default function EditorCanvas({
   const [toolMode, setToolMode] = useState<'select' | 'pan' | 'draw'>('select');
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<'svg' | 'png' | 'pdf' | 'ctxdr'>('svg');
@@ -97,6 +98,11 @@ export default function EditorCanvas({
 
 
   const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    // Если нажат пробел, не обрабатываем клик (панорамирование обрабатывается через handleMouseDown)
+    if (isSpacePressed) {
+      return;
+    }
+    
     if (tool === 'select') {
       const target = e.target as SVGElement;
       const elementId = target.getAttribute('data-element-id');
@@ -152,8 +158,25 @@ export default function EditorCanvas({
     setHistoryIndex(newHistory.length - 1);
   }, [currentPage, history, historyIndex]);
 
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Если нажат пробел, начинаем панорамирование
+    if (isSpacePressed && e.button === 0) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
   const handleElementMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
+    
+    // Если нажат пробел, начинаем панорамирование
+    if (isSpacePressed) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    
     if (toolMode === 'pan') {
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
@@ -196,8 +219,8 @@ export default function EditorCanvas({
       });
     }
 
-    // Панорамирование
-    if (isPanning && toolMode === 'pan') {
+    // Панорамирование (при нажатом пробеле или режиме pan)
+    if (isPanning && (toolMode === 'pan' || isSpacePressed)) {
       const deltaX = e.clientX - panStart.x;
       const deltaY = e.clientY - panStart.y;
       setPan({
@@ -318,7 +341,7 @@ export default function EditorCanvas({
 
       onUpdateElement(selectedElementId, updates);
     }
-  }, [isDragging, isResizing, selectedElementId, tool, dragStart, pan, zoom, onUpdateElement, resizeHandle, selectedElement, snapToGridValue]);
+  }, [isDragging, isResizing, selectedElementId, tool, dragStart, pan, zoom, onUpdateElement, resizeHandle, selectedElement, snapToGridValue, isPanning, toolMode, isSpacePressed, panStart]);
 
   const handleMouseUp = useCallback(() => {
     if (isDragging || isResizing) {
@@ -339,7 +362,7 @@ export default function EditorCanvas({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, isPanning, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, isPanning, handleMouseMove, handleMouseUp, isSpacePressed]);
 
   // Масштабирование колесиком мыши (Alt + колесико для масштабирования относительно указателя)
   useEffect(() => {
@@ -436,6 +459,13 @@ export default function EditorCanvas({
         return;
       }
 
+      // Пробел для панорамирования (как в Figma)
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setIsSpacePressed(true);
+        return;
+      }
+
       // Удаление
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
         handleDelete();
@@ -482,9 +512,24 @@ export default function EditorCanvas({
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setIsSpacePressed(false);
+        // Если панорамирование было активно, останавливаем его
+        if (isPanning) {
+          setIsPanning(false);
+        }
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, handleDelete, handleCopy, handlePaste, handleUndo, handleRedo, copiedElement]);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [selectedElementId, handleDelete, handleCopy, handlePaste, handleUndo, handleRedo, copiedElement, isPanning]);
 
   const exportSVG = () => {
     if (!canvasRef.current) return;
@@ -980,9 +1025,9 @@ export default function EditorCanvas({
                 <button
                   onClick={() => setLeftMenuCollapsed(true)}
                   className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2 transition-colors"
-                  title="Скрыть меню"
+                  title="Скрыть левое меню"
                 >
-                  <i className="fas fa-chevron-left text-sm"></i>
+                  <i className="fas fa-angle-double-left text-sm"></i>
                 </button>
               </div>
             </div>
@@ -1062,11 +1107,11 @@ export default function EditorCanvas({
               <div className="border-t border-gray-200 my-3"></div>
             )}
 
-            {/* Блок "Компоненты" */}
+            {/* Блок "Готовые объекты" */}
             {!leftMenuCollapsed && (
               <div className="px-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Компоненты</span>
+                  <span className="text-sm font-medium text-gray-900">Готовые объекты</span>
                   <button
                     onClick={() => setComponentsOpen(!componentsOpen)}
                     className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1087,7 +1132,7 @@ export default function EditorCanvas({
                       <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
                     </button>
                     {componentsExpanded === 'IDEF0' && (
-                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
+                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
                         <button
                           onClick={() => {
                             const newElement: EditorElement = {
@@ -1249,7 +1294,7 @@ export default function EditorCanvas({
                       <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
                     </button>
                     {componentsExpanded === 'DFD' && (
-                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
+                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
                         <button
                           onClick={() => {
                             const newElement: EditorElement = {
@@ -1359,7 +1404,7 @@ export default function EditorCanvas({
                       <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
                     </button>
                     {componentsExpanded === 'BPMN' && (
-                      <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[250px] max-h-96 overflow-y-auto">
+                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[250px] max-h-96 overflow-y-auto">
                         <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">События</div>
                         <button
                           onClick={() => {
@@ -1679,11 +1724,11 @@ export default function EditorCanvas({
               <div className="border-t border-gray-200 my-3"></div>
             )}
 
-          {/* Блок "Слои" */}
+          {/* Блок "Компоненты" */}
           {!leftMenuCollapsed && (
             <div className="flex-1 overflow-y-auto flex flex-col px-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Слои</span>
+                <span className="text-sm font-medium text-gray-900">Компоненты</span>
                 <button
                   onClick={() => setLayersOpen(!layersOpen)}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1932,7 +1977,13 @@ export default function EditorCanvas({
         </div>
 
         {/* Холст */}
-        <div className="flex-1 overflow-auto bg-gray-100">
+        <div 
+          className="flex-1 overflow-auto bg-gray-100"
+          onMouseDown={handleCanvasMouseDown}
+          style={{
+            cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : 'default',
+          }}
+        >
           <div className="flex items-center justify-center h-full p-8">
             <svg
               ref={canvasRef}
@@ -1944,7 +1995,7 @@ export default function EditorCanvas({
                 transformOrigin: 'top left',
                 backgroundColor: currentPage.background || '#ffffff',
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                cursor: tool === 'select' ? 'default' : 'crosshair',
+                cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : (tool === 'select' ? 'default' : 'crosshair'),
               }}
               onClick={handleCanvasClick}
             >
