@@ -1807,7 +1807,6 @@ export default function EditorCanvas({
                   </div>
                 </div>
               </div>
-            )}
 
             {/* Девайдер */}
             <div className="border-t border-gray-200 my-3"></div>
