@@ -1945,6 +1945,7 @@ export default function EditorCanvas({
             </div>
           </div>
         )}
+      </div>
 
       {/* Центральная область - холст */}
       <div className="absolute inset-0 overflow-hidden">
