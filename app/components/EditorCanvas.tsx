@@ -8,6 +8,7 @@ const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 0.25;
 const ZOOM_OVERLAY_HIDE_MS = 1200;
+const ROTATE_CURSOR = "url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 12a9 9 0 0 1 9-9%22/><polyline points=%223 3 3 12 12 12%22/><path d=%22M21 12a9 9 0 0 1-9 9%22/><polyline points=%2221 21 21 12 12 12%22/></svg>') 12 12, auto";
 
 interface EditorCanvasProps {
   diagram: EditorDiagram;
@@ -706,45 +707,80 @@ export default function EditorCanvas({
   };
 
 
+  const getElementBounds = (element: EditorElement) => {
+    const width = element.width ?? (element.type === 'text' ? 160 : 120);
+    const height = element.height ?? (element.type === 'text' ? 40 : 80);
+    return { x: element.x, y: element.y, width, height };
+  };
+
+  const renderSelectionOverlay = (element: EditorElement) => {
+    if (element.id !== selectedElementId || !selectedElement || tool !== 'select') return null;
+    if (element.locked) return null;
+    const { x, y, width, height } = getElementBounds(element);
+    const name = element.name || element.text || element.type;
+    const sizeLabel = `${Math.round(width)} × ${Math.round(height)}`;
+    const labelPaddingX = 6;
+    const nameWidth = Math.max(60, name.length * 7);
+    const sizeWidth = Math.max(60, sizeLabel.length * 7);
+
+    return (
+      <g data-selection-overlay pointerEvents="none">
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth={1.5}
+        />
+        <rect x={x} y={y - 24} width={nameWidth} height={20} rx={6} fill="#3b82f6" />
+        <text x={x + labelPaddingX} y={y - 10} fill="#ffffff" fontSize={11} fontFamily="Inter, sans-serif">
+          {name}
+        </text>
+        <rect x={x + width / 2 - sizeWidth / 2} y={y + height + 8} width={sizeWidth} height={20} rx={6} fill="#3b82f6" />
+        <text
+          x={x + width / 2 - sizeWidth / 2 + labelPaddingX}
+          y={y + height + 22}
+          fill="#ffffff"
+          fontSize={11}
+          fontFamily="Inter, sans-serif"
+        >
+          {sizeLabel}
+        </text>
+      </g>
+    );
+  };
+
   // Рендеринг маркеров изменения размера
   const renderResizeHandles = (element: EditorElement) => {
     if (element.id !== selectedElementId || !selectedElement || tool !== 'select') return null;
-    if (element.width === undefined || element.height === undefined) return null;
     if (element.locked) return null;
+    const { x, y, width, height } = getElementBounds(element);
 
     const handles = [
-      { id: 'nw', x: element.x, y: element.y, cursor: 'nw-resize' },
-      { id: 'ne', x: element.x + element.width, y: element.y, cursor: 'ne-resize' },
-      { id: 'sw', x: element.x, y: element.y + element.height, cursor: 'sw-resize' },
-      { id: 'se', x: element.x + element.width, y: element.y + element.height, cursor: 'se-resize' },
-      { id: 'n', x: element.x + element.width / 2, y: element.y, cursor: 'n-resize' },
-      { id: 's', x: element.x + element.width / 2, y: element.y + element.height, cursor: 's-resize' },
-      { id: 'w', x: element.x, y: element.y + element.height / 2, cursor: 'w-resize' },
-      { id: 'e', x: element.x + element.width, y: element.y + element.height / 2, cursor: 'e-resize' },
+      { id: 'nw', x, y, cursor: 'nw-resize' },
+      { id: 'ne', x: x + width, y, cursor: 'ne-resize' },
+      { id: 'sw', x, y: y + height, cursor: 'sw-resize' },
+      { id: 'se', x: x + width, y: y + height, cursor: 'se-resize' },
+    ];
+
+    const rotateHandles = [
+      { x: x - 16, y: y - 16 },
+      { x: x + width + 16, y: y - 16 },
+      { x: x - 16, y: y + height + 16 },
+      { x: x + width + 16, y: y + height + 16 },
     ];
 
     return (
       <g>
-        {/* Рамка выбранного элемента */}
-        <rect
-          x={element.x - 2}
-          y={element.y - 2}
-          width={element.width + 4}
-          height={element.height + 4}
-          fill="none"
-          stroke="#3b82f6"
-          strokeWidth={2}
-          strokeDasharray="5,5"
-          pointerEvents="none"
-        />
-        {/* Маркеры */}
         {handles.map(handle => (
           <rect
             key={handle.id}
-            x={handle.x - 6}
-            y={handle.y - 6}
-            width={12}
-            height={12}
+            x={handle.x - 5}
+            y={handle.y - 5}
+            width={10}
+            height={10}
             fill="#3b82f6"
             stroke="#ffffff"
             strokeWidth={2}
@@ -764,6 +800,17 @@ export default function EditorCanvas({
             style={{ cursor: handle.cursor }}
           />
         ))}
+        {rotateHandles.map((handle, index) => (
+          <circle
+            key={`rotate-${index}`}
+            cx={handle.x}
+            cy={handle.y}
+            r={9}
+            fill="transparent"
+            stroke="transparent"
+            style={{ cursor: ROTATE_CURSOR }}
+          />
+        ))}
       </g>
     );
   };
@@ -772,14 +819,13 @@ export default function EditorCanvas({
     const commonProps = {
       key: element.id,
       'data-element-id': element.id,
-      onClick: (e: React.MouseEvent) => handleElementMouseDown(e, element.id),
+      onMouseDown: (e: React.MouseEvent) => handleElementMouseDown(e, element.id),
       style: {
         cursor: tool === 'select' ? 'move' : 'default',
       },
     };
 
-    const isSelected = element.id === selectedElementId;
-    const strokeWidth = isSelected ? (element.strokeWidth || 2) + 2 : (element.strokeWidth || 2);
+    const strokeWidth = element.strokeWidth || 2;
     const opacity = element.opacity !== undefined ? element.opacity : 1;
 
     switch (element.type) {
@@ -792,7 +838,7 @@ export default function EditorCanvas({
             width={element.width || 100}
             height={element.height || 100}
             fill={element.fill || '#3b82f6'}
-            stroke={isSelected ? '#ef4444' : (element.stroke || '#1e40af')}
+            stroke={element.stroke || '#1e40af'}
             strokeWidth={strokeWidth}
             rx={4}
             ry={4}
@@ -807,7 +853,7 @@ export default function EditorCanvas({
             cy={element.y + (element.height || 100) / 2}
             r={(element.width || 100) / 2}
             fill={element.fill || '#3b82f6'}
-            stroke={isSelected ? '#ef4444' : (element.stroke || '#1e40af')}
+            stroke={element.stroke || '#1e40af'}
             strokeWidth={strokeWidth}
             opacity={opacity}
           />
@@ -820,7 +866,7 @@ export default function EditorCanvas({
             y1={element.y}
             x2={element.x + (element.width || 100)}
             y2={element.y + (element.height || 100)}
-            stroke={isSelected ? '#ef4444' : (element.stroke || '#1e40af')}
+            stroke={element.stroke || '#1e40af'}
             strokeWidth={strokeWidth}
           />
         );
@@ -833,8 +879,8 @@ export default function EditorCanvas({
               fill={element.fill || '#000000'}
               fontSize={element.fontSize || 16}
               fontFamily={element.fontFamily || 'Inter, sans-serif'}
-              stroke={isSelected ? '#ef4444' : 'none'}
-              strokeWidth={isSelected ? 1 : 0}
+              stroke="none"
+              strokeWidth={0}
               opacity={opacity}
             >
               {element.text || 'Текст'}
@@ -855,7 +901,7 @@ export default function EditorCanvas({
               y1={element.y}
               x2={element.x + (element.width || 100)}
               y2={element.y + (element.height || 0)}
-              stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+              stroke={element.stroke || '#000000'}
               strokeWidth={strokeWidth}
               markerEnd="url(#arrowhead)"
               opacity={opacity}
@@ -884,7 +930,7 @@ export default function EditorCanvas({
               >
                 <polygon
                   points={`0 0, ${arrowHeadSize} ${arrowHeadSize / 2}, 0 ${arrowHeadSize}`}
-                  fill={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+                  fill={element.stroke || '#000000'}
                 />
               </marker>
             </defs>
@@ -899,7 +945,7 @@ export default function EditorCanvas({
               width={element.width || 200}
               height={element.height || 120}
               fill={element.fill || '#ffffff'}
-              stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+              stroke={element.stroke || '#000000'}
               strokeWidth={strokeWidth}
               opacity={opacity}
             />
@@ -941,7 +987,7 @@ export default function EditorCanvas({
               width={element.width || 120}
               height={element.height || 80}
               fill={element.fill || '#ffffff'}
-              stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+              stroke={element.stroke || '#000000'}
               strokeWidth={strokeWidth}
               rx={element.type === 'dfd-process' ? 8 : 0}
             />
@@ -969,7 +1015,7 @@ export default function EditorCanvas({
               width={element.width || 120}
               height={element.height || 60}
               fill={element.fill || '#ffffff'}
-              stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+              stroke={element.stroke || '#000000'}
               strokeWidth={strokeWidth}
               rx={4}
             />
@@ -996,7 +1042,7 @@ export default function EditorCanvas({
               cy={element.y + (element.height || 40) / 2}
               r={(element.width || 40) / 2}
               fill={element.fill || '#ffffff'}
-              stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+              stroke={element.stroke || '#000000'}
               strokeWidth={strokeWidth}
             />
           </g>
@@ -1012,7 +1058,7 @@ export default function EditorCanvas({
                 ${element.x},${element.y + (element.height || 50) / 2}
               `}
               fill={element.fill || '#ffffff'}
-              stroke={isSelected ? '#ef4444' : (element.stroke || '#000000')}
+              stroke={element.stroke || '#000000'}
               strokeWidth={strokeWidth}
             />
           </g>
@@ -1023,64 +1069,68 @@ export default function EditorCanvas({
   };
 
   return (
-    <div className="flex h-screen w-screen bg-gray-50">
+    <div className="relative h-screen w-screen bg-gray-50">
       {/* Левое меню */}
-      <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${leftMenuCollapsed ? 'w-16' : 'w-64'}`} style={{ overflow: 'visible' }}>
-          {/* Заголовок с названием диаграммы и иконкой скрытия */}
-          {!leftMenuCollapsed && (
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                {editingDiagramName ? (
-                  <input
-                    type="text"
-                    value={diagram.name}
-                    onBlur={() => {
+      <div
+        className={`fixed left-4 top-4 bottom-4 bg-white border border-gray-200 rounded-2xl shadow-lg flex flex-col transition-all duration-300 ease-in-out z-30 ${leftMenuCollapsed ? 'w-16' : 'w-64'}`}
+        style={{ overflow: 'visible' }}
+      >
+        {/* Заголовок с названием диаграммы и иконкой скрытия */}
+        <div className="p-4 border-b border-gray-200">
+          {!leftMenuCollapsed ? (
+            <div className="flex items-center justify-between gap-2">
+              {editingDiagramName ? (
+                <input
+                  type="text"
+                  value={diagram.name}
+                  onBlur={() => {
+                    setEditingDiagramName(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
                       setEditingDiagramName(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        setEditingDiagramName(false);
-                      } else if (e.key === 'Escape') {
-                        setEditingDiagramName(false);
-                      }
-                    }}
-                    onChange={(e) => {
-                      // Обновление названия через callback если нужен
-                    }}
-                    className="flex-1 text-base text-gray-600 border border-blue-300 rounded px-2 py-1"
-                    autoFocus
-                  />
-                ) : (
-                  <span
-                    className="text-base text-gray-600 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
-                    onDoubleClick={() => setEditingDiagramName(true)}
-                    title="Двойной клик для редактирования"
-                  >
-                    {diagram.name}
-                  </span>
-                )}
-                <button
-                  onClick={() => setLeftMenuCollapsed(true)}
-                  className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded ml-2 transition-colors"
-                  title="Скрыть левое меню"
+                    } else if (e.key === 'Escape') {
+                      setEditingDiagramName(false);
+                    }
+                  }}
+                  onChange={(e) => {
+                    // Обновление названия через callback если нужен
+                  }}
+                  className="flex-1 text-base text-gray-600 border border-blue-300 rounded px-2 py-1"
+                  autoFocus
+                />
+              ) : (
+                <span
+                  className="text-base text-gray-600 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
+                  onDoubleClick={() => setEditingDiagramName(true)}
+                  title="Двойной клик для редактирования"
                 >
-                  <i className="fas fa-angle-double-left text-sm"></i>
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {leftMenuCollapsed && (
-            <div className="p-2 border-b border-gray-200">
+                  {diagram.name}
+                </span>
+              )}
               <button
-                onClick={() => setLeftMenuCollapsed(false)}
-                className="w-full p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center justify-center"
-                title="Развернуть меню"
+                onClick={() => setLeftMenuCollapsed(true)}
+                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                title="Скрыть левое меню"
               >
-                <i className="fas fa-chevron-right text-sm"></i>
+                <i className="fas fa-angle-double-left text-sm"></i>
               </button>
             </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => setLeftMenuCollapsed(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                title="Раскрыть левое меню"
+              >
+                <i className="fas fa-angle-double-right text-sm"></i>
+              </button>
+              <span className="text-[10px] text-gray-500 text-center leading-tight">
+                {diagram.name}
+              </span>
+            </div>
           )}
+        </div>
 
             {/* Блок "Действия" */}
             <div className="px-2 mt-3">
@@ -1898,7 +1948,7 @@ export default function EditorCanvas({
       </div>
 
       {/* Центральная область - холст */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden">
         {/* Холст */}
         <div
           ref={containerRef}
@@ -1960,13 +2010,14 @@ export default function EditorCanvas({
               {showGrid && (
                 <rect width="100%" height="100%" fill="url(#grid)" />
               )}
-              {currentPage.elements.map(renderElement)}
-              {selectedElement && renderResizeHandles(selectedElement)}
+            {currentPage.elements.map(renderElement)}
+            {selectedElement && renderSelectionOverlay(selectedElement)}
+            {selectedElement && renderResizeHandles(selectedElement)}
           </svg>
         </div>
 
         {/* Нижняя панель инструментов */}
-        <div className="h-16 bg-white border-t border-gray-200 flex items-center justify-center gap-4 px-4">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-2xl shadow-lg flex items-center justify-center gap-4 px-4 py-2 z-30">
           <button
             onClick={handleUndo}
             disabled={historyIndex <= 0}
@@ -2102,14 +2153,15 @@ export default function EditorCanvas({
 
       {/* Правое меню - настройки */}
       {rightMenuOpen && selectedElement && (
-        <div className="w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+        <div className="fixed right-4 top-4 bottom-4 w-64 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 overflow-y-auto z-20">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-900">Настройки элемента</h3>
             <button
               onClick={() => setRightMenuOpen(false)}
-              className="p-1 text-gray-500 hover:text-gray-700"
+              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              title="Скрыть правое меню"
             >
-              <i className="fas fa-times"></i>
+              <i className="fas fa-angle-double-right"></i>
             </button>
           </div>
 
@@ -2356,14 +2408,15 @@ export default function EditorCanvas({
 
       {/* Правая панель - свойства страницы (когда ничего не выбрано) */}
       {rightMenuOpen && !selectedElement && (
-        <div className="w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+        <div className="fixed right-4 top-4 bottom-4 w-64 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 overflow-y-auto z-20">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-900">Свойства страницы</h3>
             <button
               onClick={() => setRightMenuOpen(false)}
-              className="p-1 text-gray-500 hover:text-gray-700"
+              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              title="Скрыть правое меню"
             >
-              <i className="fas fa-times"></i>
+              <i className="fas fa-angle-double-right"></i>
             </button>
           </div>
 
@@ -2414,15 +2467,16 @@ export default function EditorCanvas({
         </div>
       )}
 
-      {!rightMenuOpen && !selectedElement && (
-        <div className="w-12 bg-white border-l border-gray-200 flex flex-col items-center py-4">
+      {!rightMenuOpen && (
+        <div className="fixed right-4 top-4 bottom-4 w-16 bg-white border border-gray-200 rounded-2xl shadow-lg flex flex-col items-center py-4 gap-2 z-20">
           <button
             onClick={() => setRightMenuOpen(true)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-            title="Показать настройки"
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+            title="Раскрыть правое меню"
           >
-            <i className="fas fa-chevron-left"></i>
+            <i className="fas fa-angle-double-left"></i>
           </button>
+          <span className="text-[10px] text-gray-500 text-center leading-tight">Настройки</span>
         </div>
       )}
 
