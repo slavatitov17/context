@@ -38,7 +38,20 @@ export default function EditorEditPage() {
       const pageId = foundDiagram.currentPageId || foundDiagram.pages[0]?.id;
       const page = foundDiagram.pages.find(p => p.id === pageId) || foundDiagram.pages[0];
       if (page) {
-        setCurrentPage(page);
+        const needsDefaultBg = !page.background || page.background === '#ffffff';
+        if (needsDefaultBg) {
+          const updatedPage = { ...page, background: '#474747' };
+          const updatedPages = foundDiagram.pages.map(p => p.id === updatedPage.id ? updatedPage : p);
+          setDiagram({ ...foundDiagram, pages: updatedPages });
+          setCurrentPage(updatedPage);
+          try {
+            editorDiagrams.update(foundDiagram.id, userId, { pages: updatedPages });
+          } catch (error) {
+            console.error('Ошибка при обновлении фона страницы:', error);
+          }
+        } else {
+          setCurrentPage(page);
+        }
       }
     } catch (error) {
       console.error('Ошибка при загрузке диаграммы:', error);
@@ -170,7 +183,7 @@ export default function EditorEditPage() {
       elements: [],
             width: 10000,
             height: 10000,
-      background: '#ffffff',
+              background: '#474747',
     };
 
     setDiagram({
@@ -278,6 +291,19 @@ export default function EditorEditPage() {
     }
   }, [diagram, user]);
 
+  const updateDiagramName = useCallback((name: string) => {
+    if (!diagram || !user) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const updatedDiagram = { ...diagram, name: trimmed };
+    setDiagram(updatedDiagram);
+    try {
+      editorDiagrams.update(updatedDiagram.id, user.id, { name: trimmed });
+    } catch (error) {
+      console.error('Ошибка при сохранении названия диаграммы:', error);
+    }
+  }, [diagram, user]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -298,6 +324,7 @@ export default function EditorEditPage() {
         selectedElementId={selectedElementId}
         onSelectElement={setSelectedElementId}
         onUpdatePage={updatePage}
+        onUpdateDiagramName={updateDiagramName}
         onAddElement={addElement}
         onUpdateElement={updateElement}
         onDeleteElement={deleteElement}

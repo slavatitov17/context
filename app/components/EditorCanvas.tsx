@@ -16,6 +16,7 @@ interface EditorCanvasProps {
   selectedElementId: string | null;
   onSelectElement: (id: string | null) => void;
   onUpdatePage: (page: EditorPage) => void;
+  onUpdateDiagramName?: (name: string) => void;
   onAddElement: (element: EditorElement) => void;
   onUpdateElement: (elementId: string, updates: Partial<EditorElement>) => void;
   onDeleteElement: (elementId: string) => void;
@@ -32,6 +33,7 @@ export default function EditorCanvas({
   selectedElementId,
   onSelectElement,
   onUpdatePage,
+  onUpdateDiagramName,
   onAddElement,
   onUpdateElement,
   onDeleteElement,
@@ -62,6 +64,7 @@ export default function EditorCanvas({
   const [editingLayerName, setEditingLayerName] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
   const [editingDiagramName, setEditingDiagramName] = useState(false);
+  const [diagramNameDraft, setDiagramNameDraft] = useState(diagram.name);
   const [toolMode, setToolMode] = useState<'select' | 'pan' | 'draw'>('select');
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -82,6 +85,10 @@ export default function EditorCanvas({
   const [showZoomOverlay, setShowZoomOverlay] = useState(false);
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
+
+  useEffect(() => {
+    setDiagramNameDraft(diagram.name);
+  }, [diagram.name]);
 
   const triggerZoomOverlay = useCallback(() => {
     setShowZoomOverlay(true);
@@ -606,7 +613,7 @@ export default function EditorCanvas({
       canvas.height = CANVAS_SIZE * scale;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = currentPage.background || '#ffffff';
+        ctx.fillStyle = currentPage.background || '#474747';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         canvas.toBlob((blob) => {
@@ -649,7 +656,7 @@ export default function EditorCanvas({
         canvas.height = CANVAS_SIZE;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.fillStyle = currentPage.background || '#ffffff';
+          ctx.fillStyle = currentPage.background || '#474747';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0);
           
@@ -1072,8 +1079,8 @@ export default function EditorCanvas({
     <div className="relative h-screen w-screen bg-gray-50">
       {/* Левое меню */}
       <div
-        className={`fixed left-4 top-4 bottom-4 bg-white border border-gray-200 rounded-2xl shadow-lg flex flex-col transition-all duration-300 ease-in-out z-30 ${leftMenuCollapsed ? 'w-16' : 'w-64'}`}
-        style={{ overflow: 'visible' }}
+        className={`fixed left-4 top-4 bg-white border border-gray-200 rounded-2xl shadow-lg flex flex-col transition-all duration-200 ease-in-out z-30 ${leftMenuCollapsed ? 'w-52' : 'w-64'} ${leftMenuCollapsed ? 'h-auto' : 'bottom-4'}`}
+        style={{ overflow: 'hidden' }}
       >
         {/* Заголовок с названием диаграммы и иконкой скрытия */}
         <div className="p-4 border-b border-gray-200">
@@ -1082,27 +1089,33 @@ export default function EditorCanvas({
               {editingDiagramName ? (
                 <input
                   type="text"
-                  value={diagram.name}
+                  value={diagramNameDraft}
                   onBlur={() => {
+                    onUpdateDiagramName?.(diagramNameDraft.trim() || diagram.name);
                     setEditingDiagramName(false);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                      onUpdateDiagramName?.(diagramNameDraft.trim() || diagram.name);
                       setEditingDiagramName(false);
                     } else if (e.key === 'Escape') {
+                      setDiagramNameDraft(diagram.name);
                       setEditingDiagramName(false);
                     }
                   }}
                   onChange={(e) => {
-                    // Обновление названия через callback если нужен
+                    setDiagramNameDraft(e.target.value);
                   }}
-                  className="flex-1 text-base text-gray-600 border border-blue-300 rounded px-2 py-1"
+                  className="flex-1 text-base text-gray-900 border border-blue-300 rounded px-2 py-1"
                   autoFocus
                 />
               ) : (
                 <span
-                  className="text-base text-gray-600 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
-                  onDoubleClick={() => setEditingDiagramName(true)}
+                  className="text-base text-gray-900 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
+                  onDoubleClick={() => {
+                    setDiagramNameDraft(diagram.name);
+                    setEditingDiagramName(true);
+                  }}
                   title="Двойной клик для редактирования"
                 >
                   {diagram.name}
@@ -1117,7 +1130,7 @@ export default function EditorCanvas({
               </button>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={() => setLeftMenuCollapsed(false)}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
@@ -1125,26 +1138,24 @@ export default function EditorCanvas({
               >
                 <i className="fas fa-angle-double-right text-sm"></i>
               </button>
-              <span className="text-[10px] text-gray-500 text-center leading-tight">
-                {diagram.name}
-              </span>
+              <span className="text-sm text-gray-900 truncate">{diagram.name}</span>
             </div>
           )}
         </div>
 
+        {!leftMenuCollapsed && (
+          <div className="flex-1 min-h-0 flex flex-col">
             {/* Блок "Действия" */}
             <div className="px-2 mt-3">
-              {!leftMenuCollapsed && (
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Действия</span>
-                  <button
-                    onClick={() => setActionsOpen(!actionsOpen)}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <i className={`fas fa-chevron-${actionsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-normal text-gray-400">Действия</span>
+                <button
+                  onClick={() => setActionsOpen(!actionsOpen)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <i className={`fas fa-chevron-${actionsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
+                </button>
+              </div>
               <div className={`space-y-1 transition-all duration-300 ease-in-out ${actionsOpen ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'} ${actionsOpen ? '' : 'overflow-hidden'}`} style={{ position: 'relative' }}>
                 <div className="relative" style={{ zIndex: showSaveTooltip ? 100 : 1 }}>
                   <button 
@@ -1165,11 +1176,10 @@ export default function EditorCanvas({
                         setShowSaveTooltip(false);
                       }, 2000);
                     }}
-                    className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
-                    title={leftMenuCollapsed ? 'Сохранить' : ''}
+                    className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white"
                   >
                     <i className="fas fa-save text-gray-600 group-hover:text-white transition-colors"></i>
-                    {!leftMenuCollapsed && <span className="font-medium">Сохранить</span>}
+                    <span className="font-medium">Сохранить</span>
                   </button>
                   {showSaveTooltip && (
                     <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 shadow-lg" style={{ zIndex: 1000, pointerEvents: 'none' }}>
@@ -1180,46 +1190,41 @@ export default function EditorCanvas({
                 </div>
                 <button
                   onClick={() => setShowExportDialog(true)}
-                  className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
-                  title={leftMenuCollapsed ? 'Экспорт' : ''}
+                  className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white"
                 >
                   <i className="fas fa-download text-gray-600 group-hover:text-white transition-colors"></i>
-                  {!leftMenuCollapsed && <span className="font-medium">Экспорт</span>}
+                  <span className="font-medium">Экспорт</span>
                 </button>
               </div>
             </div>
 
             {/* Девайдер */}
-            {!leftMenuCollapsed && (
-              <div className="border-t border-gray-200 my-3"></div>
-            )}
+            <div className="border-t border-gray-200 my-3"></div>
 
             {/* Блок "Готовые объекты" */}
-            {!leftMenuCollapsed && (
-              <div className="px-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Готовые объекты</span>
+            <div className="px-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-normal text-gray-400">Готовые объекты</span>
+                <button
+                  onClick={() => setComponentsOpen(!componentsOpen)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
+                </button>
+              </div>
+              <div className={`space-y-1 transition-all duration-300 ease-in-out ${componentsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`} style={{ position: 'relative' }}>
+                <div className="relative" style={{ zIndex: componentsExpanded ? 10 : 1 }}>
                   <button
-                    onClick={() => setComponentsOpen(!componentsOpen)}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
+                    className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                   >
-                    <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">IDEF0</span>
+                    </div>
+                    <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
                   </button>
-                </div>
-                <div className={`space-y-1 transition-all duration-300 ease-in-out ${componentsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`} style={{ position: 'relative' }}>
-                  <div className="relative" style={{ zIndex: componentsExpanded ? 10 : 1 }}>
-                    <button
-                      onClick={() => setComponentsExpanded(componentsExpanded === 'IDEF0' ? null : 'IDEF0')}
-                      className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <i className="fas fa-project-diagram text-gray-600 group-hover:text-white transition-colors"></i>
-                        <span className="font-medium">IDEF0</span>
-                      </div>
-                      <i className={`fas fa-chevron-${componentsExpanded === 'IDEF0' ? 'down' : 'right'} text-xs`}></i>
-                    </button>
-                    {componentsExpanded === 'IDEF0' && (
-                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
+                  {componentsExpanded === 'IDEF0' && (
+                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
                         <button
                           onClick={() => {
                             const newElement: EditorElement = {
@@ -1375,7 +1380,6 @@ export default function EditorCanvas({
                       className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <i className="fas fa-project-diagram text-gray-600 group-hover:text-white transition-colors"></i>
                         <span className="font-medium">DFD</span>
                       </div>
                       <i className={`fas fa-chevron-${componentsExpanded === 'DFD' ? 'down' : 'right'} text-xs`}></i>
@@ -1485,7 +1489,6 @@ export default function EditorCanvas({
                       className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <i className="fas fa-project-diagram text-gray-600 group-hover:text-white transition-colors"></i>
                         <span className="font-medium">BPMN</span>
                       </div>
                       <i className={`fas fa-chevron-${componentsExpanded === 'BPMN' ? 'down' : 'right'} text-xs`}></i>
@@ -1807,15 +1810,12 @@ export default function EditorCanvas({
             )}
 
             {/* Девайдер */}
-            {!leftMenuCollapsed && (
-              <div className="border-t border-gray-200 my-3"></div>
-            )}
+            <div className="border-t border-gray-200 my-3"></div>
 
-          {/* Блок "Компоненты" */}
-          {!leftMenuCollapsed && (
-            <div className="flex-1 overflow-y-auto flex flex-col px-2">
+            {/* Блок "Компоненты" */}
+            <div className="flex-1 min-h-0 flex flex-col px-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Компоненты</span>
+                <span className="text-sm font-normal text-gray-400">Компоненты</span>
                 <button
                   onClick={() => setLayersOpen(!layersOpen)}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1823,10 +1823,10 @@ export default function EditorCanvas({
                   <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
                 </button>
               </div>
-              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${layersOpen ? 'flex-1 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="pb-2">
+              <div className={`min-h-0 transition-all duration-300 ease-in-out ${layersOpen ? 'flex-1 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                <div className="pb-2 max-h-full overflow-y-auto">
                   {currentPage.elements.length === 0 ? (
-                    <div className="text-sm text-gray-500 px-2 py-4 text-center">
+                    <div className="text-sm font-normal text-gray-400 px-2 py-4 text-center">
                       Нет элементов
                     </div>
                   ) : (
@@ -1923,29 +1923,29 @@ export default function EditorCanvas({
                 </div>
               </div>
             </div>
-          )}
-            
-          {/* Кнопка "Выйти из редактора" */}
-          <div className="mt-auto pt-2 pb-2 px-2">
-            <button
-              onClick={() => {
-                console.log('Exit button clicked, isSaved:', isSaved);
-                if (isSaved) {
-                  console.log('Direct exit');
-                  onBack();
-                } else {
-                  console.log('Showing exit modal');
-                  setShowExitModal(true);
-                }
-              }}
-              className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${leftMenuCollapsed ? 'justify-center' : ''} text-gray-800 hover:bg-blue-600 hover:text-white`}
-              title={leftMenuCollapsed ? 'Выйти из редактора' : ''}
-            >
-              <i className="fas fa-sign-out-alt text-gray-600 group-hover:text-white transition-colors"></i>
-              {!leftMenuCollapsed && <span className="font-medium">Выйти из редактора</span>}
-            </button>
+
+            {/* Кнопка "Выйти из редактора" */}
+            <div className="mt-auto pt-2 pb-2 px-2">
+              <div className="border-t border-gray-200 my-3"></div>
+              <button
+                onClick={() => {
+                  console.log('Exit button clicked, isSaved:', isSaved);
+                  if (isSaved) {
+                    console.log('Direct exit');
+                    onBack();
+                  } else {
+                    console.log('Showing exit modal');
+                    setShowExitModal(true);
+                  }
+                }}
+                className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white"
+              >
+                <i className="fas fa-sign-out-alt text-gray-600 group-hover:text-white transition-colors"></i>
+                <span className="font-medium">Выйти из редактора</span>
+              </button>
+            </div>
           </div>
-      </div>
+        )}
 
       {/* Центральная область - холст */}
       <div className="absolute inset-0 overflow-hidden">
@@ -1994,7 +1994,7 @@ export default function EditorCanvas({
             style={{
               transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
               transformOrigin: 'top left',
-              backgroundColor: currentPage.background || '#ffffff',
+              backgroundColor: currentPage.background || '#474747',
               cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : (tool === 'select' ? 'default' : 'crosshair'),
             }}
             onClick={handleCanvasClick}
@@ -2455,7 +2455,7 @@ export default function EditorCanvas({
               <label className="block text-xs font-medium text-gray-700 mb-1">Цвет фона</label>
               <input
                 type="color"
-                value={currentPage.background || '#ffffff'}
+                value={currentPage.background || '#474747'}
                 onChange={(e) => {
                   const updatedPage = { ...currentPage, background: e.target.value };
                   onUpdatePage(updatedPage);
