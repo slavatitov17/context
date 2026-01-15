@@ -15,6 +15,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPrivacyPage = pathname === '/privacy';
   const isEditorPage = pathname?.startsWith('/editor/') && pathname?.includes('/edit') && !pathname?.includes('/new');
+  const isDiagramTypeCatalog = pathname?.startsWith('/diagrams/') && !pathname?.includes('/edit') && !pathname?.includes('/new');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
@@ -219,7 +220,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       )}
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
-      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
+      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
         {/* Кнопка "Назад" - показывается только на страницах не первого уровня, но не в редакторе и не на страницах авторизации */}
         {/* На странице privacy кнопка "Назад" уже встроена в компонент, поэтому здесь не показываем */}
         {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}

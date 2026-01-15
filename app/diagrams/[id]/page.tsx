@@ -280,7 +280,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       />
       
       {/* Модальное окно */}
-      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
           <button
