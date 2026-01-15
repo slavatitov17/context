@@ -305,7 +305,7 @@ export default function EditorEditPage() {
         onSwitchPage={switchPage}
         onDeletePage={deletePage}
         onUpdatePageName={updatePageName}
-        onBack={() => router.push('/editor')}
+        onBack={() => router.push('/diagrams')}
       />
     </div>
   );
