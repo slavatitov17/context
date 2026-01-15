@@ -168,8 +168,8 @@ export default function EditorEditPage() {
       id: `page_${Date.now()}`,
       name: `Страница ${diagram.pages.length + 1}`,
       elements: [],
-      width: 1920,
-      height: 1080,
+            width: 10000,
+            height: 10000,
       background: '#ffffff',
     };
 

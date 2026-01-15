@@ -3,6 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { type EditorDiagram, type EditorPage, type EditorElement } from '@/lib/storage';
 
+const CANVAS_SIZE = 10000;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 4;
+const ZOOM_STEP = 0.25;
+const ZOOM_OVERLAY_HIDE_MS = 1200;
+
 interface EditorCanvasProps {
   diagram: EditorDiagram;
   currentPage: EditorPage;
@@ -35,7 +41,6 @@ export default function EditorCanvas({
   onBack,
 }: EditorCanvasProps) {
   const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'arrow' | 'comment'>('select');
-  const [leftMenuOpen, setLeftMenuOpen] = useState(true);
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
   const [layersOpen, setLayersOpen] = useState(true);
   const [pagesOpen, setPagesOpen] = useState(true);
@@ -53,11 +58,9 @@ export default function EditorCanvas({
   const [history, setHistory] = useState<EditorPage[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [copiedElement, setCopiedElement] = useState<EditorElement | null>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [editingLayerName, setEditingLayerName] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
   const [editingDiagramName, setEditingDiagramName] = useState(false);
-  const [diagramTypeFilter, setDiagramTypeFilter] = useState<'all' | 'IDEF0' | 'DFD' | 'BPMN' | 'Custom'>(diagram.diagramType || 'all');
   const [toolMode, setToolMode] = useState<'select' | 'pan' | 'draw'>('select');
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -74,8 +77,45 @@ export default function EditorCanvas({
   const [showExitModal, setShowExitModal] = useState(false);
   const [isSaved, setIsSaved] = useState(true);
   const initialPageStateRef = useRef<string>('');
+  const zoomOverlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showZoomOverlay, setShowZoomOverlay] = useState(false);
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
+
+  const triggerZoomOverlay = useCallback(() => {
+    setShowZoomOverlay(true);
+    if (zoomOverlayTimeoutRef.current) {
+      clearTimeout(zoomOverlayTimeoutRef.current);
+    }
+    zoomOverlayTimeoutRef.current = setTimeout(() => {
+      setShowZoomOverlay(false);
+    }, ZOOM_OVERLAY_HIDE_MS);
+  }, []);
+
+  const clampPan = useCallback((nextPan: { x: number; y: number }, nextZoom = zoom) => {
+    const container = containerRef.current;
+    if (!container) return nextPan;
+    const rect = container.getBoundingClientRect();
+    const canvasWidth = CANVAS_SIZE * nextZoom;
+    const canvasHeight = CANVAS_SIZE * nextZoom;
+    const minX = Math.min(0, rect.width - canvasWidth);
+    const minY = Math.min(0, rect.height - canvasHeight);
+    return {
+      x: Math.min(0, Math.max(minX, nextPan.x)),
+      y: Math.min(0, Math.max(minY, nextPan.y)),
+    };
+  }, [zoom]);
+
+  const setZoomWithOverlay = useCallback((nextZoom: number, nextPan?: { x: number; y: number }) => {
+    const clampedZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, nextZoom));
+    triggerZoomOverlay();
+    setZoom(clampedZoom);
+    if (nextPan) {
+      setPan(clampPan(nextPan, clampedZoom));
+    } else {
+      setPan(prev => clampPan(prev, clampedZoom));
+    }
+  }, [clampPan, triggerZoomOverlay]);
 
   // Отслеживание изменений
   useEffect(() => {
@@ -210,23 +250,14 @@ export default function EditorCanvas({
   };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    // Обновление позиции мыши для отображения координат
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setMousePosition({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-
     // Панорамирование (при нажатом пробеле или режиме pan)
     if (isPanning && (toolMode === 'pan' || isSpacePressed)) {
       const deltaX = e.clientX - panStart.x;
       const deltaY = e.clientY - panStart.y;
-      setPan({
-        x: pan.x + deltaX,
-        y: pan.y + deltaY,
-      });
+      setPan(prev => clampPan({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+      }));
       setPanStart({ x: e.clientX, y: e.clientY });
       return;
     }
@@ -341,7 +372,7 @@ export default function EditorCanvas({
 
       onUpdateElement(selectedElementId, updates);
     }
-  }, [isDragging, isResizing, selectedElementId, tool, dragStart, pan, zoom, onUpdateElement, resizeHandle, selectedElement, snapToGridValue, isPanning, toolMode, isSpacePressed, panStart]);
+  }, [isDragging, isResizing, selectedElementId, tool, dragStart, pan, zoom, onUpdateElement, resizeHandle, selectedElement, snapToGridValue, isPanning, toolMode, isSpacePressed, panStart, clampPan]);
 
   const handleMouseUp = useCallback(() => {
     if (isDragging || isResizing) {
@@ -379,17 +410,16 @@ export default function EditorCanvas({
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
             
-            const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
+            const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom + delta));
             const zoomFactor = newZoom / zoom;
-            
-            setPan({
+            const nextPan = {
               x: mouseX - (mouseX - pan.x) * zoomFactor,
               y: mouseY - (mouseY - pan.y) * zoomFactor,
-            });
-            setZoom(newZoom);
+            };
+            setZoomWithOverlay(newZoom, nextPan);
           }
         } else {
-          setZoom(prev => Math.max(0.25, Math.min(4, prev + delta)));
+          setZoomWithOverlay(zoom + delta);
         }
       }
     };
@@ -399,7 +429,7 @@ export default function EditorCanvas({
       container.addEventListener('wheel', handleWheel, { passive: false });
       return () => container.removeEventListener('wheel', handleWheel);
     }
-  }, [zoom, pan]);
+  }, [zoom, pan, setZoomWithOverlay]);
 
   // Инициализация истории - только при первой загрузке
   useEffect(() => {
@@ -408,6 +438,14 @@ export default function EditorCanvas({
       setHistoryIndex(0);
     }
   }, []); // Инициализируем только один раз при монтировании компонента
+
+  useEffect(() => {
+    return () => {
+      if (zoomOverlayTimeoutRef.current) {
+        clearTimeout(zoomOverlayTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -563,8 +601,8 @@ export default function EditorCanvas({
     img.onload = () => {
       const scale = quality;
       const canvas = document.createElement('canvas');
-      canvas.width = currentPage.width * scale;
-      canvas.height = currentPage.height * scale;
+      canvas.width = CANVAS_SIZE * scale;
+      canvas.height = CANVAS_SIZE * scale;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.fillStyle = currentPage.background || '#ffffff';
@@ -592,7 +630,7 @@ export default function EditorCanvas({
       const { PDFDocument, rgb } = await import('pdf-lib');
       
       const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([currentPage.width, currentPage.height]);
+      const page = pdfDoc.addPage([CANVAS_SIZE, CANVAS_SIZE]);
       
       // Экспортируем SVG в PNG сначала
       if (!canvasRef.current) return;
@@ -606,8 +644,8 @@ export default function EditorCanvas({
       const img = new Image();
       img.onload = async () => {
         const canvas = document.createElement('canvas');
-        canvas.width = currentPage.width;
-        canvas.height = currentPage.height;
+        canvas.width = CANVAS_SIZE;
+        canvas.height = CANVAS_SIZE;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.fillStyle = currentPage.background || '#ffffff';
@@ -626,8 +664,8 @@ export default function EditorCanvas({
           page.drawImage(pngImage, {
             x: 0,
             y: 0,
-            width: currentPage.width,
-            height: currentPage.height,
+            width: CANVAS_SIZE,
+            height: CANVAS_SIZE,
           });
 
           const pdfBytes = await pdfDoc.save();
@@ -987,8 +1025,7 @@ export default function EditorCanvas({
   return (
     <div className="flex h-screen w-screen bg-gray-50">
       {/* Левое меню */}
-      {leftMenuOpen && (
-        <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${leftMenuCollapsed ? 'w-16' : 'w-64'}`} style={{ overflow: 'visible' }}>
+      <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${leftMenuCollapsed ? 'w-16' : 'w-64'}`} style={{ overflow: 'visible' }}>
           {/* Заголовок с названием диаграммы и иконкой скрытия */}
           {!leftMenuCollapsed && (
             <div className="p-4 border-b border-gray-200">
@@ -1858,147 +1895,60 @@ export default function EditorCanvas({
               {!leftMenuCollapsed && <span className="font-medium">Выйти из редактора</span>}
             </button>
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Центральная область - холст */}
-      <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
-        {/* Верхняя панель */}
-        <div className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setLeftMenuOpen(!leftMenuOpen)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-            >
-              <i className="fas fa-bars"></i>
-            </button>
-            <span className="text-sm text-gray-600">{currentPage.name}</span>
-            <div className="w-px h-6 bg-gray-300 mx-2"></div>
-            {/* Переключатель типа диаграммы */}
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setDiagramTypeFilter('all')}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
-                  diagramTypeFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Все
-              </button>
-              <button
-                onClick={() => setDiagramTypeFilter('IDEF0')}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
-                  diagramTypeFilter === 'IDEF0' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                IDEF0
-              </button>
-              <button
-                onClick={() => setDiagramTypeFilter('DFD')}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
-                  diagramTypeFilter === 'DFD' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                DFD
-              </button>
-              <button
-                onClick={() => setDiagramTypeFilter('BPMN')}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
-                  diagramTypeFilter === 'BPMN' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                BPMN
-              </button>
-              <button
-                onClick={() => setDiagramTypeFilter('Custom')}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
-                  diagramTypeFilter === 'Custom' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Произвольная
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleUndo}
-              disabled={historyIndex <= 0}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Отменить (Ctrl+Z)"
-            >
-              <i className="fas fa-undo"></i>
-            </button>
-            <button
-              onClick={handleRedo}
-              disabled={historyIndex >= history.length - 1}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Повторить (Ctrl+Y)"
-            >
-              <i className="fas fa-redo"></i>
-            </button>
-            <div className="w-px h-6 bg-gray-300"></div>
-            <button
-              onClick={() => setShowGrid(!showGrid)}
-              className={`p-2 rounded ${showGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
-              title="Показать/скрыть сетку"
-            >
-              <i className="fas fa-th"></i>
-            </button>
-            <button
-              onClick={() => setSnapToGrid(!snapToGrid)}
-              className={`p-2 rounded ${snapToGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
-              title="Привязка к сетке"
-            >
-              <i className="fas fa-magnet"></i>
-            </button>
-            <div className="w-px h-6 bg-gray-300"></div>
-            <button
-              onClick={() => setZoom(Math.max(0.25, zoom - 0.25))}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-            >
-              <i className="fas fa-minus"></i>
-            </button>
-            <span className="text-sm text-gray-600 w-16 text-center">{Math.round(zoom * 100)}%</span>
-            <button
-              onClick={() => setZoom(Math.min(4, zoom + 0.25))}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-            >
-              <i className="fas fa-plus"></i>
-            </button>
-            <button
-              onClick={() => setZoom(1)}
-              className="px-3 py-1 text-xs text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded"
-            >
-              100%
-            </button>
-          </div>
-          <div className="text-xs text-gray-500">
-            X: {Math.round(mousePosition.x)} Y: {Math.round(mousePosition.y)}
-          </div>
-        </div>
-
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Холст */}
-        <div 
-          className="flex-1 overflow-auto bg-gray-100"
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-hidden bg-gray-100 relative"
           onMouseDown={handleCanvasMouseDown}
           style={{
             cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : 'default',
           }}
         >
-          <div className="flex items-center justify-center h-full p-8">
-            <svg
-              ref={canvasRef}
-              width={currentPage.width}
-              height={currentPage.height}
-              viewBox={`0 0 ${currentPage.width} ${currentPage.height}`}
-              style={{
-                transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-                transformOrigin: 'top left',
-                backgroundColor: currentPage.background || '#ffffff',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : (tool === 'select' ? 'default' : 'crosshair'),
-              }}
-              onClick={handleCanvasClick}
+          <div
+            className={`absolute left-1/2 top-4 -translate-x-1/2 z-20 bg-white border border-gray-200 rounded-full px-3 py-2 shadow-md flex items-center gap-2 transition-all duration-200 ${
+              showZoomOverlay ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
+            }`}
+          >
+            <button
+              onClick={() => setZoomWithOverlay(zoom - ZOOM_STEP)}
+              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-full"
+              title="Уменьшить"
             >
+              <i className="fas fa-minus text-xs"></i>
+            </button>
+            <span className="text-xs text-gray-700 w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <button
+              onClick={() => setZoomWithOverlay(zoom + ZOOM_STEP)}
+              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-full"
+              title="Увеличить"
+            >
+              <i className="fas fa-plus text-xs"></i>
+            </button>
+            <button
+              onClick={() => setZoomWithOverlay(1)}
+              className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full"
+              title="100%"
+            >
+              100%
+            </button>
+          </div>
+          <svg
+            ref={canvasRef}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}
+            style={{
+              transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+              transformOrigin: 'top left',
+              backgroundColor: currentPage.background || '#ffffff',
+              cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : (tool === 'select' ? 'default' : 'crosshair'),
+            }}
+            onClick={handleCanvasClick}
+          >
               {/* Сетка */}
               {showGrid && (
                 <defs>
@@ -2012,12 +1962,28 @@ export default function EditorCanvas({
               )}
               {currentPage.elements.map(renderElement)}
               {selectedElement && renderResizeHandles(selectedElement)}
-            </svg>
-          </div>
+          </svg>
         </div>
 
         {/* Нижняя панель инструментов */}
         <div className="h-16 bg-white border-t border-gray-200 flex items-center justify-center gap-4 px-4">
+          <button
+            onClick={handleUndo}
+            disabled={historyIndex <= 0}
+            className="p-3 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Отменить (Ctrl+Z)"
+          >
+            <i className="fas fa-undo"></i>
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={historyIndex >= history.length - 1}
+            className="p-3 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Повторить (Ctrl+Y)"
+          >
+            <i className="fas fa-redo"></i>
+          </button>
+          <div className="w-px h-8 bg-gray-300"></div>
           <button
             onClick={() => {
               setTool('select');
@@ -2111,6 +2077,25 @@ export default function EditorCanvas({
             title="Комментарий"
           >
             <i className="fas fa-comment"></i>
+          </button>
+          <div className="w-px h-8 bg-gray-300"></div>
+          <button
+            onClick={() => setShowGrid(!showGrid)}
+            className={`p-3 rounded-lg transition-colors ${
+              showGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Показать/скрыть сетку"
+          >
+            <i className="fas fa-th"></i>
+          </button>
+          <button
+            onClick={() => setSnapToGrid(!snapToGrid)}
+            className={`p-3 rounded-lg transition-colors ${
+              snapToGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Привязка к сетке"
+          >
+            <i className="fas fa-magnet"></i>
           </button>
         </div>
       </div>
@@ -2275,7 +2260,7 @@ export default function EditorCanvas({
                 <button
                   onClick={() => {
                     if (selectedElementId && selectedElement.width !== undefined) {
-                      const centerX = currentPage.width / 2 - (selectedElement.width || 0) / 2;
+                      const centerX = CANVAS_SIZE / 2 - (selectedElement.width || 0) / 2;
                       onUpdateElement(selectedElementId, { x: centerX });
                     }
                   }}
@@ -2399,24 +2384,18 @@ export default function EditorCanvas({
               <label className="block text-xs font-medium text-gray-700 mb-1">Ширина</label>
               <input
                 type="number"
-                value={currentPage.width}
-                onChange={(e) => {
-                  const updatedPage = { ...currentPage, width: parseFloat(e.target.value) || 1920 };
-                  onUpdatePage(updatedPage);
-                }}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                value={CANVAS_SIZE}
+                disabled
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Высота</label>
               <input
                 type="number"
-                value={currentPage.height}
-                onChange={(e) => {
-                  const updatedPage = { ...currentPage, height: parseFloat(e.target.value) || 1080 };
-                  onUpdatePage(updatedPage);
-                }}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                value={CANVAS_SIZE}
+                disabled
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
               />
             </div>
             <div>
