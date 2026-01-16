@@ -45,8 +45,8 @@ export default function EditorCanvas({
 }: EditorCanvasProps) {
   const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text'>('select');
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
-  const [layersOpen, setLayersOpen] = useState(true);
-  const [pagesOpen, setPagesOpen] = useState(true);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [pagesOpen, setPagesOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHandle, setResizeHandle] = useState<string | null>(null);
@@ -74,8 +74,8 @@ export default function EditorCanvas({
   const [exportFormat, setExportFormat] = useState<'svg' | 'png' | 'pdf' | 'ctxdr'>('svg');
   const [exportScope, setExportScope] = useState<'page' | 'all' | 'selection'>('page');
   const [showSaveTooltip, setShowSaveTooltip] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(true);
-  const [componentsOpen, setComponentsOpen] = useState(true);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [componentsOpen, setComponentsOpen] = useState(false);
   const [componentsExpanded, setComponentsExpanded] = useState<'IDEF0' | 'DFD' | 'BPMN' | null>(null);
   const [leftMenuCollapsed, setLeftMenuCollapsed] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -1223,60 +1223,72 @@ export default function EditorCanvas({
         {/* Заголовок с названием диаграммы и иконкой скрытия */}
         <div className="p-4 border-b border-gray-200">
           {!leftMenuCollapsed ? (
-            <div className="flex items-center justify-between gap-2">
-              {editingDiagramName ? (
-                <input
-                  type="text"
-                  value={diagramNameDraft}
-                  onBlur={() => {
-                    onUpdateDiagramName?.(diagramNameDraft.trim() || diagram.name);
-                    setEditingDiagramName(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+            <div className="space-y-2">
+              <span className="text-sm font-normal text-gray-400">Диаграмма</span>
+              <div className="flex items-center justify-between gap-2">
+                {editingDiagramName ? (
+                  <input
+                    type="text"
+                    value={diagramNameDraft}
+                    onBlur={() => {
                       onUpdateDiagramName?.(diagramNameDraft.trim() || diagram.name);
                       setEditingDiagramName(false);
-                    } else if (e.key === 'Escape') {
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        onUpdateDiagramName?.(diagramNameDraft.trim() || diagram.name);
+                        setEditingDiagramName(false);
+                      } else if (e.key === 'Escape') {
+                        setDiagramNameDraft(diagram.name);
+                        setEditingDiagramName(false);
+                      }
+                    }}
+                    onChange={(e) => {
+                      setDiagramNameDraft(e.target.value);
+                    }}
+                    className="flex-1 text-base text-gray-900 border border-blue-300 rounded px-2 py-1"
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    className="text-base text-gray-900 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
+                    onDoubleClick={() => {
                       setDiagramNameDraft(diagram.name);
-                      setEditingDiagramName(false);
-                    }
+                      setEditingDiagramName(true);
+                    }}
+                    title="Двойной клик для редактирования"
+                  >
+                    {diagram.name}
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setLeftMenuCollapsed(true);
+                    setRightMenuOpen(false);
                   }}
-                  onChange={(e) => {
-                    setDiagramNameDraft(e.target.value);
-                  }}
-                  className="flex-1 text-base text-gray-900 border border-blue-300 rounded px-2 py-1"
-                  autoFocus
-                />
-              ) : (
-                <span
-                  className="text-base text-gray-900 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
-                  onDoubleClick={() => {
-                    setDiagramNameDraft(diagram.name);
-                    setEditingDiagramName(true);
-                  }}
-                  title="Двойной клик для редактирования"
+                  className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                  title="Скрыть меню"
                 >
-                  {diagram.name}
-                </span>
-              )}
-              <button
-                onClick={() => setLeftMenuCollapsed(true)}
-                className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                title="Скрыть левое меню"
-              >
-                <i className="fas fa-angle-double-left text-sm"></i>
-              </button>
+                  <i className="fas fa-angle-double-left text-sm"></i>
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={() => setLeftMenuCollapsed(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                title="Раскрыть левое меню"
-              >
-                <i className="fas fa-angle-double-right text-sm"></i>
-              </button>
-              <span className="text-sm text-gray-900 truncate">{diagram.name}</span>
+            <div className="space-y-2">
+              <span className="text-sm font-normal text-gray-400">Диаграмма</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-base text-gray-900 truncate flex-1">{diagram.name}</span>
+                <button
+                  onClick={() => {
+                    setLeftMenuCollapsed(false);
+                    setRightMenuOpen(true);
+                  }}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                  title="Раскрыть левое меню"
+                >
+                  <i className="fas fa-angle-double-right text-sm"></i>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1285,10 +1297,16 @@ export default function EditorCanvas({
           <div className="flex-1 min-h-0 flex flex-col">
             {/* Блок "Действия" */}
             <div className="px-2 mt-3">
-              <div className="flex items-center justify-between mb-2">
+              <div 
+                className="flex items-center justify-between mb-2 cursor-pointer"
+                onClick={() => setActionsOpen(!actionsOpen)}
+              >
                 <span className="text-sm font-normal text-gray-400">Действия</span>
                 <button
-                  onClick={() => setActionsOpen(!actionsOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActionsOpen(!actionsOpen);
+                  }}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <i className={`fas fa-chevron-${actionsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
@@ -1341,10 +1359,16 @@ export default function EditorCanvas({
 
             {/* Блок "Готовые объекты" */}
             <div className="px-2">
-              <div className="flex items-center justify-between mb-2">
+              <div 
+                className="flex items-center justify-between mb-2 cursor-pointer"
+                onClick={() => setComponentsOpen(!componentsOpen)}
+              >
                 <span className="text-sm font-normal text-gray-400">Готовые объекты</span>
                 <button
-                  onClick={() => setComponentsOpen(!componentsOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setComponentsOpen(!componentsOpen);
+                  }}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <i className={`fas fa-chevron-${componentsOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
@@ -1951,10 +1975,16 @@ export default function EditorCanvas({
 
             {/* Блок "Компоненты" */}
             <div className="flex-1 min-h-0 flex flex-col px-2">
-              <div className="flex items-center justify-between mb-2">
+              <div 
+                className="flex items-center justify-between mb-2 cursor-pointer"
+                onClick={() => setLayersOpen(!layersOpen)}
+              >
                 <span className="text-sm font-normal text-gray-400">Компоненты</span>
                 <button
-                  onClick={() => setLayersOpen(!layersOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLayersOpen(!layersOpen);
+                  }}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <i className={`fas fa-chevron-${layersOpen ? 'down' : 'right'} text-xs transition-transform duration-200`}></i>
@@ -2269,40 +2299,14 @@ export default function EditorCanvas({
           >
             <span className="text-lg font-bold">T</span>
           </button>
-          <div className="w-px h-8 bg-gray-300"></div>
-          <button
-            onClick={() => setShowGrid(!showGrid)}
-            className={`p-3 rounded-lg transition-colors ${
-              showGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Показать/скрыть сетку"
-          >
-            <i className="fas fa-th"></i>
-          </button>
-          <button
-            onClick={() => setSnapToGrid(!snapToGrid)}
-            className={`p-3 rounded-lg transition-colors ${
-              snapToGrid ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Привязка к сетке"
-          >
-            <i className="fas fa-magnet"></i>
-          </button>
         </div>
       </div>
 
-      {/* Правое меню - настройки */}
-      {rightMenuOpen && selectedElement && (
-        <div className="fixed right-4 top-4 bottom-4 w-64 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 overflow-y-auto z-20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900">Настройки элемента</h3>
-            <button
-              onClick={() => setRightMenuOpen(false)}
-              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              title="Скрыть правое меню"
-            >
-              <i className="fas fa-angle-double-right"></i>
-            </button>
+      {/* Правое меню - настройки элемента */}
+      {!leftMenuCollapsed && rightMenuOpen && selectedElement && (
+        <div className="fixed right-4 top-4 bottom-4 w-64 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 overflow-y-auto z-20 transition-all duration-300">
+          <div className="mb-4">
+            <h3 className="text-base text-gray-900">Настройки</h3>
           </div>
 
           <div className="space-y-4">
@@ -2417,6 +2421,21 @@ export default function EditorCanvas({
                 />
               </div>
             )}
+            {selectedElement.type === 'text' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Шрифт</label>
+                <select
+                  value={selectedElement.fontFamily || 'Inter, sans-serif'}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { fontFamily: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="Inter, sans-serif">Inter</option>
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="Times New Roman, serif">Times New Roman</option>
+                  <option value="Courier New, monospace">Courier New</option>
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Название</label>
               <input
@@ -2452,6 +2471,17 @@ export default function EditorCanvas({
                 className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
+            {selectedElement.rotation !== undefined && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Поворот (градусы)</label>
+                <input
+                  type="number"
+                  value={selectedElement.rotation || 0}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { rotation: parseFloat(e.target.value) || 0 })}
+                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                />
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => selectedElementId && onUpdateElement(selectedElementId, { locked: !selectedElement.locked })}
@@ -2578,50 +2608,13 @@ export default function EditorCanvas({
       )}
 
       {/* Правая панель - свойства страницы (когда ничего не выбрано) */}
-      {rightMenuOpen && !selectedElement && (
-        <div className="fixed right-4 top-4 bottom-4 w-64 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 overflow-y-auto z-20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900">Свойства страницы</h3>
-            <button
-              onClick={() => setRightMenuOpen(false)}
-              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              title="Скрыть правое меню"
-            >
-              <i className="fas fa-angle-double-right"></i>
-            </button>
+      {!leftMenuCollapsed && rightMenuOpen && !selectedElement && (
+        <div className="fixed right-4 top-4 bottom-4 w-64 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 overflow-y-auto z-20 transition-all duration-300">
+          <div className="mb-4">
+            <h3 className="text-base text-gray-900">Настройки</h3>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Название страницы</label>
-              <input
-                type="text"
-                value={currentPage.name}
-                onChange={(e) => {
-                  const updatedPage = { ...currentPage, name: e.target.value };
-                  onUpdatePage(updatedPage);
-                }}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Ширина</label>
-              <input
-                type="number"
-                value={CANVAS_SIZE}
-                disabled
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Высота</label>
-              <input
-                type="number"
-                value={CANVAS_SIZE}
-                disabled
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
-              />
-            </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Цвет фона</label>
               <input
@@ -2634,22 +2627,37 @@ export default function EditorCanvas({
                 className="w-full h-8 border border-gray-300 rounded"
               />
             </div>
+            
+            {/* Кнопки сетки и привязки */}
+            <div className="pt-2 border-t border-gray-200 space-y-3">
+              <div className="text-xs font-medium text-gray-700 mb-2">Сетка</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowGrid(!showGrid)}
+                  className={`flex-1 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                    showGrid ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Показать/скрыть сетку"
+                >
+                  <i className="fas fa-th"></i>
+                  <span className="text-xs font-medium">Сетка</span>
+                </button>
+                <button
+                  onClick={() => setSnapToGrid(!snapToGrid)}
+                  className={`flex-1 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                    snapToGrid ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Привязка к сетке"
+                >
+                  <i className="fas fa-magnet"></i>
+                  <span className="text-xs font-medium">Привязка</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {!rightMenuOpen && (
-        <div className="fixed right-4 top-4 bottom-4 w-16 bg-white border border-gray-200 rounded-2xl shadow-lg flex flex-col items-center py-4 gap-2 z-20">
-          <button
-            onClick={() => setRightMenuOpen(true)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            title="Раскрыть правое меню"
-          >
-            <i className="fas fa-angle-double-left"></i>
-          </button>
-          <span className="text-[10px] text-gray-500 text-center leading-tight">Настройки</span>
-        </div>
-      )}
 
       {/* Модальное окно выхода */}
       {showExitModal && (
