@@ -196,7 +196,7 @@ export default function ProjectsPage() {
       <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-medium mb-2">Проекты</h1>
-          <p className="text-gray-600">Создавайте проекты и получайте ответы на вопросы по ним</p>
+          <p className="text-gray-600">Загружайте документы и получайте ответы на вопросы по ним</p>
         </div>
         {hasProjects && (
           <Link href="/projects/new">
