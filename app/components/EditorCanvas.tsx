@@ -159,16 +159,6 @@ export default function EditorCanvas({
     setTool('select');
   }, []);
 
-  const triggerZoomOverlay = useCallback(() => {
-    setShowZoomOverlay(true);
-    if (zoomOverlayTimeoutRef.current) {
-      clearTimeout(zoomOverlayTimeoutRef.current);
-    }
-    zoomOverlayTimeoutRef.current = setTimeout(() => {
-      setShowZoomOverlay(false);
-    }, ZOOM_OVERLAY_HIDE_MS);
-  }, []);
-
   const clampPan = useCallback((nextPan: { x: number; y: number }, nextZoom = zoom) => {
     const container = containerRef.current;
     if (!container) return nextPan;
@@ -182,6 +172,16 @@ export default function EditorCanvas({
       y: Math.min(0, Math.max(minY, nextPan.y)),
     };
   }, [zoom]);
+
+  const triggerZoomOverlay = useCallback(() => {
+    setShowZoomOverlay(true);
+    if (zoomOverlayTimeoutRef.current) {
+      clearTimeout(zoomOverlayTimeoutRef.current);
+    }
+    zoomOverlayTimeoutRef.current = setTimeout(() => {
+      setShowZoomOverlay(false);
+    }, ZOOM_OVERLAY_HIDE_MS);
+  }, []);
 
   const setZoomWithOverlay = useCallback((nextZoom: number, nextPan?: { x: number; y: number }) => {
     const clampedZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, nextZoom));
