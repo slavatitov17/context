@@ -90,6 +90,21 @@ export default function EditorCanvas({
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
 
+  // clampPan должен быть объявлен до использования в useEffect
+  const clampPan = useCallback((nextPan: { x: number; y: number }, nextZoom = zoom) => {
+    const container = containerRef.current;
+    if (!container) return nextPan;
+    const rect = container.getBoundingClientRect();
+    const canvasWidth = CANVAS_SIZE * nextZoom;
+    const canvasHeight = CANVAS_SIZE * nextZoom;
+    const minX = Math.min(0, rect.width - canvasWidth);
+    const minY = Math.min(0, rect.height - canvasHeight);
+    return {
+      x: Math.min(0, Math.max(minX, nextPan.x)),
+      y: Math.min(0, Math.max(minY, nextPan.y)),
+    };
+  }, [zoom]);
+
   useEffect(() => {
     setDiagramNameDraft(diagram.name);
   }, [diagram.name]);
@@ -158,20 +173,6 @@ export default function EditorCanvas({
     setTextInputValue('');
     setTool('select');
   }, []);
-
-  const clampPan = useCallback((nextPan: { x: number; y: number }, nextZoom = zoom) => {
-    const container = containerRef.current;
-    if (!container) return nextPan;
-    const rect = container.getBoundingClientRect();
-    const canvasWidth = CANVAS_SIZE * nextZoom;
-    const canvasHeight = CANVAS_SIZE * nextZoom;
-    const minX = Math.min(0, rect.width - canvasWidth);
-    const minY = Math.min(0, rect.height - canvasHeight);
-    return {
-      x: Math.min(0, Math.max(minX, nextPan.x)),
-      y: Math.min(0, Math.max(minY, nextPan.y)),
-    };
-  }, [zoom]);
 
   const triggerZoomOverlay = useCallback(() => {
     setShowZoomOverlay(true);
