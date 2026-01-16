@@ -43,7 +43,7 @@ export default function EditorCanvas({
   onUpdatePageName,
   onBack,
 }: EditorCanvasProps) {
-  const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'arrow' | 'comment'>('select');
+  const [tool, setTool] = useState<'select' | 'rectangle' | 'circle' | 'line' | 'text'>('select');
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
   const [layersOpen, setLayersOpen] = useState(true);
   const [pagesOpen, setPagesOpen] = useState(true);
@@ -83,12 +83,58 @@ export default function EditorCanvas({
   const initialPageStateRef = useRef<string>('');
   const zoomOverlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showZoomOverlay, setShowZoomOverlay] = useState(false);
+  const [textInputPosition, setTextInputPosition] = useState<{ x: number; y: number } | null>(null);
+  const [textInputValue, setTextInputValue] = useState('');
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   const selectedElement = currentPage.elements.find(el => el.id === selectedElementId);
 
   useEffect(() => {
     setDiagramNameDraft(diagram.name);
   }, [diagram.name]);
+
+  // Фокус на текстовое поле при его появлении
+  useEffect(() => {
+    if (textInputPosition && textInputRef.current) {
+      textInputRef.current.focus();
+      textInputRef.current.select();
+    }
+  }, [textInputPosition]);
+
+  // Обработка завершения ввода текста
+  const handleTextInputComplete = useCallback(() => {
+    if (!textInputPosition) return;
+    
+    const textValue = textInputValue.trim();
+    if (textValue) {
+      const newElement: EditorElement = {
+        id: `element_${Date.now()}`,
+        type: 'text',
+        x: textInputPosition.x,
+        y: textInputPosition.y,
+        text: textValue,
+        fill: '#000000',
+        fontSize: 16,
+        fontFamily: 'Inter, sans-serif',
+        zIndex: currentPage.elements.length,
+        opacity: 1,
+      };
+      
+      onAddElement(newElement);
+      onSelectElement(newElement.id);
+    }
+    
+    setTextInputPosition(null);
+    setTextInputValue('');
+    setTool('select');
+  }, [textInputPosition, textInputValue, currentPage.elements.length, onAddElement, onSelectElement]);
+
+  // Обработка отмены ввода текста
+  const handleTextInputCancel = useCallback(() => {
+    setTextInputPosition(null);
+    setTextInputValue('');
+    setTool('select');
+  }, []);
 
   const triggerZoomOverlay = useCallback(() => {
     setShowZoomOverlay(true);
@@ -155,6 +201,20 @@ export default function EditorCanvas({
       const target = e.target as SVGElement;
       const elementId = target.getAttribute('data-element-id');
       onSelectElement(elementId);
+    } else if (tool === 'text') {
+      // Для текста показываем поле ввода вместо немедленного создания элемента
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = (e.clientX - rect.left - pan.x) / zoom;
+      const y = (e.clientY - rect.top - pan.y) / zoom;
+
+      const snappedX = snapToGridValue(x);
+      const snappedY = snapToGridValue(y);
+
+      setTextInputPosition({ x: snappedX, y: snappedY });
+      setTextInputValue('');
+      // Фокус на input будет установлен через useEffect
     } else {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -167,17 +227,14 @@ export default function EditorCanvas({
 
       const newElement: EditorElement = {
         id: `element_${Date.now()}`,
-        type: tool === 'rectangle' ? 'rectangle' : tool === 'circle' ? 'circle' : tool === 'line' ? 'line' : tool === 'arrow' ? 'arrow' : 'text',
+        type: tool === 'rectangle' ? 'rectangle' : tool === 'circle' ? 'circle' : tool === 'line' ? 'line' : 'text',
         x: snappedX,
         y: snappedY,
-        width: tool === 'text' ? undefined : 100,
-        height: tool === 'text' ? undefined : 100,
-        text: tool === 'text' ? 'Текст' : undefined,
+        width: 100,
+        height: 100,
         fill: '#3b82f6',
         stroke: '#1e40af',
         strokeWidth: 2,
-        fontSize: tool === 'text' ? 16 : undefined,
-        fontFamily: 'Inter, sans-serif',
         zIndex: currentPage.elements.length,
         opacity: 1,
       };
@@ -866,16 +923,97 @@ export default function EditorCanvas({
           />
         );
       case 'line':
+        const arrowType = element.lineArrowType || 'none';
+        const arrowPosition = element.lineArrowPosition || 'end';
+        const lineColor = element.stroke || '#1e40af';
+        const markerIdStart = `arrow-start-${element.id}`;
+        const markerIdEnd = `arrow-end-${element.id}`;
+        
+        const shouldShowStart = arrowType !== 'none' && (arrowPosition === 'start' || arrowPosition === 'both');
+        const shouldShowEnd = arrowType !== 'none' && (arrowPosition === 'end' || arrowPosition === 'both');
+        
+        const arrowSize = 10;
+        
+        const renderArrowMarker = (id: string, type: string) => {
+          if (type === 'none') return null;
+          
+          let markerContent;
+          switch (type) {
+            case 'thin':
+              markerContent = (
+                <polygon
+                  points={`0 0, ${arrowSize} ${arrowSize / 2}, 0 ${arrowSize}`}
+                  fill={lineColor}
+                  stroke={lineColor}
+                  strokeWidth={1}
+                />
+              );
+              break;
+            case 'bold':
+              markerContent = (
+                <polygon
+                  points={`0 0, ${arrowSize} ${arrowSize / 2}, 0 ${arrowSize}`}
+                  fill={lineColor}
+                />
+              );
+              break;
+            case 'circle':
+              markerContent = (
+                <circle
+                  cx={arrowSize / 2}
+                  cy={arrowSize / 2}
+                  r={arrowSize / 3}
+                  fill={lineColor}
+                />
+              );
+              break;
+            case 'square':
+              markerContent = (
+                <rect
+                  x={0}
+                  y={arrowSize / 4}
+                  width={arrowSize / 2}
+                  height={arrowSize / 2}
+                  fill={lineColor}
+                />
+              );
+              break;
+            default:
+              return null;
+          }
+          
+          return (
+            <marker
+              id={id}
+              markerWidth={arrowSize}
+              markerHeight={arrowSize}
+              refX={arrowSize}
+              refY={arrowSize / 2}
+              orient="auto"
+            >
+              {markerContent}
+            </marker>
+          );
+        };
+        
         return (
-          <line
-            {...commonProps}
-            x1={element.x}
-            y1={element.y}
-            x2={element.x + (element.width || 100)}
-            y2={element.y + (element.height || 100)}
-            stroke={element.stroke || '#1e40af'}
-            strokeWidth={strokeWidth}
-          />
+          <g {...commonProps}>
+            <defs>
+              {shouldShowStart && renderArrowMarker(markerIdStart, arrowType)}
+              {shouldShowEnd && renderArrowMarker(markerIdEnd, arrowType)}
+            </defs>
+            <line
+              x1={element.x}
+              y1={element.y}
+              x2={element.x + (element.width || 100)}
+              y2={element.y + (element.height || 100)}
+              stroke={lineColor}
+              strokeWidth={strokeWidth}
+              markerStart={shouldShowStart ? `url(#${markerIdStart})` : undefined}
+              markerEnd={shouldShowEnd ? `url(#${markerIdEnd})` : undefined}
+              opacity={opacity}
+            />
+          </g>
         );
       case 'text':
         return (
@@ -2014,6 +2152,42 @@ export default function EditorCanvas({
             {selectedElement && renderSelectionOverlay(selectedElement)}
             {selectedElement && renderResizeHandles(selectedElement)}
           </svg>
+          
+          {/* Текстовое поле для ввода текста (как в Figma) */}
+          {textInputPosition && (
+            <input
+              ref={textInputRef}
+              type="text"
+              value={textInputValue}
+              onChange={(e) => setTextInputValue(e.target.value)}
+              onBlur={handleTextInputComplete}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleTextInputComplete();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  handleTextInputCancel();
+                }
+              }}
+              style={{
+                position: 'absolute',
+                left: `${textInputPosition.x * zoom + pan.x}px`,
+                top: `${textInputPosition.y * zoom + pan.y}px`,
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top left',
+                fontSize: '16px',
+                fontFamily: 'Inter, sans-serif',
+                border: '1px solid #3b82f6',
+                outline: 'none',
+                padding: '2px 4px',
+                background: 'white',
+                minWidth: '100px',
+                zIndex: 1000,
+              }}
+              placeholder="Введите текст..."
+            />
+          )}
         </div>
 
         {/* Нижняя панель инструментов */}
@@ -2087,47 +2261,13 @@ export default function EditorCanvas({
             <i className="fas fa-minus"></i>
           </button>
           <button
-            onClick={() => setTool('arrow')}
-            className={`p-3 rounded-lg transition-colors ${
-              tool === 'arrow' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Стрелка"
-          >
-            <i className="fas fa-arrow-right"></i>
-          </button>
-          <button
             onClick={() => setTool('text')}
             className={`p-3 rounded-lg transition-colors ${
               tool === 'text' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
             title="Текст"
           >
-            <i className="fas fa-font"></i>
-          </button>
-          <div className="w-px h-8 bg-gray-300"></div>
-          <button
-            onClick={() => setTool('arrow')}
-            className={`p-3 rounded-lg transition-colors ${
-              tool === 'arrow' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Соединительная линия"
-          >
-            <i className="fas fa-project-diagram"></i>
-          </button>
-          <button
-            className="p-3 rounded-lg text-gray-600 hover:bg-gray-100"
-            title="Шаблоны"
-          >
-            <i className="fas fa-layer-group"></i>
-          </button>
-          <button
-            onClick={() => setTool('comment')}
-            className={`p-3 rounded-lg transition-colors ${
-              tool === 'comment' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Комментарий"
-          >
-            <i className="fas fa-comment"></i>
+            <span className="text-lg font-bold">T</span>
           </button>
           <div className="w-px h-8 bg-gray-300"></div>
           <button
@@ -2224,6 +2364,37 @@ export default function EditorCanvas({
                 className="w-full h-8 border border-gray-300 rounded"
               />
             </div>
+            {selectedElement.type === 'line' && (
+              <div className="pt-2 border-t border-gray-200 space-y-3">
+                <div className="text-xs font-medium text-gray-700 mb-2">Стрелки</div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Тип стрелки</label>
+                  <select
+                    value={selectedElement.lineArrowType || 'none'}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { lineArrowType: e.target.value as 'none' | 'thin' | 'bold' | 'circle' | 'square' })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    <option value="none">Без стрелки</option>
+                    <option value="thin">Тонкая стрелка</option>
+                    <option value="bold">Жирная стрелка</option>
+                    <option value="circle">Круг</option>
+                    <option value="square">Квадрат</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Позиция стрелки</label>
+                  <select
+                    value={selectedElement.lineArrowPosition || 'end'}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { lineArrowPosition: e.target.value as 'start' | 'end' | 'both' })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    <option value="start">На первом конце</option>
+                    <option value="end">На втором конце</option>
+                    <option value="both">Везде</option>
+                  </select>
+                </div>
+              </div>
+            )}
             {selectedElement.type === 'text' && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Текст</label>

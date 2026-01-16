@@ -125,6 +125,9 @@ export interface EditorElement {
   groupId?: string;
   // Порты для умных соединительных линий
   ports?: Array<{ id: string; x: number; y: number; side: 'top' | 'right' | 'bottom' | 'left' }>;
+  // Свойства стрелок для линий
+  lineArrowType?: 'none' | 'thin' | 'bold' | 'circle' | 'square'; // Тип стрелки
+  lineArrowPosition?: 'start' | 'end' | 'both'; // Позиция стрелки
 }
 
 export interface EditorPage {
