@@ -182,6 +182,12 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       setEmail('');
       setMessage('');
       setAttachedFiles([]);
+    } else {
+      // Автоматическое подтягивание почты для авторизованного пользователя
+      const user = auth.getCurrentUser();
+      if (user && user.email) {
+        setEmail(user.email);
+      }
     }
   }, [isOpen]);
 
@@ -274,7 +280,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       />
       
       {/* Модальное окно */}
-      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
           <button
@@ -2225,11 +2231,26 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             ))}
           </div>
 
-          {/* Сообщение, если ничего не найдено */}
-          {filteredAndSortedTypes.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">Диаграммы не найдены</p>
-              <p className="text-gray-400 text-sm mt-2">Попробуйте изменить параметры поиска или фильтры</p>
+          {/* Сообщение, если ничего не найдено или блок "Не нашли нужный тип?" */}
+          {filteredAndSortedTypes.length === 0 ? (
+            <div className="mt-12 text-center pb-8">
+              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
+              <p className="text-gray-600 mb-6">Создайте уникальный тип диаграммы с помощью редактора</p>
+              <Link href="/editor/new">
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Создать тип диаграммы
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-12 text-center pb-8">
+              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
+              <p className="text-gray-600 mb-6">Создайте уникальный тип диаграммы с помощью редактора</p>
+              <Link href="/editor/new">
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Создать тип диаграммы
+                </button>
+              </Link>
             </div>
           )}
         </div>

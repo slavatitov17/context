@@ -3,17 +3,24 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+import { auth, projects as projectsStorage, folders, type Project, type Folder, type FolderType } from '@/lib/storage';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'alphabet' | 'date'>('date');
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false);
+  const [foldersList, setFoldersList] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const modalWasOpenRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -21,10 +28,20 @@ export default function ProjectsPage() {
     const checkUser = () => {
       const currentUser = auth.getCurrentUser();
       if (currentUser) {
+        const wasUserSet = !!user;
         setUser(currentUser);
-        loadProjects(currentUser.id);
+        // Загружаем проекты только при первом рендере
+        if (!initialLoadDoneRef.current && !wasUserSet) {
+          initialLoadDoneRef.current = true;
+          if (currentFolderId) {
+            loadProjects(currentUser.id, currentFolderId, true);
+          } else {
+            loadProjects(currentUser.id, null, true);
+          }
+        }
       } else {
         setLoading(false);
+        initialLoadDoneRef.current = false;
         router.push('/login');
       }
     };
@@ -39,54 +56,98 @@ export default function ProjectsPage() {
     };
   }, [router]);
 
-  // Закрытие меню при клике вне его
+  // Загрузка папок при открытии модального окна (только при первом открытии)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
+    if (showMoveToFolderModal && user && !showCreateFolder) {
+      // Сбрасываем selectedFolderId только при первом открытии модального окна
+      if (!modalWasOpenRef.current) {
+        const userFolders = folders.getAllByType(user.id, 'projects');
+        setFoldersList(userFolders);
+        setSelectedFolderId(null);
+        setNewFolderName('');
+        modalWasOpenRef.current = true;
       }
-    };
+    } else if (!showMoveToFolderModal) {
+      modalWasOpenRef.current = false;
+    }
+  }, [showMoveToFolderModal, user, showCreateFolder]);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Загрузка текущей папки и данных при изменении папки
+  useEffect(() => {
+    if (user && initialLoadDoneRef.current) {
+      if (currentFolderId) {
+        const folder = folders.getById(currentFolderId, user.id);
+        setCurrentFolder(folder);
+      } else {
+        setCurrentFolder(null);
+      }
+      // Загружаем данные без показа loader'а при навигации по папкам
+      loadProjects(user.id, currentFolderId, false);
+    }
+  }, [currentFolderId, user]);
 
-  const loadProjects = (userId: string) => {
+  const loadProjects = (userId: string, folderId: string | null = null, showLoader: boolean = false) => {
     try {
-      setLoading(true);
-      const userProjects = projectsStorage.getAll(userId);
+      if (showLoader) {
+        setLoading(true);
+      }
+      let userProjects = projectsStorage.getAll(userId);
+      
+      // Фильтруем по папке, если выбрана
+      if (folderId) {
+        userProjects = userProjects.filter(p => p.folder_id === folderId);
+      } else {
+        // Если папка не выбрана, показываем только элементы без папки
+        userProjects = userProjects.filter(p => !p.folder_id);
+      }
+      
       // Сортируем по дате создания (новые первые)
       userProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setProjects(userProjects);
     } catch (error) {
       console.error('Ошибка при загрузке проектов:', error);
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   };
 
-  // Фильтрация и сортировка проектов
-  const filteredAndSortedProjects = useMemo(() => {
-    let filtered = projects;
+  // Фильтрация и сортировка проектов и папок
+  const filteredAndSortedItems = useMemo(() => {
+    let filteredProjects = projects;
+    let filteredFolders: Folder[] = [];
+
+    // Загружаем папки только если мы в корне (currentFolderId === null)
+    if (!currentFolderId && user) {
+      filteredFolders = folders.getAllByType(user.id, 'projects');
+    }
 
     // Фильтрация по поисковому запросу
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(project =>
+      filteredProjects = filteredProjects.filter(project =>
         project.name.toLowerCase().includes(query)
+      );
+      filteredFolders = filteredFolders.filter(folder =>
+        folder.name.toLowerCase().includes(query)
       );
     }
 
     // Сортировка
-    const sorted = [...filtered];
+    const sortedProjects = [...filteredProjects];
+    const sortedFolders = [...filteredFolders];
+    
     if (sortBy === 'alphabet') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      sortedProjects.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      sortedFolders.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
     } else {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedProjects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedFolders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
-    return sorted;
-  }, [projects, searchQuery, sortBy]);
+    return { projects: sortedProjects, folders: sortedFolders };
+  }, [projects, searchQuery, sortBy, currentFolderId, user]);
 
   const handleDelete = (projectId: string) => {
     if (!user) return;
@@ -104,7 +165,6 @@ export default function ProjectsPage() {
           newSet.delete(projectId);
           return newSet;
         });
-        setOpenMenuId(null);
       } else {
         alert('Не удалось удалить проект. Попробуйте еще раз.');
       }
@@ -145,14 +205,101 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleEdit = (projectId: string) => {
-    setOpenMenuId(null);
+  const handleEdit = () => {
+    if (selectedProjects.size !== 1 || !user) return;
+    const projectId = Array.from(selectedProjects)[0];
     router.push(`/projects/${projectId}/edit`);
+  };
+
+  const handleMoveToFolder = () => {
+    if (selectedProjects.size === 0 || !user) return;
+    setShowMoveToFolderModal(true);
+  };
+
+  const handleCreateFolder = () => {
+    if (!user || !newFolderName.trim()) return;
+    
+    try {
+      const newFolder = folders.create({
+        name: newFolderName.trim(),
+        user_id: user.id,
+        type: 'projects',
+      });
+      setFoldersList(prev => [...prev, newFolder]);
+      setSelectedFolderId(newFolder.id);
+      
+      // Автоматически перемещаем выбранные проекты в созданную папку
+      if (selectedProjects.size > 0) {
+        let successCount = 0;
+        selectedProjects.forEach(projectId => {
+          const success = projectsStorage.update(projectId, user.id, { folder_id: newFolder.id });
+          if (success) {
+            successCount++;
+          }
+        });
+        
+        if (successCount > 0) {
+          // Перезагружаем проекты после перемещения (без loader'а)
+          if (currentFolderId) {
+            loadProjects(user.id, currentFolderId, false);
+          } else {
+            loadProjects(user.id, null, false);
+          }
+          setSelectedProjects(new Set());
+        }
+      }
+      
+      setShowMoveToFolderModal(false);
+      setShowCreateFolder(false);
+      setNewFolderName('');
+    } catch (error) {
+      console.error('Ошибка при создании папки:', error);
+      alert('Не удалось создать папку. Попробуйте еще раз.');
+    }
+  };
+
+  const handleMove = () => {
+    if (selectedProjects.size === 0 || !user) return;
+    
+    try {
+      let successCount = 0;
+      selectedProjects.forEach(projectId => {
+        const success = projectsStorage.update(projectId, user.id, { folder_id: selectedFolderId || null });
+        if (success) {
+          successCount++;
+        }
+      });
+
+      if (successCount > 0) {
+        // Перезагружаем проекты после перемещения (без loader'а)
+        if (currentFolderId) {
+          loadProjects(user.id, currentFolderId, false);
+        } else {
+          loadProjects(user.id, null, false);
+        }
+        setSelectedProjects(new Set());
+        setShowMoveToFolderModal(false);
+      }
+    } catch (error) {
+      console.error('Ошибка при перемещении проектов:', error);
+      alert('Не удалось переместить проекты. Попробуйте еще раз.');
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedProjects.size === 0 || !user) return;
+    
+    const count = selectedProjects.size;
+    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'проект' : count < 5 ? 'проекта' : 'проектов'}?`)) {
+      return;
+    }
+
+    handleBulkDelete();
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProjects(new Set(filteredAndSortedProjects.map(p => p.id)));
+      setSelectedProjects(new Set(filteredAndSortedItems.projects.map(p => p.id)));
     } else {
       setSelectedProjects(new Set());
     }
@@ -186,8 +333,8 @@ export default function ProjectsPage() {
     );
   }
 
-  const hasProjects = projects.length > 0;
-  const allSelected = filteredAndSortedProjects.length > 0 && filteredAndSortedProjects.every(p => selectedProjects.has(p.id));
+  const hasProjects = (user && (projects.length > 0 || (!currentFolderId && folders.getAllByType(user.id, 'projects').length > 0))) || false;
+  const allSelected = filteredAndSortedItems.projects.length > 0 && filteredAndSortedItems.projects.every(p => selectedProjects.has(p.id));
   const someSelected = selectedProjects.size > 0;
 
   return (
@@ -201,7 +348,7 @@ export default function ProjectsPage() {
         {hasProjects && (
           <Link href="/projects/new">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              + Создать проект
+              Создать проект
             </button>
           </Link>
         )}
@@ -210,7 +357,24 @@ export default function ProjectsPage() {
       {/* Контент: пустое состояние или таблица */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-medium">Мои проекты</h2>
+          <div>
+            <h2 className="text-2xl font-medium flex items-center gap-2">
+              {currentFolder ? (
+                <>
+                  <button
+                    onClick={() => setCurrentFolderId(null)}
+                    className="opacity-50 hover:opacity-100 transition-opacity"
+                  >
+                    Мои проекты
+                  </button>
+                  <span className="text-gray-400">›</span>
+                  <span className="text-gray-900">{currentFolder.name}</span>
+                </>
+              ) : (
+                'Мои проекты'
+              )}
+            </h2>
+          </div>
           
           {hasProjects && (
             <div className="flex items-center gap-4">
@@ -262,26 +426,53 @@ export default function ProjectsPage() {
             </p>
             <Link href="/projects/new">
               <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                + Создать проект
+                Создать проект
               </button>
             </Link>
           </div>
         ) : (
           /* Таблица проектов */
           <div>
-            {someSelected && (
-              <div className="mb-4 flex items-center gap-4">
-                <button
-                  onClick={handleBulkDelete}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <i className="fas fa-trash"></i>
-                  <span>Удалить выбранное ({selectedProjects.size})</span>
-                </button>
-              </div>
-            )}
+            <div className="mb-4 flex items-center gap-3">
+              <button
+                onClick={handleEdit}
+                disabled={selectedProjects.size !== 1}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                  selectedProjects.size === 1
+                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <i className="far fa-edit"></i>
+                <span>Редактировать</span>
+              </button>
+              <button
+                onClick={handleMoveToFolder}
+                disabled={selectedProjects.size === 0}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                  selectedProjects.size > 0
+                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <i className="far fa-folder"></i>
+                <span>Перенести в папку</span>
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedProjects.size === 0}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                  selectedProjects.size > 0
+                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <i className="far fa-trash-alt"></i>
+                <span>Удалить</span>
+              </button>
+            </div>
             
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-lg overflow-x-auto overflow-y-visible">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-200">
@@ -296,11 +487,41 @@ export default function ProjectsPage() {
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
                     <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAndSortedProjects.map((project) => (
+                  {/* Отображение папок (только если мы в корне) */}
+                  {!currentFolderId && filteredAndSortedItems.folders.map((folder) => (
+                    <tr 
+                      key={folder.id} 
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setCurrentFolderId(folder.id);
+                      }}
+                    >
+                      <td className="py-4 px-6">
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-gray-900 font-medium flex items-center gap-3">
+                        <i className="far fa-folder text-blue-600 text-xl"></i>
+                        <span className="hover:text-blue-600 transition-colors">{folder.name}</span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-600">
+                        <span></span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-500">
+                        {formatDate(folder.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Отображение проектов */}
+                  {filteredAndSortedItems.projects.map((project) => (
                     <tr 
                       key={project.id} 
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -329,47 +550,6 @@ export default function ProjectsPage() {
                           {formatDate(project.created_at)}
                         </Link>
                       </td>
-                      <td className="py-4 px-6 relative">
-                        <div className="relative" ref={openMenuId === project.id ? menuRef : null}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(openMenuId === project.id ? null : project.id);
-                            }}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105"
-                            title="Действия"
-                          >
-                            <i className="fas fa-ellipsis-v"></i>
-                          </button>
-                          
-                          {openMenuId === project.id && (
-                            <div className="absolute right-full top-0 mr-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 transition-all duration-200 flex items-center gap-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(project.id);
-                                }}
-                                className="px-3 py-2 text-gray-700 hover:bg-gray-50 transition-all duration-150 flex items-center gap-2 rounded"
-                                title="Редактировать"
-                              >
-                                <i className="fas fa-edit text-gray-500 text-sm"></i>
-                                <span className="text-sm">Редактировать</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(project.id);
-                                }}
-                                className="px-3 py-2 text-red-600 hover:bg-red-50 transition-all duration-150 flex items-center gap-2 rounded"
-                                title="Удалить"
-                              >
-                                <i className="fas fa-trash text-red-600 text-sm"></i>
-                                <span className="text-sm">Удалить</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -378,6 +558,153 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* Модальное окно для перемещения в папку */}
+      {showMoveToFolderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Блюр фон */}
+          <div 
+            className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+            onClick={() => {
+              if (!showCreateFolder) {
+                setShowMoveToFolderModal(false);
+                setShowCreateFolder(false);
+                setNewFolderName('');
+              }
+            }}
+          />
+          
+          {/* Модальное окно */}
+          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-medium text-gray-900">
+                {showCreateFolder ? 'Создание папки' : 'Перенести в папку'}
+              </h2>
+              {!showCreateFolder && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMoveToFolderModal(false);
+                    setShowCreateFolder(false);
+                    setNewFolderName('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            
+            {showCreateFolder ? (
+              /* Режим создания папки */
+              <>
+                <div className="flex-1 mb-6">
+                  <input
+                    type="text"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Название папки"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newFolderName.trim()) {
+                        handleCreateFolder();
+                      } else if (e.key === 'Escape') {
+                        setShowCreateFolder(false);
+                        setNewFolderName('');
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCreateFolder(false);
+                      setNewFolderName('');
+                    }}
+                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCreateFolder();
+                    }}
+                    disabled={!newFolderName.trim()}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      newFolderName.trim()
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Создать папку
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Обычный режим - список папок */
+              <>
+                <div className="flex-1 overflow-y-auto mb-6">
+                  {foldersList.length === 0 ? (
+                    <p className="text-gray-500 text-base">Папки отсутствуют</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {foldersList.map((folder) => (
+                        <button
+                          key={folder.id}
+                          onClick={() => setSelectedFolderId(folder.id)}
+                          className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
+                            selectedFolderId === folder.id
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <i className="far fa-folder text-blue-600 text-xl"></i>
+                          <span className="text-base text-gray-900">{folder.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCreateFolder(true);
+                    }}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      foldersList.length === 0
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
+                    Создать новую папку
+                  </button>
+                  <button
+                    onClick={handleMove}
+                    disabled={foldersList.length === 0 || (!selectedFolderId && foldersList.length > 0)}
+                    className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      foldersList.length === 0
+                        ? 'bg-white border border-gray-300 text-gray-400 opacity-50 cursor-not-allowed'
+                        : selectedFolderId
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    Переместить
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

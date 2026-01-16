@@ -15,6 +15,10 @@ export default function PrivacyPage() {
     const checkAuth = () => {
       const user = auth.getCurrentUser();
       setIsAuthenticated(!!user && auth.hasSession());
+      // Автоматическое подтягивание почты для авторизованного пользователя
+      if (user && user.email) {
+        setEmail(user.email);
+      }
     };
     checkAuth();
   }, []);
@@ -43,10 +47,12 @@ export default function PrivacyPage() {
         {!isAuthenticated && (
           <button
             onClick={() => router.push('/login')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative mb-6"
           >
-            <i className="fas fa-arrow-left mr-2"></i>
-            <span className="text-base">Назад</span>
+            <i className="fas fa-arrow-left text-sm"></i>
+            <span className="relative z-10">Назад</span>
+            {/* Подчеркивание при наведении */}
+            <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
           </button>
         )}
         <h1 className="text-3xl font-medium mb-2">Политика конфиденциальности</h1>
@@ -196,7 +202,7 @@ export default function PrivacyPage() {
         {/* Блок 9: Контакты */}
         <div className="bg-white border border-gray-200 rounded-xl p-6" ref={formRef}>
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            9. Контактная информация
+            9. Обратиться в поддержку
           </h2>
           <div className="space-y-4 text-gray-700 text-base leading-relaxed">
             <p>

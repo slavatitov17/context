@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, diagrams as diagramsStorage, editorDiagrams } from '@/lib/storage';
+import { auth, editorDiagrams, diagrams as diagramsStorage } from '@/lib/storage';
 
-export default function NewDiagramPage() {
+export default function NewEditorDiagramPage() {
   const router = useRouter();
 
   useEffect(() => {
@@ -22,15 +22,17 @@ export default function NewDiagramPage() {
         const totalDiagrams = catalogDiagrams.length + editorDiagramsList.length;
         const diagramNumber = totalDiagrams + 1;
         
-        // Создаем диаграмму с автоматическим названием
-        const newDiagram = diagramsStorage.create({
+        // Создаем редакторскую диаграмму с автоматическим названием
+        const newDiagram = editorDiagrams.create({
           name: `Диаграмма ${diagramNumber}`,
           description: '',
           user_id: currentUser.id,
+          diagramType: 'Custom',
+          pages: [],
         });
 
-        // Перенаправляем в каталог типов диаграмм
-        router.push(`/diagrams/${newDiagram.id}`);
+        // Перенаправляем в редактор
+        router.push(`/editor/${newDiagram.id}/edit`);
       } catch (error) {
         console.error('Ошибка при создании диаграммы:', error);
         alert('Не удалось создать диаграмму. Попробуйте еще раз.');

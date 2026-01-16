@@ -8,12 +8,24 @@ export interface ProcessedDocument {
   chunks: string[];
 }
 
+export type FolderType = 'projects' | 'diagrams';
+
+export interface Folder {
+  id: string;
+  name: string;
+  user_id: string;
+  type: FolderType;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
   members?: string;
   user_id: string;
+  folder_id?: string | null;
   files?: any[];
   messages?: any[];
   processedDocuments?: ProcessedDocument[];
@@ -68,6 +80,7 @@ export interface Diagram {
   name: string;
   description: string;
   user_id: string;
+  folder_id?: string | null;
   selectedOption?: 'projects' | 'scratch' | null;
   selectedProject?: string | null;
   diagramType?: DiagramType | null;
@@ -81,6 +94,61 @@ export interface Diagram {
   updated_at: string;
 }
 
+export type EditorDiagramType = 'IDEF0' | 'DFD' | 'BPMN' | 'Custom';
+
+export interface EditorElement {
+  id: string;
+  type: 'rectangle' | 'circle' | 'ellipse' | 'line' | 'arrow' | 'text' | 'idef0-box' | 'dfd-process' | 'dfd-data-store' | 'dfd-external' | 'bpmn-task' | 'bpmn-gateway' | 'bpmn-event';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  text?: string;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  fontSize?: number;
+  fontFamily?: string;
+  rotation?: number;
+  zIndex?: number;
+  properties?: Record<string, any>;
+  locked?: boolean;
+  name?: string;
+  opacity?: number;
+  // IDEF0 специфичные поля
+  idef0Number?: string; // A1, A2, etc.
+  idef0DetailDiagramId?: string; // Ссылка на другую диаграмму
+  // DFD специфичные поля
+  dfdLabel?: string; // Метка на стрелке
+  dfdLabelPosition?: number; // Позиция метки на линии (0-1)
+  // Группировка
+  groupId?: string;
+  // Порты для умных соединительных линий
+  ports?: Array<{ id: string; x: number; y: number; side: 'top' | 'right' | 'bottom' | 'left' }>;
+}
+
+export interface EditorPage {
+  id: string;
+  name: string;
+  elements: EditorElement[];
+  width: number;
+  height: number;
+  background?: string;
+}
+
+export interface EditorDiagram {
+  id: string;
+  name: string;
+  description: string;
+  user_id: string;
+  folder_id?: string | null;
+  diagramType: EditorDiagramType;
+  pages: EditorPage[];
+  currentPageId?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Ключи для localStorage
 const STORAGE_KEYS = {
   USER: 'context_user',
@@ -88,6 +156,8 @@ const STORAGE_KEYS = {
   USERS: 'context_users', // База пользователей
   PROJECTS: 'context_projects',
   DIAGRAMS: 'context_diagrams',
+  FOLDERS: 'context_folders',
+  EDITOR_DIAGRAMS: 'context_editor_diagrams',
 };
 
 // Хэширование пароля с использованием Web Crypto API (встроенный в браузер)
@@ -437,6 +507,216 @@ export const diagrams = {
     if (filtered.length === allDiagrams.length) return false;
 
     localStorage.setItem(STORAGE_KEYS.DIAGRAMS, JSON.stringify(filtered));
+    return true;
+  },
+};
+
+// Работа с редакторскими диаграммами (каждый пользователь видит только свои диаграммы)
+export const editorDiagrams = {
+  // Получить все редакторские диаграммы пользователя
+  getAll: (userId: string): EditorDiagram[] => {
+    if (typeof window === 'undefined') return [];
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.EDITOR_DIAGRAMS);
+    if (!diagramsStr) return [];
+    try {
+      const allDiagrams: EditorDiagram[] = JSON.parse(diagramsStr);
+      return allDiagrams.filter(d => d.user_id === userId);
+    } catch {
+      return [];
+    }
+  },
+
+  // Получить редакторскую диаграмму по ID (только если она принадлежит пользователю)
+  getById: (diagramId: string, userId: string): EditorDiagram | null => {
+    if (typeof window === 'undefined') return null;
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.EDITOR_DIAGRAMS);
+    if (!diagramsStr) return null;
+    try {
+      const allDiagrams: EditorDiagram[] = JSON.parse(diagramsStr);
+      const diagram = allDiagrams.find(d => d.id === diagramId && d.user_id === userId);
+      return diagram || null;
+    } catch {
+      return null;
+    }
+  },
+
+  // Создать редакторскую диаграмму
+  create: (diagram: Omit<EditorDiagram, 'id' | 'created_at' | 'updated_at'>): EditorDiagram => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const defaultPage: EditorPage = {
+      id: `page_${Date.now()}`,
+      name: 'Страница 1',
+      elements: [],
+      width: 1920,
+      height: 1080,
+      background: '#ffffff',
+    };
+
+    const newDiagram: EditorDiagram = {
+      ...diagram,
+      id: `editor_diagram_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      pages: diagram.pages && diagram.pages.length > 0 ? diagram.pages : [defaultPage],
+      currentPageId: diagram.pages && diagram.pages.length > 0 ? diagram.pages[0].id : defaultPage.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.EDITOR_DIAGRAMS);
+    const allDiagrams: EditorDiagram[] = diagramsStr ? JSON.parse(diagramsStr) : [];
+    allDiagrams.push(newDiagram);
+    localStorage.setItem(STORAGE_KEYS.EDITOR_DIAGRAMS, JSON.stringify(allDiagrams));
+
+    return newDiagram;
+  },
+
+  // Обновить редакторскую диаграмму (только если она принадлежит пользователю)
+  update: (diagramId: string, userId: string, updates: Partial<EditorDiagram>): EditorDiagram | null => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.EDITOR_DIAGRAMS);
+    if (!diagramsStr) return null;
+
+    const allDiagrams: EditorDiagram[] = JSON.parse(diagramsStr);
+    const index = allDiagrams.findIndex(d => d.id === diagramId && d.user_id === userId);
+    
+    if (index === -1) return null;
+
+    allDiagrams[index] = {
+      ...allDiagrams[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.EDITOR_DIAGRAMS, JSON.stringify(allDiagrams));
+    return allDiagrams[index];
+  },
+
+  // Удалить редакторскую диаграмму (только если она принадлежит пользователю)
+  delete: (diagramId: string, userId: string): boolean => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const diagramsStr = localStorage.getItem(STORAGE_KEYS.EDITOR_DIAGRAMS);
+    if (!diagramsStr) return false;
+
+    const allDiagrams: EditorDiagram[] = JSON.parse(diagramsStr);
+    const filtered = allDiagrams.filter(d => !(d.id === diagramId && d.user_id === userId));
+    
+    if (filtered.length === allDiagrams.length) return false;
+
+    localStorage.setItem(STORAGE_KEYS.EDITOR_DIAGRAMS, JSON.stringify(filtered));
+    return true;
+  },
+};
+
+// Работа с папками (каждый пользователь видит только свои папки)
+export const folders = {
+  // Получить все папки пользователя (для обратной совместимости, но лучше использовать getAllByType)
+  getAll: (userId: string): Folder[] => {
+    if (typeof window === 'undefined') return [];
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return [];
+    try {
+      const allFolders: Folder[] = JSON.parse(foldersStr);
+      return allFolders.filter(f => f.user_id === userId);
+    } catch {
+      return [];
+    }
+  },
+
+  // Получить все папки пользователя определенного типа
+  getAllByType: (userId: string, type: FolderType): Folder[] => {
+    if (typeof window === 'undefined') return [];
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return [];
+    try {
+      const allFolders: Folder[] = JSON.parse(foldersStr);
+      return allFolders.filter(f => f.user_id === userId && f.type === type);
+    } catch {
+      return [];
+    }
+  },
+
+  // Получить папку по ID (только если она принадлежит пользователю)
+  getById: (folderId: string, userId: string): Folder | null => {
+    if (typeof window === 'undefined') return null;
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return null;
+    try {
+      const allFolders: Folder[] = JSON.parse(foldersStr);
+      const folder = allFolders.find(f => f.id === folderId && f.user_id === userId);
+      return folder || null;
+    } catch {
+      return null;
+    }
+  },
+
+  // Создать папку
+  create: (folder: Omit<Folder, 'id' | 'created_at' | 'updated_at'>): Folder => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const newFolder: Folder = {
+      ...folder,
+      id: `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    const allFolders: Folder[] = foldersStr ? JSON.parse(foldersStr) : [];
+    allFolders.push(newFolder);
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(allFolders));
+
+    return newFolder;
+  },
+
+  // Обновить папку (только если она принадлежит пользователю)
+  update: (folderId: string, userId: string, updates: Partial<Folder>): Folder | null => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return null;
+
+    const allFolders: Folder[] = JSON.parse(foldersStr);
+    const index = allFolders.findIndex(f => f.id === folderId && f.user_id === userId);
+    
+    if (index === -1) return null;
+
+    allFolders[index] = {
+      ...allFolders[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(allFolders));
+    return allFolders[index];
+  },
+
+  // Удалить папку (только если она принадлежит пользователю)
+  delete: (folderId: string, userId: string): boolean => {
+    if (typeof window === 'undefined') {
+      throw new Error('localStorage is not available');
+    }
+
+    const foldersStr = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    if (!foldersStr) return false;
+
+    const allFolders: Folder[] = JSON.parse(foldersStr);
+    const filtered = allFolders.filter(f => !(f.id === folderId && f.user_id === userId));
+    
+    if (filtered.length === allFolders.length) return false;
+
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(filtered));
     return true;
   },
 };

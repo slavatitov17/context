@@ -4,18 +4,24 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { auth, type User } from '@/lib/storage';
-import Breadcrumbs from './Breadcrumbs';
+import BackButton from './BackButton';
 import ProfileModal from './ProfileModal';
+import AboutModal from './AboutModal';
+import SettingsModal from './SettingsModal';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPrivacyPage = pathname === '/privacy';
+  const isEditorPage = pathname?.startsWith('/editor/') && pathname?.includes('/edit') && !pathname?.includes('/new');
+  const isDiagramTypeCatalog = pathname?.startsWith('/diagrams/') && !pathname?.includes('/edit') && !pathname?.includes('/new');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -148,8 +154,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
-      {/* Боковое меню - показывается только если не страница авторизации и пользователь авторизован */}
-      {!isAuthPage && isAuthenticated && (
+      {/* Боковое меню - показывается только если не страница авторизации, не редактор и пользователь авторизован */}
+      {!isAuthPage && !isEditorPage && isAuthenticated && (
         <aside className="fixed left-4 top-4 w-64 bg-gray-50 text-gray-800 p-6 rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="mb-10 flex items-center gap-3">
             {/* Логотип - диаграмма с узлами (уменьшен) */}
@@ -173,20 +179,20 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               <i className="fas fa-sitemap mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">Диаграммы</span>
             </Link>
-            <Link
-              href="/settings"
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-cog mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">Настройки</span>
-            </Link>
-            <Link
-              href="/about"
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+            </button>
+            <button
+              onClick={() => setShowAboutModal(true)}
+              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-info-circle mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
               <span className="font-medium">О системе</span>
-            </Link>
+            </button>
           </nav>
 
           {/* Блок профиля внизу */}
@@ -214,9 +220,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       )}
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
-      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage ? 'ml-[calc(16rem+1rem)]' : ''}`} style={{ paddingTop: '2.5rem', paddingBottom: '1rem', paddingLeft: '2rem', paddingRight: '2rem', height: '100vh', overflowY: 'auto' }}>
-        {/* Хлебные крошки - показываются только на страницах не первого уровня, включая privacy для авторизованных */}
-        {!isAuthPage && isAuthenticated && <Breadcrumbs />}
+      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
+        {/* Кнопка "Назад" - показывается только на страницах не первого уровня, но не в редакторе и не на страницах авторизации */}
+        {/* На странице privacy кнопка "Назад" уже встроена в компонент, поэтому здесь не показываем */}
+        {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
         {children}
       </main>
       
@@ -242,6 +249,22 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               }
             }
           }} 
+        />
+      )}
+      
+      {/* Модальное окно "О системе" */}
+      {isAuthenticated && (
+        <AboutModal 
+          isOpen={showAboutModal} 
+          onClose={() => setShowAboutModal(false)} 
+        />
+      )}
+      
+      {/* Модальное окно "Настройки" */}
+      {isAuthenticated && (
+        <SettingsModal 
+          isOpen={showSettingsModal} 
+          onClose={() => setShowSettingsModal(false)} 
         />
       )}
     </body>
