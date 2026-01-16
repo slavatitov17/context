@@ -55,6 +55,7 @@ export default function EditorCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isInitialized, setIsInitialized] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridSize] = useState(20);
@@ -92,6 +93,28 @@ export default function EditorCanvas({
   useEffect(() => {
     setDiagramNameDraft(diagram.name);
   }, [diagram.name]);
+
+  // Инициализация позиции холста в центре (как в Figma)
+  useEffect(() => {
+    if (!isInitialized && containerRef.current) {
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
+      const viewportWidth = rect.width;
+      const viewportHeight = rect.height;
+      
+      // Центр холста (5000, 5000) должен быть в центре viewport
+      const canvasCenterX = CANVAS_SIZE / 2;
+      const canvasCenterY = CANVAS_SIZE / 2;
+      
+      // Вычисляем pan так, чтобы центр холста был в центре viewport
+      // Формула: pan = viewport_center - canvas_center * zoom
+      const initialPanX = viewportWidth / 2 - canvasCenterX * zoom;
+      const initialPanY = viewportHeight / 2 - canvasCenterY * zoom;
+      
+      setPan(clampPan({ x: initialPanX, y: initialPanY }, zoom));
+      setIsInitialized(true);
+    }
+  }, [isInitialized, zoom, clampPan]);
 
   // Фокус на текстовое поле при его появлении
   useEffect(() => {
@@ -197,10 +220,19 @@ export default function EditorCanvas({
       return;
     }
     
+    // Проверяем, был ли клик на элементе
+    const target = e.target as SVGElement;
+    const clickedElementId = target.getAttribute('data-element-id') || 
+                             target.closest('[data-element-id]')?.getAttribute('data-element-id');
+    
+    // Если клик был на элементе, не обрабатываем здесь (обработается в handleElementMouseDown)
+    if (clickedElementId) {
+      return;
+    }
+    
     if (tool === 'select') {
-      const target = e.target as SVGElement;
-      const elementId = target.getAttribute('data-element-id');
-      onSelectElement(elementId);
+      // Клик был на пустом месте - снимаем выбор
+      onSelectElement(null);
     } else if (tool === 'text') {
       // Для текста показываем поле ввода вместо немедленного создания элемента
       const rect = canvasRef.current?.getBoundingClientRect();
@@ -300,6 +332,7 @@ export default function EditorCanvas({
         return;
       }
       
+      // Выбираем элемент сразу при клике
       onSelectElement(elementId);
       setIsDragging(true);
       if (element) {
@@ -1345,10 +1378,19 @@ export default function EditorCanvas({
                   )}
                 </div>
                 <button
-                  onClick={() => setShowExportDialog(true)}
-                  className="w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group text-gray-800 hover:bg-blue-600 hover:text-white"
+                  onClick={() => {
+                    if (selectedElementId) {
+                      setShowExportDialog(true);
+                    }
+                  }}
+                  disabled={!selectedElementId}
+                  className={`w-full text-left py-3.5 px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group ${
+                    selectedElementId 
+                      ? 'text-gray-800 hover:bg-blue-600 hover:text-white cursor-pointer' 
+                      : 'text-gray-400 cursor-not-allowed opacity-50'
+                  }`}
                 >
-                  <i className="fas fa-download text-gray-600 group-hover:text-white transition-colors"></i>
+                  <i className={`fas fa-download ${selectedElementId ? 'text-gray-600 group-hover:text-white transition-colors' : 'text-gray-400'}`}></i>
                   <span className="font-medium">Экспорт</span>
                 </button>
               </div>
