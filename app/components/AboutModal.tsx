@@ -296,7 +296,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </form>
             </div>
           </div>
-        ) : (
+        ) : showPrivacy ? (
           <div className="space-y-6">
             {/* Политика конфиденциальности */}
             <div className="bg-white border border-gray-200 rounded-xl p-6">
