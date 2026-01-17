@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { auth } from '@/lib/storage';
 
 interface AboutModalProps {
@@ -11,6 +10,7 @@ interface AboutModalProps {
 
 export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showVersion, setShowVersion] = useState(false);
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -23,6 +23,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       setMessage('');
       setAttachedFiles([]);
       setShowPrivacy(false);
+      setShowVersion(false);
     } else {
       // Автоматическое подтягивание почты для авторизованного пользователя
       const user = auth.getCurrentUser();
@@ -124,11 +125,14 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
         className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar" 
         onClick={(e) => e.stopPropagation()}
       >
-        {showPrivacy ? (
+        {(showPrivacy || showVersion) ? (
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
               <button
-                onClick={() => setShowPrivacy(false)}
+                onClick={() => {
+                  setShowPrivacy(false);
+                  setShowVersion(false);
+                }}
                 className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
               >
                 <i className="fas fa-arrow-left text-sm"></i>
@@ -145,7 +149,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </button>
             </div>
             <h2 className="text-xl font-medium text-gray-900">
-              Политика конфиденциальности
+              {showPrivacy ? 'Политика конфиденциальности' : 'Версия 1.0.0'}
             </h2>
           </div>
         ) : (
@@ -164,7 +168,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
           </div>
         )}
         
-        {!showPrivacy ? (
+        {!showPrivacy && !showVersion ? (
           <div className="space-y-6">
             {/* Блок 1: О системе */}
             <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -185,12 +189,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </p>
                 <div>
                   <p className="text-xl font-medium text-gray-900 mb-1">Версия</p>
-                  <Link
-                    href="/version"
+                  <button
+                    onClick={() => setShowVersion(true)}
                     className="text-blue-600 hover:underline text-base"
                   >
                     1.0.0
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
@@ -435,7 +439,82 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
             </div>
           </div>
-        )}
+        ) : showVersion ? (
+          <div className="space-y-6">
+            {/* Блок 1: Основные возможности */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-4">
+                Основные возможности
+              </h3>
+              <div className="space-y-3 text-gray-700 text-base leading-relaxed">
+                <p>
+                  Система Context позволяет работать с документами и создавать диаграммы по текстовому описанию.
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li>Загрузка и обработка документов различных форматов</li>
+                  <li>Анализ содержимого документов с помощью искусственного интеллекта</li>
+                  <li>Создание диаграмм различных типов по описанию предметной области</li>
+                  <li>Управление проектами и диаграммами</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Блок 2: Типы диаграмм */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-4">
+                Доступные типы диаграмм
+              </h3>
+              <div className="space-y-3 text-gray-700 text-base leading-relaxed">
+                <p>
+                  В текущей версии доступны следующие типы диаграмм:
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li>Блок-схемы (Flowchart)</li>
+                  <li>Диаграммы классов UML (UML Class Diagram)</li>
+                  <li>Диаграммы последовательности UML (UML Sequence Diagram)</li>
+                  <li>Диаграммы состояний UML (UML State Diagram)</li>
+                  <li>Диаграммы ER (Entity Relationship)</li>
+                  <li>Диаграммы DFD (Data Flow Diagram)</li>
+                  <li>Диаграммы IDEF0</li>
+                  <li>Диаграммы BPMN</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Блок 3: Форматы документов */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-4">
+                Поддерживаемые форматы документов
+              </h3>
+              <div className="space-y-3 text-gray-700 text-base leading-relaxed">
+                <p>
+                  Система поддерживает загрузку и обработку следующих типов файлов:
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li>PDF документы (.pdf)</li>
+                  <li>Документы Microsoft Word (.docx)</li>
+                  <li>Таблицы Microsoft Excel (.xlsx)</li>
+                  <li>Текстовые файлы (.txt)</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Блок 4: Технические детали */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-4">
+                Технические детали
+              </h3>
+              <div className="space-y-3 text-gray-700 text-base leading-relaxed">
+                <p>
+                  Дата сборки: 01.12.2025
+                </p>
+                <p>
+                  Система использует современные веб-технологии для обеспечения удобного и быстрого интерфейса.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
