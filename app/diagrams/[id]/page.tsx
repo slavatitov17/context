@@ -2235,22 +2235,34 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           {filteredAndSortedTypes.length === 0 ? (
             <div className="mt-12 text-center pb-8">
               <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
-              <p className="text-gray-600 mb-6">Создайте уникальный тип диаграммы с помощью редактора</p>
-              <Link href="/editor/new">
-                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Создать тип диаграммы
+              <p className="text-gray-600 mb-6">
+                В ближайшее время будут добавлены новые типы, следите за обновлениями в разделе{' '}
+                <button
+                  onClick={() => {
+                    const aboutButton = document.querySelector('[data-about-button]') as HTMLButtonElement;
+                    if (aboutButton) aboutButton.click();
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  о системе
                 </button>
-              </Link>
+              </p>
             </div>
           ) : (
             <div className="mt-12 text-center pb-8">
               <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
-              <p className="text-gray-600 mb-6">Создайте уникальный тип диаграммы с помощью редактора</p>
-              <Link href="/editor/new">
-                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Создать тип диаграммы
+              <p className="text-gray-600 mb-6">
+                В ближайшее время будут добавлены новые типы, следите за обновлениями в разделе{' '}
+                <button
+                  onClick={() => {
+                    const aboutButton = document.querySelector('[data-about-button]') as HTMLButtonElement;
+                    if (aboutButton) aboutButton.click();
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  о системе
                 </button>
-              </Link>
+              </p>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { auth } from '@/lib/storage';
 
 interface AboutModalProps {
@@ -184,7 +185,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </p>
                 <div>
                   <p className="text-xl font-medium text-gray-900 mb-1">Версия</p>
-                  <p className="text-gray-500 text-base">1.0.0</p>
+                  <Link
+                    href="/version"
+                    className="text-blue-600 hover:underline text-base"
+                  >
+                    1.0.0
+                  </Link>
                 </div>
               </div>
             </div>

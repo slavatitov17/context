@@ -188,6 +188,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             </button>
             <button
               onClick={() => setShowAboutModal(true)}
+              data-about-button
               className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
             >
               <i className="fas fa-info-circle mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
