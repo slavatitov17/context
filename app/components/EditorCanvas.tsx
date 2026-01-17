@@ -297,8 +297,8 @@ export default function EditorCanvas({
   }, [currentPage, history, historyIndex]);
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Если нажат пробел, начинаем панорамирование
-    if (isSpacePressed && e.button === 0) {
+    // Если нажат пробел или выбран режим pan, начинаем панорамирование
+    if ((isSpacePressed || toolMode === 'pan') && e.button === 0) {
       e.preventDefault();
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
@@ -2166,7 +2166,7 @@ export default function EditorCanvas({
           className="flex-1 overflow-hidden bg-gray-100 relative"
           onMouseDown={handleCanvasMouseDown}
           style={{
-            cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : 'default',
+            cursor: (isSpacePressed || toolMode === 'pan') ? (isPanning ? 'grabbing' : 'grab') : 'default',
           }}
         >
           <div
@@ -2206,7 +2206,7 @@ export default function EditorCanvas({
               transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
               transformOrigin: 'top left',
               backgroundColor: currentPage.background || '#474747',
-              cursor: isSpacePressed ? (isPanning ? 'grabbing' : 'grab') : (tool === 'select' ? 'default' : 'crosshair'),
+              cursor: (isSpacePressed || toolMode === 'pan') ? (isPanning ? 'grabbing' : 'grab') : (tool === 'select' ? 'default' : 'crosshair'),
             }}
             onClick={handleCanvasClick}
           >
@@ -2307,7 +2307,10 @@ export default function EditorCanvas({
             <i className="fas fa-hand"></i>
           </button>
           <button
-            onClick={() => setTool('rectangle')}
+            onClick={() => {
+              setTool('rectangle');
+              setToolMode('draw');
+            }}
             className={`p-3 rounded-lg transition-colors ${
               tool === 'rectangle' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
@@ -2316,7 +2319,10 @@ export default function EditorCanvas({
             <i className="fas fa-square"></i>
           </button>
           <button
-            onClick={() => setTool('circle')}
+            onClick={() => {
+              setTool('circle');
+              setToolMode('draw');
+            }}
             className={`p-3 rounded-lg transition-colors ${
               tool === 'circle' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
@@ -2325,7 +2331,10 @@ export default function EditorCanvas({
             <i className="fas fa-circle"></i>
           </button>
           <button
-            onClick={() => setTool('line')}
+            onClick={() => {
+              setTool('line');
+              setToolMode('draw');
+            }}
             className={`p-3 rounded-lg transition-colors ${
               tool === 'line' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
@@ -2334,7 +2343,10 @@ export default function EditorCanvas({
             <i className="fas fa-minus"></i>
           </button>
           <button
-            onClick={() => setTool('text')}
+            onClick={() => {
+              setTool('text');
+              setToolMode('draw');
+            }}
             className={`p-3 rounded-lg transition-colors ${
               tool === 'text' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
             }`}
