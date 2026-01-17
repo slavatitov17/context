@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { type EditorDiagram, type EditorPage, type EditorElement } from '@/lib/storage';
 
-const CANVAS_SIZE = 10000;
+const CANVAS_SIZE = 5000;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 0.25;
@@ -2365,25 +2365,49 @@ export default function EditorCanvas({
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Позиция X</label>
-              <input
-                type="number"
-                value={Math.round(selectedElement.x)}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { x: parseFloat(e.target.value) || 0 })}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Позиция X</label>
+                <input
+                  type="number"
+                  value={Math.round(selectedElement.x)}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { x: parseFloat(e.target.value) || 0 })}
+                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Позиция Y</label>
+                <input
+                  type="number"
+                  value={Math.round(selectedElement.y)}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { y: parseFloat(e.target.value) || 0 })}
+                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Позиция Y</label>
-              <input
-                type="number"
-                value={Math.round(selectedElement.y)}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { y: parseFloat(e.target.value) || 0 })}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-              />
-            </div>
-            {selectedElement.width !== undefined && (
+            {selectedElement.width !== undefined && selectedElement.height !== undefined && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Ширина</label>
+                  <input
+                    type="number"
+                    value={Math.round(selectedElement.width)}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { width: parseFloat(e.target.value) || 0 })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Высота</label>
+                  <input
+                    type="number"
+                    value={Math.round(selectedElement.height)}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { height: parseFloat(e.target.value) || 0 })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+            {(selectedElement.width === undefined || selectedElement.height === undefined) && selectedElement.width !== undefined && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Ширина</label>
                 <input
@@ -2394,7 +2418,7 @@ export default function EditorCanvas({
                 />
               </div>
             )}
-            {selectedElement.height !== undefined && (
+            {(selectedElement.width === undefined || selectedElement.height === undefined) && selectedElement.height !== undefined && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Высота</label>
                 <input
@@ -2405,23 +2429,25 @@ export default function EditorCanvas({
                 />
               </div>
             )}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Заливка</label>
-              <input
-                type="color"
-                value={selectedElement.fill || '#3b82f6'}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { fill: e.target.value })}
-                className="w-full h-8 border border-gray-300 rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Обводка</label>
-              <input
-                type="color"
-                value={selectedElement.stroke || '#1e40af'}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { stroke: e.target.value })}
-                className="w-full h-8 border border-gray-300 rounded"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Заливка</label>
+                <input
+                  type="color"
+                  value={selectedElement.fill || '#3b82f6'}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { fill: e.target.value })}
+                  className="w-full h-8 border border-gray-300 rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Обводка</label>
+                <input
+                  type="color"
+                  value={selectedElement.stroke || '#1e40af'}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { stroke: e.target.value })}
+                  className="w-full h-8 border border-gray-300 rounded"
+                />
+              </div>
             </div>
             {selectedElement.type === 'line' && (
               <div className="pt-2 border-t border-gray-200 space-y-3">
@@ -2491,40 +2517,33 @@ export default function EditorCanvas({
                 </select>
               </div>
             )}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Название</label>
-              <input
-                type="text"
-                value={selectedElement.name || ''}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { name: e.target.value })}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                placeholder="Название элемента"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Прозрачность</label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={selectedElement.opacity !== undefined ? selectedElement.opacity : 1}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { opacity: parseFloat(e.target.value) })}
-                className="w-full"
-              />
-              <span className="text-xs text-gray-500">
-                {Math.round((selectedElement.opacity !== undefined ? selectedElement.opacity : 1) * 100)}%
-              </span>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Толщина обводки</label>
-              <input
-                type="number"
-                min="0"
-                value={selectedElement.strokeWidth || 2}
-                onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { strokeWidth: parseFloat(e.target.value) || 0 })}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Прозрачность</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={Math.round((selectedElement.opacity !== undefined ? selectedElement.opacity : 1) * 100)}
+                    onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { opacity: parseFloat(e.target.value) / 100 })}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm pr-8"
+                    placeholder="100"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">%</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Толщина обводки</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={selectedElement.strokeWidth || 2}
+                  onChange={(e) => selectedElementId && onUpdateElement(selectedElementId, { strokeWidth: parseFloat(e.target.value) || 0 })}
+                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                />
+              </div>
             </div>
             {selectedElement.rotation !== undefined && (
               <div>
