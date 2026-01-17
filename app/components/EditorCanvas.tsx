@@ -2550,47 +2550,6 @@ export default function EditorCanvas({
                 {selectedElement.locked ? 'Заблокирован' : 'Заблокировать'}
               </button>
             </div>
-            <div className="pt-2 border-t border-gray-200">
-              <div className="text-xs font-medium text-gray-700 mb-2">Выравнивание</div>
-              <div className="grid grid-cols-3 gap-1">
-                <button
-                  onClick={() => {
-                    if (selectedElementId && selectedElement.width !== undefined) {
-                      const leftmost = Math.min(...currentPage.elements.map(el => el.x));
-                      onUpdateElement(selectedElementId, { x: leftmost });
-                    }
-                  }}
-                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-transform hover:scale-105"
-                  title="По левому краю"
-                >
-                  <i className="fas fa-align-left"></i>
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedElementId && selectedElement.width !== undefined) {
-                      const centerX = CANVAS_SIZE / 2 - (selectedElement.width || 0) / 2;
-                      onUpdateElement(selectedElementId, { x: centerX });
-                    }
-                  }}
-                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-transform hover:scale-105"
-                  title="По центру"
-                >
-                  <i className="fas fa-align-center"></i>
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedElementId && selectedElement.width !== undefined) {
-                      const rightmost = Math.max(...currentPage.elements.map(el => (el.x + (el.width || 0))));
-                      onUpdateElement(selectedElementId, { x: rightmost - (selectedElement.width || 0) });
-                    }
-                  }}
-                  className="p-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-transform hover:scale-105"
-                  title="По правому краю"
-                >
-                  <i className="fas fa-align-right"></i>
-                </button>
-              </div>
-            </div>
 
             {/* IDEF0 специфичные поля */}
             {selectedElement.type === 'idef0-box' && (
