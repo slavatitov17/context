@@ -449,12 +449,13 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className="space-y-3 text-gray-700 text-base leading-relaxed">
                 <p>
-                  Система Context позволяет быстрее анализировать документы и создавать диаграммы по текстовому описанию. Возможности:
+                  CASE-средство Context позволяет быстрее анализировать документы и создавать диаграммы по текстовому описанию. Возможности:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Загрузка документов различных форматов</li>
-                  <li>Автоматический анализ содержимого документов</li>
-                  <li>Создание и экспорт диаграмм различных типов по текстовому описанию</li>
+                  <li>Загрузка документов различных форматов (PDF, DOCX и другие)</li>
+                  <li>Анализ и выдача ответов на вопросы по загруженным документам</li>
+                  <li>Создание и экспорт диаграмм различных типов (UML, ER и другие)</li>
+                  <li>Создание глоссария и кода (PlantUML) диаграмм различных типов</li>
                 </ul>
               </div>
             </div>
@@ -469,9 +470,9 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   В текущей версии доступны следующие типы диаграмм:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Семейство UML: Use Case, Sequence, Activity, Class, Component, Deployment, Object, Statechart</li>
+                  <li>Семейство UML: Use Case, Sequence и другие (всего 8 типов)</li>
                   <li>Диаграмма Ганта (Gantt)</li>
-                  <li>Диаграмма Сущность-связь (Entity-Relationships)</li>
+                  <li>Диаграмма сущность-связь (Entity-Relationships)</li>
                   <li>Интеллект-карта (MindMap)</li>
                   <li>Диаграмма обмена данными (JSON)</li>
                   <li>Иерархическая структура работ (WBS)</li>
@@ -508,10 +509,10 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Библиотеки React для построения пользовательского интерфейса</li>
-                  <li>Фреймворка Next.js для создания веб-приложений с серверным рендерингом</li>
+                  <li>Фреймворка Next.js для создания веб-приложений</li>
                   <li>Языка TypeScript для повышения надежности кода</li>
                   <li>CSS-фреймворка Tailwind CSS для быстрой стилизации интерфейса</li>
-                  <li>Модели Mixtral 8x22B от Mistral AI для анализа документов и генерации диаграмм</li>
+                  <li>Модели Mixtral 8x22B для анализа документов, генерации диаграмм</li>
                   <li>API PlantUML для преобразования текстового описания в диаграммы</li>
                   <li>Базы данных IndexedDB для хранения проектов и диаграмм в браузере</li>
                   <li>Платформы Vercel для развертывания и хостинга веб-приложения</li>
