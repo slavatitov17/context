@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, diagrams as diagramsStorage, editorDiagrams } from '@/lib/storage';
+import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 
 export default function NewDiagramPage() {
   const router = useRouter();
@@ -16,10 +16,9 @@ export default function NewDiagramPage() {
       }
 
       try {
-        // Получаем все диаграммы (каталог + редактор) для определения номера
+        // Получаем все диаграммы для определения номера
         const catalogDiagrams = diagramsStorage.getAll(currentUser.id);
-        const editorDiagramsList = editorDiagrams.getAll(currentUser.id);
-        const totalDiagrams = catalogDiagrams.length + editorDiagramsList.length;
+        const totalDiagrams = catalogDiagrams.length;
         const diagramNumber = totalDiagrams + 1;
         
         // Создаем диаграмму с автоматическим названием
