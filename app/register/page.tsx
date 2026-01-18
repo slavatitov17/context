@@ -101,7 +101,7 @@ export default function RegisterPage() {
                 setEmail(e.target.value);
                 setError('');
               }}
-              placeholder="slava-titov173@yandex.ru"
+              placeholder="test@mail.ru"
               className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
             />
           </div>
@@ -126,7 +126,7 @@ export default function RegisterPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors"
               >
-                <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                <i className={`fas ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
               </button>
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors"
               >
-                <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                <i className={`fas ${showConfirmPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
               </button>
             </div>
             {confirmPassword.length > 0 && password !== confirmPassword && (

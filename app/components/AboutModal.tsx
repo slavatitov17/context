@@ -449,13 +449,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className="space-y-3 text-gray-700 text-base leading-relaxed">
                 <p>
-                  Система Context позволяет работать с документами и создавать диаграммы по текстовому описанию.
+                  Система Context позволяет быстрее анализировать документы и создавать диаграммы по текстовому описанию. Возможности:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Загрузка и обработка документов различных форматов</li>
+                  <li>Загрузка документов различных форматов</li>
                   <li>Автоматический анализ содержимого документов</li>
-                  <li>Создание диаграмм различных типов по описанию предметной области</li>
-                  <li>Управление проектами и диаграммами</li>
+                  <li>Создание и экспорт диаграмм различных типов по текстовому описанию</li>
                 </ul>
               </div>
             </div>
@@ -471,11 +470,11 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Семейство UML: Use Case, Sequence, Activity, Class, Component, Deployment, Object, Statechart</li>
-                  <li>Gantt</li>
-                  <li>Entity-Relationships</li>
-                  <li>MindMap</li>
-                  <li>JSON</li>
-                  <li>WBS</li>
+                  <li>Диаграмма Ганта (Gantt)</li>
+                  <li>Диаграмма Сущность-связь (Entity-Relationships)</li>
+                  <li>Интеллект-карта (MindMap)</li>
+                  <li>Диаграмма обмена данными (JSON)</li>
+                  <li>Иерархическая структура работ (WBS)</li>
                 </ul>
               </div>
             </div>
@@ -504,15 +503,18 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 Технические детали
               </h3>
               <div className="space-y-3 text-gray-700 text-base leading-relaxed">
+                <p>
+                  Система разработана с использованием:
+                </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Библиотека React для построения пользовательского интерфейса</li>
-                  <li>Фреймворк Next.js для создания веб-приложений с серверным рендерингом</li>
-                  <li>Язык TypeScript для повышения надежности кода</li>
-                  <li>CSS-фреймворк Tailwind CSS для быстрой стилизации интерфейса</li>
-                  <li>Модель Mixtral 8x22B от Mistral AI для анализа документов и генерации диаграмм</li>
+                  <li>Библиотеки React для построения пользовательского интерфейса</li>
+                  <li>Фреймворка Next.js для создания веб-приложений с серверным рендерингом</li>
+                  <li>Языка TypeScript для повышения надежности кода</li>
+                  <li>CSS-фреймворка Tailwind CSS для быстрой стилизации интерфейса</li>
+                  <li>Модели Mixtral 8x22B от Mistral AI для анализа документов и генерации диаграмм</li>
                   <li>API PlantUML для преобразования текстового описания в диаграммы</li>
-                  <li>База данных IndexedDB для хранения проектов и диаграмм в браузере</li>
-                  <li>Платформа Vercel для развертывания и хостинга веб-приложения</li>
+                  <li>Базы данных IndexedDB для хранения проектов и диаграмм в браузере</li>
+                  <li>Платформы Vercel для развертывания и хостинга веб-приложения</li>
                 </ul>
               </div>
             </div>
