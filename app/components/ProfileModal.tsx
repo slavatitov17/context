@@ -1,3 +1,4 @@
+// Создаем модальное окно профиля пользователя с возможностью редактирования личных данных
 'use client';
 
 import { useState, useEffect, useRef } from 'react';

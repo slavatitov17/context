@@ -1,3 +1,4 @@
+// Создаем страницу просмотра диаграммы с выбором типа, генерацией и отображением диаграммы
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';

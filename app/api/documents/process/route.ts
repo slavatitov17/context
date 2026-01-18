@@ -1,3 +1,4 @@
+// Создаем API-маршрут для обработки документов различных форматов и извлечения текста
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore - pdf2json не имеет типов
 import PDFParser from 'pdf2json';

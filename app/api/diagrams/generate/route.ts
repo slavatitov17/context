@@ -1,3 +1,4 @@
+// Создаем API-маршрут для генерации диаграмм с использованием Mistral AI и PlantUML
 import { NextRequest, NextResponse } from 'next/server';
 import { Mistral } from '@mistralai/mistralai';
 import { readFileSync } from 'fs';

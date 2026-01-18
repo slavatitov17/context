@@ -1,3 +1,4 @@
+// Создаем страницу списка диаграмм с фильтрацией, поиском, сортировкой и управлением папками
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';

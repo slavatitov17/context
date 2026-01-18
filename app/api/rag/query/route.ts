@@ -1,3 +1,4 @@
+// Создаем API-маршрут для RAG-запросов к документам с использованием Mistral AI для поиска релевантных фрагментов
 import { NextRequest, NextResponse } from 'next/server';
 import { Mistral } from '@mistralai/mistralai';
 

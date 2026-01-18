@@ -1,3 +1,4 @@
+// Создаем корневой layout приложения с метаданными и оберткой для всех страниц
 import './globals.css';
 import LayoutWrapper from './components/LayoutWrapper';
 

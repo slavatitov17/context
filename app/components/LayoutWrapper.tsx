@@ -1,3 +1,4 @@
+// Создаем обертку для layout приложения с навигацией, модальными окнами и управлением аутентификацией
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';

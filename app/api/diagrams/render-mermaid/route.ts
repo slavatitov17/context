@@ -1,3 +1,4 @@
+// Создаем API-маршрут для рендеринга Mermaid диаграмм в SVG формат
 import { NextRequest, NextResponse } from 'next/server';
 import mermaid from 'mermaid';
 

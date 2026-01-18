@@ -1,3 +1,4 @@
+// Создаем страницу "О системе" с информацией о приложении и формой обратной связи
 'use client';
 
 import { useState, useRef, useEffect } from 'react';

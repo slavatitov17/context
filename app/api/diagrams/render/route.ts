@@ -1,3 +1,4 @@
+// Создаем API-маршрут для рендеринга PlantUML диаграмм в изображения через публичный сервер
 import { NextRequest, NextResponse } from 'next/server';
 import plantumlEncoder from 'plantuml-encoder';
 

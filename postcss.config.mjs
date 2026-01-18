@@ -1,4 +1,4 @@
-// Настраиваем PostCSS для обработки стилей Tailwind CSS
+// Настраиваем PostCSS для дальнешей обработки стилей Tailwind CSS
 const config = {
   plugins: {
     "@tailwindcss/postcss": {},

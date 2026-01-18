@@ -1,4 +1,4 @@
-// Настраиваем конфигурацию Next.js для проекта
+// Настраиваем конфигурацию на Next.js для проекта
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

@@ -1,3 +1,4 @@
+// Создаем страницу с информацией о версии приложения и доступном функционале
 'use client';
 
 import { useState, useEffect } from 'react';

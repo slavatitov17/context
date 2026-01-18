@@ -2,7 +2,7 @@
   "name": "context",
   "version": "0.1.0",
   "private": true,
-  "description": "Система для анализа файлов и создания диаграмм",
+  "description": "Система для анализа файлов, ответов на вопросы по ним, создания диаграмм",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
