@@ -1,3 +1,4 @@
+// Определяем типы TypeScript для библиотеки plantuml-encoder
 declare module 'plantuml-encoder' {
   interface PlantUmlEncoder {
     encode(text: string): string;
@@ -7,26 +8,3 @@ declare module 'plantuml-encoder' {
   const plantumlEncoder: PlantUmlEncoder;
   export = plantumlEncoder;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
