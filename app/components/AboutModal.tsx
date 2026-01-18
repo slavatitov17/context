@@ -452,7 +452,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Загрузка и обработка документов различных форматов</li>
-                  <li>Анализ содержимого документов с помощью искусственного интеллекта</li>
+                  <li>Автоматический анализ содержимого документов</li>
                   <li>Создание диаграмм различных типов по описанию предметной области</li>
                   <li>Управление проектами и диаграммами</li>
                 </ul>
@@ -469,14 +469,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   В текущей версии доступны следующие типы диаграмм:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Блок-схемы (Flowchart)</li>
-                  <li>Диаграммы классов UML (UML Class Diagram)</li>
-                  <li>Диаграммы последовательности UML (UML Sequence Diagram)</li>
-                  <li>Диаграммы состояний UML (UML State Diagram)</li>
-                  <li>Диаграммы ER (Entity Relationship)</li>
-                  <li>Диаграммы DFD (Data Flow Diagram)</li>
-                  <li>Диаграммы IDEF0</li>
-                  <li>Диаграммы BPMN</li>
+                  <li>Семейство UML: Use Case, Sequence, Activity, Class, Component, Deployment, Object, Statechart</li>
+                  <li>Gantt</li>
+                  <li>Entity-Relationships</li>
+                  <li>MindMap</li>
+                  <li>JSON</li>
+                  <li>WBS</li>
                 </ul>
               </div>
             </div>
@@ -505,12 +503,16 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 Технические детали
               </h3>
               <div className="space-y-3 text-gray-700 text-base leading-relaxed">
-                <p>
-                  Дата сборки: 01.12.2025
-                </p>
-                <p>
-                  Система использует современные веб-технологии для обеспечения удобного и быстрого интерфейса.
-                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li>React — библиотека для построения пользовательского интерфейса</li>
+                  <li>Next.js — фреймворк для создания веб-приложений с серверным рендерингом</li>
+                  <li>TypeScript — типизированный язык программирования для повышения надежности кода</li>
+                  <li>Tailwind CSS — утилитарный CSS-фреймворк для быстрой стилизации интерфейса</li>
+                  <li>Mistral — модель искусственного интеллекта для анализа документов и генерации диаграмм</li>
+                  <li>API PlantUML — сервис для преобразования текстового описания в диаграммы</li>
+                  <li>IndexedDB — клиентская база данных для хранения проектов и диаграмм в браузере</li>
+                  <li>Vercel — платформа для развертывания и хостинга веб-приложения</li>
+                </ul>
               </div>
             </div>
           </div>
