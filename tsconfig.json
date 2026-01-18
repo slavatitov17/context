@@ -1,3 +1,4 @@
+// Настраиваем конфигурацию TypeScript для компиляции кода
 {
   "compilerOptions": {
     "target": "ES2017",
