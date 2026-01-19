@@ -1136,7 +1136,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             }]);
           } else {
             setMessages([{
-              text: "Теперь можно выбрать объект, по которому будет построена диаграмма.",
+              text: t('diagram.nowSelectObject'),
               isUser: false,
               timestamp: new Date()
             }]);
@@ -1267,7 +1267,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     if (option === 'scratch') {
       // Для создания с нуля сразу переходим в чат
       setMessages([{
-        text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
+        text: t('diagram.describeSubject'),
         isUser: false,
         timestamp: new Date()
       }]);
@@ -1306,7 +1306,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           }).join(', ');
           
           setMessages([{
-            text: `Обработаны документы: ${filesList}. Теперь можно выбрать объект, по которому будет построена диаграмма.`,
+            text: `${t('diagram.documentsProcessed')} ${filesList}. ${t('diagram.nowSelectObject')}`,
             isUser: false,
             timestamp: new Date()
           }]);
@@ -2375,8 +2375,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               {/* Если есть тип диаграммы, но еще не выбран способ создания - показываем заголовок "Способ создания диаграммы" */}
               {diagramType && !selectedOption ? (
                 <div className="mb-8 pb-6 border-b border-gray-200 max-w-2xl">
-                  <h1 className="text-3xl font-medium mb-2">Способ создания диаграммы</h1>
-                  <p className="text-gray-600 text-base">Выберите способ создания диаграммы</p>
+                  <h1 className="text-3xl font-medium mb-2">{t('diagram.creationMethod')}</h1>
+                  <p className="text-gray-600 text-base">{t('diagram.selectCreationMethod')}</p>
                 </div>
               ) : (
                 <>
@@ -2393,16 +2393,16 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Выбрать из моих проектов</h2>
+                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.fromProjects')}</h2>
                 <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Использовать данные из существующего проекта
+                  {t('diagram.fromProjectsDescription')}
                 </p>
               </div>
               <button
                 onClick={() => handleOptionSelect('projects')}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
               >
-                Выбрать проект
+                {t('diagram.selectProjectButton')}
                 <i className="fas fa-arrow-right"></i>
               </button>
             </div>
@@ -2412,7 +2412,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Создать с нуля</h2>
+                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.fromScratch')}</h2>
                 <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('diagram.describeManually')}
                 </p>
@@ -2421,7 +2421,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 onClick={() => handleOptionSelect('scratch')}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
               >
-                Ввести данные
+                {t('diagram.enterData')}
                 <i className="fas fa-arrow-right"></i>
               </button>
             </div>
@@ -2444,9 +2444,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               <table className="w-full">
                 <thead className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
                   <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Название</th>
-                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Краткое описание</th>
-                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Дата создания</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.projectTable.name')}</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.projectTable.description')}</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.projectTable.date')}</th>
                   </tr>
                 </thead>
                 <tbody>
