@@ -9,8 +9,10 @@ import BackButton from './BackButton';
 import ProfileModal from './ProfileModal';
 import AboutModal from './AboutModal';
 import SettingsModal from './SettingsModal';
+import { ThemeProvider, useTheme } from '@/app/contexts/ThemeContext';
 
-export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
+function LayoutWrapperContent({ children }: { children: React.ReactNode }) {
+  const { isDark } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/register';
@@ -154,45 +156,45 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }
 
   return (
-    <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
+    <body className={`flex h-screen font-sans tracking-tight ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`} style={{ backgroundColor: isDark ? '#111827' : '#ffffff' }}>
       {/* Боковое меню - показывается только если не страница авторизации, не редактор и пользователь авторизован */}
       {!isAuthPage && !isEditorPage && isAuthenticated && (
-        <aside className="fixed left-4 top-4 w-64 bg-gray-50 text-gray-800 p-6 rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 2rem)' }}>
+        <aside className={`fixed left-4 top-4 w-64 p-6 rounded-lg border flex flex-col ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`} style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="mb-10 flex items-center gap-3">
             {/* Логотип - диаграмма с узлами (уменьшен) */}
             <i className="fas fa-diagram-project text-2xl text-gray-900"></i>
-            <h1 className="text-3xl font-medium text-gray-900 cursor-default">
+            <h1 className={`text-3xl font-medium cursor-default ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Context
             </h1>
           </div>
           <nav className="space-y-3">
             <Link
               href="/projects"
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+              className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
-              <i className="fas fa-folder mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
+              <i className={`fas fa-folder mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
               <span className="font-medium">Проекты</span>
             </Link>
             <Link
               href="/diagrams"
-              className="flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+              className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
-              <i className="fas fa-sitemap mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
+              <i className={`fas fa-sitemap mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
               <span className="font-medium">Диаграммы</span>
             </Link>
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+              className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
-              <i className="fas fa-cog mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
+              <i className={`fas fa-cog mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
               <span className="font-medium">Настройки</span>
             </button>
             <button
               onClick={() => setShowAboutModal(true)}
               data-about-button
-              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+              className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
-              <i className="fas fa-info-circle mr-3 text-gray-600 group-hover:text-white transition-colors"></i>
+              <i className={`fas fa-info-circle mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
               <span className="font-medium">О системе</span>
             </button>
           </nav>
@@ -201,17 +203,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           <div className="mt-auto pt-6">
             <button 
               onClick={() => setShowProfileModal(true)}
-              className="w-full flex items-center py-3.5 px-4 rounded-xl text-gray-800 hover:bg-blue-600 hover:text-white transition-all duration-200 group"
+              className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
               title={userEmail}
             >
               {profilePhoto ? (
                 <img 
                   src={profilePhoto} 
                   alt="Фото профиля" 
-                  className="mr-3 w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-gray-300 group-hover:border-white transition-colors"
+                  className={`mr-3 w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 group-hover:border-white transition-colors ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
                 />
               ) : (
-                <i className="fas fa-user-circle mr-3 text-gray-600 group-hover:text-white transition-colors text-xl flex-shrink-0"></i>
+                <i className={`fas fa-user-circle mr-3 group-hover:text-white transition-colors text-xl flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
               )}
               <span className="flex-1 font-medium min-w-0 truncate text-left">
                 {getDisplayName(userEmail)}
@@ -222,7 +224,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       )}
 
       {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
-      <main className={`flex-1 overflow-y-auto bg-white text-gray-900 ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
+      <main className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
         {/* Кнопка "Назад" - показывается только на страницах не первого уровня, но не в редакторе и не на страницах авторизации */}
         {/* На странице privacy кнопка "Назад" уже встроена в компонент, поэтому здесь не показываем */}
         {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
@@ -270,5 +272,15 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         />
       )}
     </body>
+  );
+}
+
+export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>
+      <LayoutWrapperContent>
+        {children}
+      </LayoutWrapperContent>
+    </ThemeProvider>
   );
 }

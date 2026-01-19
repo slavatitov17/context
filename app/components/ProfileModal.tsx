@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/storage';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const router = useRouter();
+  const { isDark } = useTheme();
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -178,17 +180,17 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Блюр фон */}
       <div 
-        className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+        className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
         onClick={onClose}
       />
       
       {/* Модальное окно */}
-      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div className={`relative rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-medium text-gray-900">Мой профиль</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Мой профиль</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -198,25 +200,25 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         
         <div className="space-y-6">
           {/* Загрузка фото профиля */}
-          <div className="flex items-center gap-6 pb-6 border-b border-gray-200">
+          <div className={`flex items-center gap-6 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex-shrink-0">
               {profilePhoto ? (
                 <img 
                   src={profilePhoto} 
                   alt="Фото профиля" 
-                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                  className={`w-24 h-24 rounded-full object-cover border-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-                  <i className="fas fa-user-circle text-4xl text-gray-400"></i>
+                <div className={`w-24 h-24 rounded-full border-2 flex items-center justify-center ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'}`}>
+                  <i className={`fas fa-user-circle text-4xl ${isDark ? 'text-gray-500' : 'text-gray-400'}`}></i>
                 </div>
               )}
             </div>
             <div className="flex-1">
-              <label className="block text-gray-900 font-medium mb-2">
+              <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 Фото профиля
               </label>
-              <p className="text-sm text-gray-500 mb-3">
+              <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Загрузите ваше фото. Рекомендуемый масштаб фото: 200x200. Максимальный размер фото: 5 МБ.
               </p>
               <div className="flex gap-3">
@@ -238,7 +240,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 {profilePhoto && (
                   <button
                     onClick={handleRemovePhoto}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    className={`px-4 py-2 border rounded-lg transition-colors font-medium ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                   >
                     Удалить
                   </button>
@@ -253,7 +255,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Фамилия, Имя, Отчество в одну строку */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-gray-900 font-medium mb-2">
+                  <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     Фамилия
                   </label>
                   <input
@@ -261,12 +263,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Иванов"
-                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-900 font-medium mb-2">
+                  <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     Имя
                   </label>
                   <input
@@ -274,12 +276,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="Иван"
-                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-900 font-medium mb-2">
+                  <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     Отчество
                   </label>
                   <input
@@ -287,40 +289,40 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
                     placeholder="Иванович"
-                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
               </div>
 
               {/* Дата рождения */}
               <div>
-                <label className="block text-gray-900 font-medium mb-2">
+                <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                   Дата рождения
                 </label>
                 <input
                   type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'border-gray-300 text-gray-900'}`}
                 />
               </div>
 
               {/* Эл. почта */}
               <div>
-                <label className="block text-gray-900 font-medium mb-2">
+                <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                   Эл. почта
                 </label>
                 <input
                   type="email"
                   value={email}
                   disabled
-                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 text-gray-500 cursor-not-allowed"
+                  className={`w-full border rounded-lg p-3 cursor-not-allowed ${isDark ? 'bg-gray-700 border-gray-600 text-gray-500' : 'bg-gray-50 border-gray-300 text-gray-500'}`}
                 />
               </div>
 
               {/* Телефон */}
               <div>
-                <label className="block text-gray-900 font-medium mb-2">
+                <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                   Телефон
                 </label>
                 <input
@@ -328,14 +330,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={phone}
                   onChange={handlePhoneChange}
                   placeholder="+7 (999) 123-45-67"
-                  className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                 />
               </div>
             </div>
           </div>
 
           {/* Кнопки сохранения и выхода */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div className={`flex items-center justify-between pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={handleSave}
               disabled={!hasChanges}

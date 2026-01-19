@@ -5,8 +5,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, projects as projectsStorage, folders, type Project, type Folder, type FolderType } from '@/lib/storage';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 export default function ProjectsPage() {
+  const { isDark } = useTheme();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -341,10 +343,10 @@ export default function ProjectsPage() {
   return (
     <div>
       {/* Верхний блок: заголовок, описание и кнопка */}
-      <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
+      <div className={`flex items-start justify-between mb-8 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <div>
-          <h1 className="text-3xl font-medium mb-2">Проекты</h1>
-          <p className="text-gray-600">Загружайте документы и получайте ответы на вопросы по ним</p>
+          <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Проекты</h1>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Загружайте документы и получайте ответы на вопросы по ним</p>
         </div>
         {hasProjects && (
           <Link href="/projects/new">
@@ -359,7 +361,7 @@ export default function ProjectsPage() {
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-medium flex items-center gap-2">
+            <h2 className={`text-2xl font-medium flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               {currentFolder ? (
                 <>
                   <button
@@ -368,8 +370,8 @@ export default function ProjectsPage() {
                   >
                     Мои проекты
                   </button>
-                  <span className="text-gray-400">›</span>
-                  <span className="text-gray-900">{currentFolder.name}</span>
+                  <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>›</span>
+                  <span>{currentFolder.name}</span>
                 </>
               ) : (
                 'Мои проекты'
@@ -386,10 +388,10 @@ export default function ProjectsPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Поиск по названию..."
-                  className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                  className={`border rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900'}`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <i className="fas fa-search text-gray-400"></i>
+                  <i className={`fas fa-search ${isDark ? 'text-gray-500' : 'text-gray-400'}`}></i>
                 </div>
               </div>
               
@@ -398,7 +400,7 @@ export default function ProjectsPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'date')}
-                  className="border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
+                  className={`border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
                   <option value="date">По дате создания</option>
                   <option value="alphabet">По алфавиту</option>
@@ -419,10 +421,10 @@ export default function ProjectsPage() {
             <div className="mb-6">
               <i className="fas fa-folder-plus text-6xl text-gray-400"></i>
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">
+            <h3 className={`text-xl font-medium mb-3 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Проекты отсутствуют...
             </h3>
-            <p className="text-gray-600 text-center max-w-md mb-6">
+            <p className={`text-center max-w-md mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               Создайте свой первый проект, загрузите документы и получите ответы на вопросы по ним
             </p>
             <Link href="/projects/new">
@@ -440,8 +442,8 @@ export default function ProjectsPage() {
                 disabled={selectedProjects.size !== 1}
                 className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
                   selectedProjects.size === 1
-                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
-                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                    ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
                 <i className="far fa-edit"></i>
@@ -452,8 +454,8 @@ export default function ProjectsPage() {
                 disabled={selectedProjects.size === 0}
                 className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
                   selectedProjects.size > 0
-                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
-                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                    ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
                 <i className="far fa-folder"></i>
@@ -464,8 +466,8 @@ export default function ProjectsPage() {
                 disabled={selectedProjects.size === 0}
                 className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
                   selectedProjects.size > 0
-                    ? 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
-                    : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
+                    ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
+                    : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
               >
                 <i className="far fa-trash-alt"></i>
@@ -473,11 +475,11 @@ export default function ProjectsPage() {
               </button>
             </div>
             
-            <div className="border border-gray-200 rounded-lg overflow-x-auto overflow-y-visible">
+            <div className={`border rounded-lg overflow-x-auto overflow-y-visible ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-4 px-6 font-medium text-gray-900 w-12">
+                <thead className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                  <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <th className={`text-left py-4 px-6 font-medium w-12 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                       <input
                         type="checkbox"
                         checked={allSelected}
@@ -485,9 +487,9 @@ export default function ProjectsPage() {
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Название</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Краткое описание</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Дата создания</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -495,7 +497,7 @@ export default function ProjectsPage() {
                   {!currentFolderId && filteredAndSortedItems.folders.map((folder) => (
                     <tr 
                       key={folder.id} 
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                      className={`border-b transition-colors cursor-pointer ${isDark ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-100 hover:bg-gray-50'}`}
                       onClick={() => {
                         setCurrentFolderId(folder.id);
                       }}
@@ -509,14 +511,14 @@ export default function ProjectsPage() {
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
-                      <td className="py-4 px-6 text-gray-900 font-medium flex items-center gap-3">
+                      <td className={`py-4 px-6 font-medium flex items-center gap-3 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                         <i className="far fa-folder text-blue-600 text-xl"></i>
                         <span className="hover:text-blue-600 transition-colors">{folder.name}</span>
                       </td>
-                      <td className="py-4 px-6 text-gray-600">
+                      <td className={`py-4 px-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         <span></span>
                       </td>
-                      <td className="py-4 px-6 text-gray-500">
+                      <td className={`py-4 px-6 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                         {formatDate(folder.created_at)}
                       </td>
                     </tr>
@@ -525,7 +527,7 @@ export default function ProjectsPage() {
                   {filteredAndSortedItems.projects.map((project) => (
                     <tr 
                       key={project.id} 
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      className={`border-b transition-colors ${isDark ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-100 hover:bg-gray-50'}`}
                     >
                       <td className="py-4 px-6">
                         <input
@@ -536,17 +538,17 @@ export default function ProjectsPage() {
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
-                      <td className="py-4 px-6 text-gray-900 font-medium">
+                      <td className={`py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                         <Link href={`/projects/${project.id}`} className="block w-full h-full hover:text-blue-600 transition-colors">
                           {project.name}
                         </Link>
                       </td>
-                      <td className="py-4 px-6 text-gray-600">
+                      <td className={`py-4 px-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         <Link href={`/projects/${project.id}`} className="block w-full h-full">
                           {project.description || ''}
                         </Link>
                       </td>
-                      <td className="py-4 px-6 text-gray-500">
+                      <td className={`py-4 px-6 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                         <Link href={`/projects/${project.id}`} className="block w-full h-full">
                           {formatDate(project.created_at)}
                         </Link>
@@ -565,7 +567,7 @@ export default function ProjectsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Блюр фон */}
           <div 
-            className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+            className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
             onClick={() => {
               if (!showCreateFolder) {
                 setShowMoveToFolderModal(false);
@@ -576,9 +578,9 @@ export default function ProjectsPage() {
           />
           
           {/* Модальное окно */}
-          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className={`relative rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-medium text-gray-900">
+              <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 {showCreateFolder ? 'Создание папки' : 'Перенести в папку'}
               </h2>
               {!showCreateFolder && (
@@ -607,7 +609,7 @@ export default function ProjectsPage() {
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     placeholder="Название папки"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900'}`}
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && newFolderName.trim()) {
@@ -627,7 +629,7 @@ export default function ProjectsPage() {
                       setShowCreateFolder(false);
                       setNewFolderName('');
                     }}
-                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    className={`flex-1 px-6 py-3 border rounded-lg transition-colors font-medium ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                   >
                     Назад
                   </button>
@@ -661,12 +663,12 @@ export default function ProjectsPage() {
                           onClick={() => setSelectedFolderId(folder.id)}
                           className={`w-full text-left px-4 py-3 rounded-lg border transition-colors flex items-center gap-3 ${
                             selectedFolderId === folder.id
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-300 hover:bg-gray-50'
+                              ? isDark ? 'border-blue-600 bg-blue-900/30' : 'border-blue-600 bg-blue-50'
+                              : isDark ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'
                           }`}
                         >
                           <i className="far fa-folder text-blue-600 text-xl"></i>
-                          <span className="text-base text-gray-900">{folder.name}</span>
+                          <span className={`text-base ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{folder.name}</span>
                         </button>
                       ))}
                     </div>
