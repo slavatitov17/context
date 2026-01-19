@@ -3,8 +3,10 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function BackButton() {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -62,7 +64,7 @@ export default function BackButton() {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
         >
           <i className="fas fa-arrow-left text-sm"></i>
-          <span className="relative z-10">Назад</span>
+          <span className="relative z-10">{t('diagram.back')}</span>
           {/* Подчеркивание при наведении */}
           <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
         </Link>
@@ -72,7 +74,7 @@ export default function BackButton() {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
         >
           <i className="fas fa-arrow-left text-sm"></i>
-          <span className="relative z-10">Назад</span>
+          <span className="relative z-10">{t('diagram.back')}</span>
           {/* Подчеркивание при наведении */}
           <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
         </button>

@@ -2070,7 +2070,23 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
   // Функция для получения переведенного описания
   const getTranslatedDescription = (type: string, originalDescription: string): string => {
-    const key = `diagram.type.${type.split('PlantUML')[0]}.description`;
+    // Маппинг типов на ключи переводов
+    const typeMap: Record<string, string> = {
+      'SequencePlantUML': 'diagram.type.Sequence.description',
+      'UseCasePlantUML': 'diagram.type.UseCase.description',
+      'ClassPlantUML': 'diagram.type.Class.description',
+      'ObjectPlantUML': 'diagram.type.Object.description',
+      'ActivityPlantUML': 'diagram.type.Activity.description',
+      'ComponentPlantUML': 'diagram.type.Component.description',
+      'DeploymentPlantUML': 'diagram.type.Deployment.description',
+      'StatechartPlantUML': 'diagram.type.Statechart.description',
+      'GanttPlantUML': 'diagram.type.Gantt.description',
+      'MindMapPlantUML': 'diagram.type.MindMap.description',
+      'ERPlantUML': 'diagram.type.ER.description',
+      'WBSPlantUML': 'diagram.type.WBS.description',
+      'JSONPlantUML': 'diagram.type.JSON.description',
+    };
+    const key = typeMap[type] || `diagram.type.${type.split('PlantUML')[0]}.description`;
     return t(key) || originalDescription;
   };
 
@@ -2161,7 +2177,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Введите название или описание диаграммы"
+                  placeholder={t('diagram.searchPlaceholder')}
                   className={`w-full border rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300'}`}
                 />
               </div>
@@ -2298,7 +2314,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 
                 {/* Описание */}
                 <p className={`text-sm mb-4 line-clamp-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {diagram.description}
+                  {getTranslatedDescription(diagram.type, diagram.description)}
                 </p>
                 
                 {/* Теги */}
@@ -2308,7 +2324,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       key={tag}
                       className="px-2 py-1 bg-[#EAEEFF] text-[#3B5AE4] text-sm rounded-md"
                     >
-                      {tag}
+                      {getTranslatedTag(tag)}
                     </span>
                   ))}
                 </div>

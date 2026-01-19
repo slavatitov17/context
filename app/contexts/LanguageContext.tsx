@@ -182,6 +182,14 @@ const translations: Record<Language, Record<string, string>> = {
     'diagrams.folder.empty': 'Папки отсутствуют',
     'diagrams.loading': 'Загрузка...',
     
+    // Diagram Type Selection
+    'diagrams.chat.selectType.filter.all': 'Все',
+    'diagrams.chat.selectType.filter.standard': 'Стандарт или нотация',
+    'diagrams.chat.selectType.filter.purpose': 'Цель использования',
+    'diagrams.chat.selectType.filter.tag': 'Теги',
+    'diagrams.chat.selectType.sort.alphabet': 'По алфавиту',
+    'diagrams.chat.selectType.sort.popularity': 'По популярности',
+    
     // Project Detail Page
     'project.documents': 'Документы',
     'project.dragFiles': 'Перетащите файлы сюда',
@@ -196,6 +204,17 @@ const translations: Record<Language, Record<string, string>> = {
     'project.unknownError': 'Неизвестная ошибка',
     'project.uploadedProcessed': 'Загружено и обработано документов:',
     'project.of': 'из',
+    'project.back': 'Назад',
+    'project.edit.title': 'Редактирование проекта',
+    'project.edit.subtitle': 'Измените информацию о проекте',
+    'project.edit.requiredFields': '* - обязательные поля',
+    'project.edit.name': 'Название проекта',
+    'project.edit.namePlaceholder': 'Введите название проекта...',
+    'project.edit.description': 'Краткое описание проекта',
+    'project.edit.descriptionPlaceholder': 'Введите описание проекта...',
+    'project.edit.cancel': 'Отмена',
+    'project.edit.save': 'Сохранить',
+    'project.edit.saving': 'Сохранение...',
     
     // Diagram Detail Page
     'diagram.type': 'Тип диаграммы',
@@ -212,6 +231,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.selectTypeFirst': 'Сначала выберите тип диаграммы...',
     'diagram.describeManually': 'Опишите предметную область вручную',
     'diagram.back': 'Назад',
+    'diagram.searchPlaceholder': 'Введите название или описание диаграммы',
     'diagram.removeFilters': 'Убрать фильтры',
     'diagram.creationMethod': 'Способ создания диаграммы',
     'diagram.selectProject': 'Выберите проект',
@@ -407,6 +427,14 @@ const translations: Record<Language, Record<string, string>> = {
     'diagrams.loading': 'Loading...',
     'common.loading': 'Loading...',
     
+    // Diagram Type Selection
+    'diagrams.chat.selectType.filter.all': 'All',
+    'diagrams.chat.selectType.filter.standard': 'Standard or Notation',
+    'diagrams.chat.selectType.filter.purpose': 'Purpose',
+    'diagrams.chat.selectType.filter.tag': 'Tags',
+    'diagrams.chat.selectType.sort.alphabet': 'Alphabetically',
+    'diagrams.chat.selectType.sort.popularity': 'By Popularity',
+    
     // Project Detail Page
     'project.documents': 'Documents',
     'project.dragFiles': 'Drag files here',
@@ -421,6 +449,17 @@ const translations: Record<Language, Record<string, string>> = {
     'project.unknownError': 'Unknown error',
     'project.uploadedProcessed': 'Documents uploaded and processed:',
     'project.of': 'of',
+    'project.back': 'Back',
+    'project.edit.title': 'Edit Project',
+    'project.edit.subtitle': 'Change project information',
+    'project.edit.requiredFields': '* - required fields',
+    'project.edit.name': 'Project Name',
+    'project.edit.namePlaceholder': 'Enter project name...',
+    'project.edit.description': 'Brief Description',
+    'project.edit.descriptionPlaceholder': 'Enter project description...',
+    'project.edit.cancel': 'Cancel',
+    'project.edit.save': 'Save',
+    'project.edit.saving': 'Saving...',
     
     // Diagram Detail Page
     'diagram.type': 'Diagram Type',
@@ -437,6 +476,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.selectTypeFirst': 'First select a diagram type...',
     'diagram.describeManually': 'Describe the subject area manually',
     'diagram.back': 'Back',
+    'diagram.searchPlaceholder': 'Enter diagram name or description',
     'diagram.removeFilters': 'Remove Filters',
     'diagram.creationMethod': 'Diagram Creation Method',
     'diagram.selectProject': 'Select Project',
