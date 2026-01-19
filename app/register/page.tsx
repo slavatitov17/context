@@ -181,7 +181,7 @@ export default function RegisterPage() {
             />
             <label htmlFor="privacy" className="text-base text-gray-900">
               Я согласен с{' '}
-              <Link href="/privacy" className="text-blue-600 hover:underline">
+              <Link href="/privacy?from=register" className="text-blue-600 hover:underline">
                 Политикой конфиденциальности
               </Link>
             </label>

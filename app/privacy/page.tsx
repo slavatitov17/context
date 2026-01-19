@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/storage';
 
 export default function PrivacyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -47,7 +48,18 @@ export default function PrivacyPage() {
       <div className="mb-8 pb-6 border-b border-gray-200">
         {!isAuthenticated && (
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => {
+              // Определяем, откуда пришел пользователь
+              const from = searchParams.get('from');
+              if (from === 'register') {
+                router.push('/register');
+              } else if (from === 'login') {
+                router.push('/login');
+              } else {
+                // По умолчанию возвращаемся на регистрацию (так как теперь это стартовая страница)
+                router.push('/register');
+              }
+            }}
             className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative mb-6"
           >
             <i className="fas fa-arrow-left text-sm"></i>
