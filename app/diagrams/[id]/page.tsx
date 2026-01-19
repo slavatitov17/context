@@ -913,19 +913,19 @@ function MermaidMessage({
                   onClick={downloadPNG}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
-                  Скачать PNG
+                  {t('diagram.downloadPNG')}
                 </button>
               )}
               <button
                 onClick={() => {
                   if (msg.mermaidCode) {
                     navigator.clipboard.writeText(msg.mermaidCode);
-                    alert('Код скопирован в буфер обмена');
+                    alert(t('diagram.codeCopied'));
                   }
                 }}
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
-                Скопировать код
+                {t('diagram.copyCode')}
               </button>
             </div>
           </div>
@@ -946,12 +946,12 @@ function MermaidMessage({
           {/* Глоссарий (внизу, в том же сообщении) */}
           {msg.glossary && msg.glossary.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+              <h4 className="font-medium text-lg mb-4">{t('diagram.glossaryTitle')}</h4>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
-                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                    <th className="text-left py-2 font-medium text-gray-900">{t('diagram.element')}</th>
+                    <th className="text-left py-2 font-medium text-gray-900">{t('diagram.description')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2549,7 +2549,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     onClick={() => setShowSupportModal(true)}
                                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                                   >
-                                    Сообщить об ошибке
+                                    {t('diagram.reportError')}
                                   </button>
                                 </div>
 
@@ -2571,7 +2571,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                           : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                   >
-                                    Диаграмма
+                                    {t('diagram.diagram')}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -2589,7 +2589,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                           : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                   >
-                                    Код
+                                    {t('diagram.code')}
                                   </button>
                                 </div>
 
@@ -2605,7 +2605,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                       }`}
                                     >
-                                      Скачать PNG
+                                      {t('diagram.downloadPNG')}
                                     </a>
                                   )}
                                   <button
@@ -2621,7 +2621,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                                   >
-                                    Скопировать код
+                                    {t('diagram.copyCode')}
                                   </button>
                                 </div>
                               </div>
@@ -2648,8 +2648,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   <table className="w-full">
                                     <thead>
                                       <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Элемент</th>
-                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Описание</th>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.element')}</th>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.description')}</th>
                                       </tr>
                                     </thead>
                                     <tbody>
