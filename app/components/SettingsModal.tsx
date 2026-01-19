@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,23 +12,10 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { theme, toggleTheme, isDark } = useTheme();
-  const [language, setLanguage] = useState('ru');
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Загружаем сохраненные настройки из localStorage
-    const savedLanguage = localStorage.getItem('language');
-    
-    if (savedLanguage) {
-      setLanguage(savedLanguage);
-    }
-  }, [isOpen]);
+  const { language, setLanguage, t } = useLanguage();
 
   const handleLanguageChange = (newLanguage: string) => {
-    setLanguage(newLanguage);
-    localStorage.setItem('language', newLanguage);
-    // Здесь можно добавить реальную логику переключения языка
+    setLanguage(newLanguage as 'ru' | 'en');
   };
 
   if (!isOpen) return null;
@@ -43,7 +31,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       {/* Модальное окно */}
       <div className={`relative rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Настройки</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.title')}</h2>
           <button
             onClick={onClose}
             className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
@@ -59,11 +47,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className={`rounded-xl p-6 h-[96px] flex items-center border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between w-full">
               <span className={`text-base ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Тема интерфейса
+                {t('settings.theme')}
               </span>
               <div className="flex items-center gap-4">
                 <span className={`text-base ${!isDark ? (isDark ? 'text-gray-100' : 'text-gray-900') : 'text-gray-500'}`}>
-                  Светлая
+                  {t('settings.light')}
                 </span>
                 <button
                   onClick={toggleTheme}
@@ -72,7 +60,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <div className="w-5 h-5 bg-white rounded-full shadow-sm"></div>
                 </button>
                 <span className={`text-base ${isDark ? (isDark ? 'text-gray-100' : 'text-gray-900') : 'text-gray-500'}`}>
-                  Тёмная
+                  {t('settings.dark')}
                 </span>
               </div>
             </div>
@@ -82,7 +70,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className={`rounded-xl p-6 h-[96px] flex items-center border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between w-full">
               <span className={`text-base ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Язык интерфейса
+                {t('settings.language')}
               </span>
               <div className="relative">
                 <select

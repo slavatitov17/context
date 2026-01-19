@@ -10,9 +10,11 @@ import ProfileModal from './ProfileModal';
 import AboutModal from './AboutModal';
 import SettingsModal from './SettingsModal';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/register';
@@ -138,7 +140,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return (
       <body className="flex h-screen bg-white font-sans tracking-tight" style={{ backgroundColor: '#ffffff' }}>
         <main className="flex-1 p-8 overflow-auto bg-white text-gray-900 flex items-center justify-center">
-          <div className="text-gray-500">Загрузка...</div>
+          <div className="text-gray-500">{t('common.loading')}</div>
         </main>
       </body>
     );
@@ -173,21 +175,21 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
               <i className={`fas fa-folder mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">Проекты</span>
+              <span className="font-medium">{t('sidebar.projects')}</span>
             </Link>
             <Link
               href="/diagrams"
               className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
               <i className={`fas fa-sitemap mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">Диаграммы</span>
+              <span className="font-medium">{t('sidebar.diagrams')}</span>
             </Link>
             <button
               onClick={() => setShowSettingsModal(true)}
               className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
               <i className={`fas fa-cog mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">Настройки</span>
+              <span className="font-medium">{t('sidebar.settings')}</span>
             </button>
             <button
               onClick={() => setShowAboutModal(true)}
@@ -195,7 +197,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
             >
               <i className={`fas fa-info-circle mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">О системе</span>
+              <span className="font-medium">{t('sidebar.about')}</span>
             </button>
           </nav>
 

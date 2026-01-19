@@ -6,12 +6,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage, folders, type Diagram, type DiagramType, type Folder, type FolderType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 // Объединенный тип для диаграмм
 type UnifiedDiagram = Diagram & { source: 'catalog' };
 
 export default function DiagramsPage() {
   const { isDark } = useTheme();
+  const { t, language } = useLanguage();
   const [diagrams, setDiagrams] = useState<UnifiedDiagram[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -161,7 +163,7 @@ export default function DiagramsPage() {
   const handleDelete = (diagramId: string) => {
     if (!user) return;
     
-    if (!confirm('Вы уверены, что хотите удалить эту диаграмму?')) {
+    if (!confirm(language === 'ru' ? 'Вы уверены, что хотите удалить эту диаграмму?' : 'Are you sure you want to delete this diagram?')) {
       return;
     }
 
@@ -175,11 +177,11 @@ export default function DiagramsPage() {
           return newSet;
         });
       } else {
-        alert('Не удалось удалить диаграмму. Попробуйте еще раз.');
+        alert(language === 'ru' ? 'Не удалось удалить диаграмму. Попробуйте еще раз.' : 'Failed to delete diagram. Please try again.');
       }
     } catch (error) {
       console.error('Ошибка при удалении диаграммы:', error);
-      alert('Не удалось удалить диаграмму. Попробуйте еще раз.');
+      alert(language === 'ru' ? 'Не удалось удалить диаграмму. Попробуйте еще раз.' : 'Failed to delete diagram. Please try again.');
     }
   };
 
@@ -187,7 +189,10 @@ export default function DiagramsPage() {
     if (!user || selectedDiagrams.size === 0) return;
     
     const count = selectedDiagrams.size;
-    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`)) {
+    const confirmText = language === 'ru' 
+      ? `Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`
+      : `Are you sure you want to delete ${count} ${count === 1 ? 'diagram' : 'diagrams'}?`;
+    if (!confirm(confirmText)) {
       return;
     }
 
@@ -206,11 +211,11 @@ export default function DiagramsPage() {
       }
 
       if (successCount < count) {
-        alert(`Удалено ${successCount} из ${count} диаграмм.`);
+        alert(language === 'ru' ? `Удалено ${successCount} из ${count} диаграмм.` : `Deleted ${successCount} of ${count} diagrams.`);
       }
     } catch (error) {
       console.error('Ошибка при массовом удалении диаграмм:', error);
-      alert('Произошла ошибка при удалении диаграмм.');
+      alert(language === 'ru' ? 'Произошла ошибка при удалении диаграмм.' : 'An error occurred while deleting diagrams.');
     }
   };
 
@@ -263,7 +268,7 @@ export default function DiagramsPage() {
       setNewFolderName('');
     } catch (error) {
       console.error('Ошибка при создании папки:', error);
-      alert('Не удалось создать папку. Попробуйте еще раз.');
+      alert(language === 'ru' ? 'Не удалось создать папку. Попробуйте еще раз.' : 'Failed to create folder. Please try again.');
     }
   };
 
@@ -291,7 +296,7 @@ export default function DiagramsPage() {
       }
     } catch (error) {
       console.error('Ошибка при перемещении диаграмм:', error);
-      alert('Не удалось переместить диаграммы. Попробуйте еще раз.');
+      alert(language === 'ru' ? 'Не удалось переместить диаграммы. Попробуйте еще раз.' : 'Failed to move diagrams. Please try again.');
     }
   };
 
@@ -299,7 +304,10 @@ export default function DiagramsPage() {
     if (selectedDiagrams.size === 0 || !user) return;
     
     const count = selectedDiagrams.size;
-    if (!confirm(`Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`)) {
+    const confirmText = language === 'ru' 
+      ? `Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`
+      : `Are you sure you want to delete ${count} ${count === 1 ? 'diagram' : 'diagrams'}?`;
+    if (!confirm(confirmText)) {
       return;
     }
 
@@ -381,7 +389,7 @@ export default function DiagramsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className={isDark ? 'text-gray-400' : 'text-gray-500'}>{t('diagrams.loading')}</div>
       </div>
     );
   }
@@ -395,14 +403,14 @@ export default function DiagramsPage() {
       {/* Верхний блок: заголовок, описание и кнопки */}
       <div className={`flex items-start justify-between mb-8 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <div>
-          <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Диаграммы</h1>
-          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Получайте готовые диаграммы по текстовому описанию</p>
+          <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagrams.title')}</h1>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{t('diagrams.description')}</p>
         </div>
         {hasDiagrams && (
           <div className="flex gap-3">
             <Link href="/diagrams/new">
               <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Выбрать тип диаграммы
+                {t('diagrams.selectType')}
               </button>
             </Link>
           </div>
@@ -419,13 +427,13 @@ export default function DiagramsPage() {
                   onClick={() => setCurrentFolderId(null)}
                   className="opacity-50 hover:opacity-100 transition-opacity"
                 >
-                  Мои диаграммы
+                  {t('diagrams.myDiagrams')}
                 </button>
                 <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>›</span>
                 <span>{currentFolder.name}</span>
               </>
             ) : (
-              'Мои диаграммы'
+              t('diagrams.myDiagrams')
             )}
           </h2>
           
@@ -437,7 +445,7 @@ export default function DiagramsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск по названию..."
+                  placeholder={t('diagrams.search')}
                   className={`border rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900'}`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -452,8 +460,8 @@ export default function DiagramsPage() {
                   onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'date')}
                   className={`border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
-                  <option value="date">По дате создания</option>
-                  <option value="alphabet">По алфавиту</option>
+                  <option value="date">{t('diagrams.sort.date')}</option>
+                  <option value="alphabet">{t('diagrams.sort.alphabet')}</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -472,15 +480,15 @@ export default function DiagramsPage() {
               <i className="fas fa-sitemap text-6xl text-gray-400"></i>
             </div>
             <h3 className={`text-xl font-medium mb-3 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Диаграммы отсутствуют...
+              {t('diagrams.empty.title')}
             </h3>
             <p className={`text-center max-w-md mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Создайте свою первую диаграмму, выбрав ее тип и описав предметную область
+              {t('diagrams.empty.description')}
             </p>
             <div className="flex gap-3">
               <Link href="/diagrams/new">
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  Выбрать тип диаграммы
+                  {t('diagrams.selectType')}
                 </button>
               </Link>
             </div>
@@ -499,7 +507,7 @@ export default function DiagramsPage() {
                 }`}
               >
                 <i className="far fa-edit"></i>
-                <span>Редактировать</span>
+                <span>{t('diagrams.edit')}</span>
               </button>
               <button
                 onClick={handleMoveToFolder}
@@ -511,7 +519,7 @@ export default function DiagramsPage() {
                 }`}
               >
                 <i className="far fa-folder"></i>
-                <span>Перенести в папку</span>
+                <span>{t('diagrams.move')}</span>
               </button>
               <button
                 onClick={handleDeleteSelected}
@@ -523,7 +531,7 @@ export default function DiagramsPage() {
                 }`}
               >
                 <i className="far fa-trash-alt"></i>
-                <span>Удалить</span>
+                <span>{t('diagrams.delete')}</span>
               </button>
             </div>
             
@@ -539,9 +547,9 @@ export default function DiagramsPage() {
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Название</th>
-                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Тип диаграммы</th>
-                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Дата создания</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagrams.table.name')}</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagrams.table.type')}</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagrams.table.date')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -633,7 +641,7 @@ export default function DiagramsPage() {
           <div className={`relative rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                {showCreateFolder ? 'Создание папки' : 'Перенести в папку'}
+                {showCreateFolder ? t('diagrams.folder.create') : t('diagrams.folder.move')}
               </h2>
               {!showCreateFolder && (
                 <button
@@ -660,7 +668,7 @@ export default function DiagramsPage() {
                     type="text"
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
-                    placeholder="Название папки"
+                    placeholder={t('diagrams.folder.name')}
                     className={`w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900'}`}
                     autoFocus
                     onKeyDown={(e) => {
@@ -681,9 +689,9 @@ export default function DiagramsPage() {
                       setShowCreateFolder(false);
                       setNewFolderName('');
                     }}
-                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    className={`flex-1 px-6 py-3 border rounded-lg transition-colors font-medium ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                   >
-                    Назад
+                    {t('diagrams.folder.back')}
                   </button>
                   <button
                     onClick={(e) => {
@@ -697,7 +705,7 @@ export default function DiagramsPage() {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    Создать папку
+                    {t('diagrams.folder.createButton')}
                   </button>
                 </div>
               </>
@@ -706,7 +714,7 @@ export default function DiagramsPage() {
               <>
                 <div className="flex-1 overflow-y-auto mb-6">
                   {foldersList.length === 0 ? (
-                    <p className="text-gray-500 text-base">Папки отсутствуют</p>
+                    <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('diagrams.folder.empty')}</p>
                   ) : (
                     <div className="space-y-2">
                       {foldersList.map((folder) => (
@@ -739,7 +747,7 @@ export default function DiagramsPage() {
                         : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
                     }`}
                   >
-                    Создать новую папку
+                    {t('diagrams.folder.createNew')}
                   </button>
                   <button
                     onClick={handleMove}
@@ -752,7 +760,7 @@ export default function DiagramsPage() {
                         : 'bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed'
                     }`}
                   >
-                    Переместить
+                    {t('diagrams.folder.moveButton')}
                   </button>
                 </div>
               </>

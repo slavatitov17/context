@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface ProfileModalProps {
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const router = useRouter();
   const { isDark } = useTheme();
+  const { t, language } = useLanguage();
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -114,12 +116,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      alert(language === 'ru' ? 'Пожалуйста, выберите изображение' : 'Please select an image');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Размер файла не должен превышать 5 МБ');
+      alert(language === 'ru' ? 'Размер файла не должен превышать 5 МБ' : 'File size must not exceed 5 MB');
       return;
     }
 
@@ -160,7 +162,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       newValue: JSON.stringify(profile),
     }));
     setHasChanges(false);
-    alert('Профиль успешно сохранен');
+    alert(language === 'ru' ? 'Профиль успешно сохранен' : 'Profile saved successfully');
     onClose();
   };
 
@@ -187,7 +189,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       {/* Модальное окно */}
       <div className={`relative rounded-xl p-6 max-w-2xl w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Мой профиль</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('profile.title')}</h2>
           <button
             onClick={onClose}
             className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
@@ -216,10 +218,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
             <div className="flex-1">
               <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Фото профиля
+                {t('profile.photo')}
               </label>
               <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Загрузите ваше фото. Рекомендуемый масштаб фото: 200x200. Максимальный размер фото: 5 МБ.
+                {t('profile.photo.upload')}
               </p>
               <div className="flex gap-3">
                 <input
@@ -235,14 +237,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer font-medium"
                 >
                   <i className="fas fa-pencil-alt"></i>
-                  {profilePhoto ? 'Изменить фото' : 'Загрузить фото'}
+                  {profilePhoto ? t('profile.photo.change') : t('profile.photo.uploadButton')}
                 </label>
                 {profilePhoto && (
                   <button
                     onClick={handleRemovePhoto}
                     className={`px-4 py-2 border rounded-lg transition-colors font-medium ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                   >
-                    Удалить
+                    {t('profile.photo.remove')}
                   </button>
                 )}
               </div>
@@ -256,39 +258,39 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Фамилия
+                    {t('profile.lastName')}
                   </label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Иванов"
+                    placeholder={language === 'ru' ? 'Иванов' : 'Smith'}
                     className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
                 <div>
                   <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Имя
+                    {t('profile.firstName')}
                   </label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Иван"
+                    placeholder={language === 'ru' ? 'Иван' : 'John'}
                     className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
 
                 <div>
                   <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Отчество
+                    {t('profile.middleName')}
                   </label>
                   <input
                     type="text"
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
-                    placeholder="Иванович"
+                    placeholder={language === 'ru' ? 'Иванович' : 'Michael'}
                     className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-500' : 'border-gray-300 text-gray-900'}`}
                   />
                 </div>
@@ -297,7 +299,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Дата рождения */}
               <div>
                 <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                  Дата рождения
+                  {t('profile.birthDate')}
                 </label>
                 <input
                   type="date"
@@ -310,7 +312,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Эл. почта */}
               <div>
                 <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                  Эл. почта
+                  {t('profile.email')}
                 </label>
                 <input
                   type="email"
@@ -323,7 +325,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               {/* Телефон */}
               <div>
                 <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                  Телефон
+                  {t('profile.phone')}
                 </label>
                 <input
                   type="tel"
@@ -343,14 +345,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               disabled={!hasChanges}
               className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
             >
-              Сохранить изменения
+              {t('profile.save')}
             </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
             >
               <i className="fas fa-sign-out-alt"></i>
-              Выйти из аккаунта
+              {t('profile.logout')}
             </button>
           </div>
         </div>

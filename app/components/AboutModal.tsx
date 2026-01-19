@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { auth } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface AboutModalProps {
 
 export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showVersion, setShowVersion] = useState(false);
   const [email, setEmail] = useState('');
@@ -139,7 +141,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-200 group relative"
               >
                 <i className="fas fa-arrow-left text-sm"></i>
-                <span className="relative z-10">Назад</span>
+                <span className="relative z-10">{t('about.back')}</span>
                 <span className="absolute bottom-1 left-3 right-3 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></span>
               </button>
               <button
@@ -152,13 +154,13 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </button>
             </div>
             <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              {showPrivacy ? 'Политика конфиденциальности' : 'Версия 1.0.0'}
+              {showPrivacy ? t('about.privacy') : t('about.version')}
             </h2>
           </div>
         ) : (
           <div className="flex justify-between items-center mb-6">
             <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              О системе
+              {t('about.title')}
             </h2>
             <button
               onClick={onClose}
@@ -176,22 +178,20 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             {/* Блок 1: О системе */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Context (рус. Контекст)
+                {t('about.context')}
               </h3>
               <div className="space-y-4">
                 <p className={`text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Ответы на вопросы по загруженным документам, создание диаграмм
-                  по предметной области. Используя систему Context, вы соглашаетесь{' '}
-                  с{' '}
+                  {t('about.description')}{' '}
                   <button
                     onClick={() => setShowPrivacy(true)}
                     className="text-blue-600 hover:underline"
                   >
-                    Политикой конфиденциальности
+                    {t('about.privacyLink')}
                   </button>
                 </p>
                 <div>
-                  <p className={`text-xl font-medium mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Версия</p>
+                  <p className={`text-xl font-medium mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('about.versionLabel')}</p>
                   <button
                     onClick={() => setShowVersion(true)}
                     className="text-blue-600 hover:underline text-base"
@@ -204,13 +204,13 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             {/* Блок 2: Форма поддержки */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`} ref={formRef}>
-              <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Обратиться в поддержку</h3>
+              <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('about.support')}</h3>
               
               <form onSubmit={handleSubmit}>
                 {/* Поле Email */}
                 <div className="mb-4">
                   <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Ваша электронная почта
+                    {t('about.support.email')}
                   </label>
                   <input
                     type="email"
@@ -218,14 +218,14 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
-                    placeholder="example@mail.com"
+                    placeholder={t('about.support.placeholder.email')}
                   />
                 </div>
 
                 {/* Поле Сообщение */}
                 <div className="mb-6">
                   <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Ваше сообщение
+                    {t('about.support.message')}
                   </label>
                   <textarea
                     value={message}
@@ -233,7 +233,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                     required
                     rows={3}
                     className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${isDark ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
-                    placeholder="Опишите вашу проблему или вопрос..."
+                    placeholder={t('about.support.placeholder.message')}
                   />
                   <div className="flex justify-end mt-2">
                     <button
@@ -242,7 +242,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                       className={`text-base font-medium flex items-center hover:text-blue-600 transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                       <i className="fas fa-paperclip mr-2 text-lg"></i>
-                      Прикрепить файл
+                      {t('about.support.attach')}
                     </button>
                     <input
                       ref={fileInputRef}
@@ -294,7 +294,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  Отправить
+                  {t('about.support.send')}
                 </button>
               </form>
             </div>
@@ -304,7 +304,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             {/* Политика конфиденциальности */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                1. Общие положения
+                {t('privacy.section1.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -319,7 +319,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                2. Собираемые данные
+                {t('privacy.section2.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>При использовании Сервиса мы собираем следующую информацию:</p>
@@ -334,7 +334,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                3. Цели использования данных
+                {t('privacy.section3.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>Собранные данные используются для следующих целей:</p>
@@ -352,7 +352,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                4. Защита персональных данных
+                {t('privacy.section4.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -364,7 +364,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                5. Передача данных третьим лицам
+                {t('privacy.section5.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -380,7 +380,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                6. Права пользователей
+                {t('privacy.section6.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>Пользователь имеет право:</p>
@@ -397,7 +397,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                7. Использование Cookies
+                {t('privacy.section7.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -411,7 +411,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                8. Изменения в Политике конфиденциальности
+                {t('privacy.section8.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -426,7 +426,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                9. Обратиться в поддержку
+                {t('privacy.section9.title')}
               </h3>
               <div className={`space-y-4 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -440,7 +440,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             {/* Блок 1: Основные возможности */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Основные возможности
+                {t('version.features.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -458,7 +458,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             {/* Блок 2: Типы диаграмм */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Доступные типы диаграмм
+                {t('version.diagrams.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -478,7 +478,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             {/* Блок 3: Форматы документов */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Поддерживаемые форматы документов
+                {t('version.formats.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
@@ -496,7 +496,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             {/* Блок 4: Технические детали */}
             <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-xl font-medium mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Технические детали
+                {t('version.technical.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
