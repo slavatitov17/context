@@ -162,7 +162,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         <aside className={`fixed left-4 top-4 w-64 p-6 rounded-lg border flex flex-col ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`} style={{ height: 'calc(100vh - 2rem)' }}>
           <div className="mb-10 flex items-center gap-3">
             {/* Логотип - диаграмма с узлами (уменьшен) */}
-            <i className="fas fa-diagram-project text-2xl text-gray-900"></i>
+            <i className={`fas fa-diagram-project text-2xl ${isDark ? 'text-white' : 'text-gray-900'}`}></i>
             <h1 className={`text-3xl font-medium cursor-default ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Context
             </h1>

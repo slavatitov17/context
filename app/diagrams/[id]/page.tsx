@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -924,6 +925,7 @@ interface UploadedFile {
 }
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
+  const { isDark } = useTheme();
   const routeParams = useParams();
   const diagramId = routeParams?.id as string;
   const [diagramData, setDiagramData] = useState<Diagram | null>(null);
@@ -2061,9 +2063,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
-          <div className="mb-8 pb-6 border-b border-gray-200">
-            <h1 className="text-3xl font-medium mb-2">Тип диаграммы</h1>
-            <p className="text-gray-600 text-base">Выберите тип диаграммы</p>
+          <div className={`mb-8 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Тип диаграммы</h1>
+            <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Выберите тип диаграммы</p>
           </div>
 
           {/* Панель управления: Поиск, Фильтры, Сортировка */}
@@ -2072,31 +2074,31 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             <div className="flex flex-col md:flex-row gap-4">
               {/* Поиск */}
               <div className="flex-1">
-                <label className="block text-xl font-medium text-gray-900 mb-2">Поиск</label>
+                <label className={`block text-xl font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Поиск</label>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Введите название или описание диаграммы"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full border rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300'}`}
                 />
               </div>
               
               {/* Сортировка */}
               <div className="md:w-64">
-                <label className="block text-xl font-medium text-gray-900 mb-2">Сортировка</label>
+                <label className={`block text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Сортировка</label>
                 <div className="relative">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
-                    className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                    className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                   >
                     <option value="alphabet">По алфавиту</option>
                     <option value="popularity">По популярности</option>
                   </select>
                   {/* Кастомная стрелочка */}
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                   </div>
@@ -2105,9 +2107,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
 
             {/* Фильтры */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className={`rounded-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-medium text-gray-900">Фильтры</h3>
+                <h3 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Фильтры</h3>
                 {hasActiveFilters && (
                   <button
                     onClick={handleClearFilters}
@@ -2120,14 +2122,14 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Фильтр по стандарту/нотации */}
                 <div>
-                  <label className="block text-base font-medium text-gray-900 mb-2">
+                  <label className={`block text-base font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     Стандарт или нотация
                   </label>
                   <div className="relative">
                     <select
                       value={selectedStandard}
                       onChange={(e) => setSelectedStandard(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                      className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
                       <option value="Все">Все</option>
                       {allStandards.map(standard => (
@@ -2136,7 +2138,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     </select>
                     {/* Кастомная стрелочка */}
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>
@@ -2145,14 +2147,14 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                 {/* Фильтр по цели использования */}
                 <div>
-                  <label className="block text-base font-medium text-gray-900 mb-2">
+                  <label className={`block text-base font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     Цель использования
                   </label>
                   <div className="relative">
                     <select
                       value={selectedPurpose}
                       onChange={(e) => setSelectedPurpose(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                      className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
                       <option value="Все">Все</option>
                       {allPurposes.map(purpose => (
@@ -2161,7 +2163,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     </select>
                     {/* Кастомная стрелочка */}
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>
@@ -2170,14 +2172,14 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                 {/* Фильтр по тегам */}
                 <div>
-                  <label className="block text-base font-medium text-gray-900 mb-2">
+                  <label className={`block text-base font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     Теги
                   </label>
                   <div className="relative">
                     <select
                       value={selectedTag}
                       onChange={(e) => setSelectedTag(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 bg-white"
+                      className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
                       <option value="Все">Все</option>
                       {allTags.map(tag => (
@@ -2186,7 +2188,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     </select>
                     {/* Кастомная стрелочка */}
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>
@@ -2202,18 +2204,18 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               <button
                 key={diagram.type}
                 onClick={() => handleDiagramTypeSelect(diagram.type)}
-                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all text-left relative group"
+                className={`border-2 rounded-xl p-6 transition-all text-left relative group ${isDark ? 'bg-gray-800 border-gray-700 hover:border-blue-500 hover:bg-gray-700' : 'bg-white border-gray-200 hover:border-blue-500 hover:bg-blue-50'}`}
               >
                 {/* Индикатор номера */}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-600 group-hover:bg-blue-100">
+                <div className={`absolute top-4 right-4 w-8 h-8 rounded flex items-center justify-center text-sm group-hover:bg-blue-100 ${isDark ? 'bg-gray-700 text-gray-300 group-hover:bg-blue-900/30' : 'bg-gray-100 text-gray-600'}`}>
                   {index + 1}
                 </div>
                 
                 {/* Заголовок */}
-                <h3 className="text-xl font-medium text-gray-900 mb-3 pr-10">{diagram.name}</h3>
+                <h3 className={`text-xl font-medium mb-3 pr-10 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{diagram.name}</h3>
                 
                 {/* Описание */}
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                <p className={`text-sm mb-4 line-clamp-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {diagram.description}
                 </p>
                 
@@ -2235,8 +2237,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           {/* Сообщение, если ничего не найдено или блок "Не нашли нужный тип?" */}
           {filteredAndSortedTypes.length === 0 ? (
             <div className="mt-12 text-center pb-8">
-              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Не нашли нужный тип?</h3>
+              <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 В ближайшее время будут добавлены новые типы, следите за обновлениями в разделе{' '}
                 <button
                   onClick={() => {

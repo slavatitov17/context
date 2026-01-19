@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface UploadedFile {
   id: string;
@@ -229,6 +230,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 }
 
 export default function ProjectDetailPage() {
+  const { isDark } = useTheme();
   const params = useParams();
   const projectId = params?.id as string;
   const [projectData, setProjectData] = useState<Project | null>(null);
@@ -717,10 +719,10 @@ export default function ProjectDetailPage() {
       
       <div className="flex-1 flex gap-4 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
         {/* Левая колонка: Боковое меню с файлами */}
-        <div className="w-80 flex-shrink-0 flex flex-col bg-gray-50 rounded-lg border border-gray-200" style={{ height: '100%', maxHeight: '100%' }}>
+        <div className={`w-80 flex-shrink-0 flex flex-col rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`} style={{ height: '100%', maxHeight: '100%' }}>
           {/* Заголовок с бордером */}
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">
+          <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h2 className={`text-lg font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Документы {hasFiles && `(${uploadedFiles.length})`}
             </h2>
           </div>
@@ -740,16 +742,16 @@ export default function ProjectDetailPage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`flex-1 overflow-y-auto p-4 transition-colors ${
-              isDragging ? 'bg-blue-50' : ''
+              isDragging ? (isDark ? 'bg-blue-900/30' : 'bg-blue-50') : ''
             }`}
           >
             {!hasFiles ? (
               /* Пустое состояние */
               <div className="flex flex-col items-center justify-center h-full text-center py-8">
                 <div className="mb-4">
-                  <i className="fas fa-download text-4xl text-gray-400"></i>
+                  <i className={`fas fa-download text-4xl ${isDark ? 'text-gray-500' : 'text-gray-400'}`}></i>
                 </div>
-                <p className="text-base text-gray-500">
+                <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Перетащите файлы сюда<br />
                   или нажмите кнопку ниже
                 </p>
@@ -760,7 +762,7 @@ export default function ProjectDetailPage() {
                 {uploadedFiles.map((fileItem) => (
                   <div
                     key={fileItem.id}
-                    className="bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors group"
+                    className={`rounded-lg p-3 transition-colors group border ${isDark ? 'bg-gray-700 border-gray-600 hover:border-blue-500' : 'bg-white border-gray-200 hover:border-blue-300'}`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Иконка файла - компактная */}
@@ -772,11 +774,11 @@ export default function ProjectDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-base font-medium text-gray-900 truncate" title={fileItem.name}>
+                            <p className={`text-base font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`} title={fileItem.name}>
                               {fileItem.name}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-sm text-gray-500">
+                              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {formatFileSize(fileItem.size)}
                               </p>
                               {/* Статус */}
@@ -806,7 +808,7 @@ export default function ProjectDetailPage() {
                         {/* Прогресс загрузки - компактный */}
                         {fileItem.status === 'uploading' && (
                           <div className="mt-2">
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div className={`w-full rounded-full h-1.5 ${isDark ? 'bg-gray-600' : 'bg-gray-200'}`}>
                               <div
                                 className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                                 style={{ width: `${fileItem.progress}%` }}
@@ -823,7 +825,7 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Бордер и кнопка внизу */}
-          <div className="p-4 border-t border-gray-200">
+          <div className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={handleButtonClick}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
@@ -838,10 +840,10 @@ export default function ProjectDetailPage() {
         <div className="flex-1 flex flex-col min-w-0" style={{ height: '100%', maxHeight: '100%' }}>
           {!hasSuccessfulFiles ? (
             /* Пустое состояние чата */
-            <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 min-h-0">
+            <div className={`flex-1 flex items-center justify-center rounded-lg border min-h-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
               <div className="text-center">
-                <i className="fas fa-comments text-6xl text-gray-400 mb-4"></i>
-                <p className="text-gray-500 text-base">
+                <i className={`fas fa-comments text-6xl mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}></i>
+                <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Загрузите документы, чтобы начать работу с ними
                 </p>
               </div>
@@ -850,7 +852,7 @@ export default function ProjectDetailPage() {
             /* Чат с сообщениями */
             <div className="flex-1 flex flex-col min-h-0">
               {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0">
+              <div className={`flex-1 rounded-lg border p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
@@ -861,17 +863,17 @@ export default function ProjectDetailPage() {
                     if (!msg.isUser && msg.generationTime !== undefined) {
                       return (
                         <div key={index} className="flex flex-col items-start w-full">
-                          <div className="text-base text-gray-500 mb-1 px-1">
+                          <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             {dateStr} {timeStr}
                           </div>
                           <div className="max-w-[75%] w-full">
                             {/* Таймер и кнопка "Сообщить об ошибке" */}
                             <div className="flex items-center gap-3 mb-4">
-                              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="text-sm font-mono font-medium text-gray-700">
+                                <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                                   {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
                                 </span>
                               </div>
@@ -884,26 +886,26 @@ export default function ProjectDetailPage() {
                             </div>
                             
                             {/* Девайдер */}
-                            <div className="border-t border-gray-200 mb-4"></div>
+                            <div className={`border-t mb-4 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}></div>
                             
                             {/* Ответ системы */}
-                            <div className="bg-white border border-gray-200 rounded-2xl p-4 rounded-bl-none shadow-sm prose prose-sm max-w-none">
-                              <div className="text-base break-words text-gray-900 markdown-content">
+                            <div className={`rounded-2xl p-4 rounded-bl-none shadow-sm prose prose-sm max-w-none border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
+                              <div className={`text-base break-words markdown-content ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                                 <ReactMarkdown
                                   components={{
-                                    h1: (props) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
-                                    h2: (props) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                    h3: (props) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                    h4: (props) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
-                                    p: (props) => <p className="mb-2 text-gray-900" {...props} />,
-                                    ul: (props) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                    ol: (props) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                    li: (props) => <li className="text-gray-900" {...props} />,
-                                    strong: (props) => <strong className="font-bold text-gray-900" {...props} />,
-                                    em: (props) => <em className="italic text-gray-900" {...props} />,
-                                    code: (props) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
-                                    pre: (props) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
-                                    blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
+                                    h1: (props) => <h1 className={`text-2xl font-bold mt-4 mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    h2: (props) => <h2 className={`text-xl font-bold mt-3 mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    h3: (props) => <h3 className={`text-lg font-bold mt-3 mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    h4: (props) => <h4 className={`text-base font-bold mt-2 mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    p: (props) => <p className={`mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    ul: (props) => <ul className={`list-disc list-inside mb-2 space-y-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    ol: (props) => <ol className={`list-decimal list-inside mb-2 space-y-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    li: (props) => <li className={isDark ? 'text-gray-100' : 'text-gray-900'} {...props} />,
+                                    strong: (props) => <strong className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    em: (props) => <em className={`italic ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    code: (props) => <code className={`px-1 py-0.5 rounded text-sm font-mono ${isDark ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-900'}`} {...props} />,
+                                    pre: (props) => <pre className={`p-3 rounded overflow-x-auto mb-2 text-sm ${isDark ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-900'}`} {...props} />,
+                                    blockquote: (props) => <blockquote className={`border-l-4 pl-4 italic mb-2 ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'}`} {...props} />,
                                   }}
                                 >
                                   {msg.text}
@@ -918,34 +920,34 @@ export default function ProjectDetailPage() {
                     // Обычные сообщения (пользователь и старые сообщения системы)
                     return (
                       <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
-                        <div className="text-base text-gray-500 mb-1 px-1">
+                        <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           {dateStr} {timeStr}
                         </div>
                         <div className={`max-w-[75%] rounded-2xl p-4 ${
                           msg.isUser
                             ? 'bg-blue-600 text-white rounded-br-none'
-                            : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
+                            : isDark ? 'bg-gray-700 border border-gray-600 rounded-bl-none shadow-sm' : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
                         }`}>
                           {msg.isUser ? (
                             <p className="text-base break-words text-white whitespace-pre-wrap">{msg.text}</p>
                           ) : (
                             <div className="prose prose-sm max-w-none">
-                              <div className="text-base break-words text-gray-900 markdown-content">
+                              <div className={`text-base break-words markdown-content ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                                 <ReactMarkdown
                                   components={{
-                                    h1: (props) => <h1 className="text-2xl font-bold mt-4 mb-2 text-gray-900" {...props} />,
-                                    h2: (props) => <h2 className="text-xl font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                    h3: (props) => <h3 className="text-lg font-bold mt-3 mb-2 text-gray-900" {...props} />,
-                                    h4: (props) => <h4 className="text-base font-bold mt-2 mb-1 text-gray-900" {...props} />,
-                                    p: (props) => <p className="mb-2 text-gray-900" {...props} />,
-                                    ul: (props) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                    ol: (props) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-900" {...props} />,
-                                    li: (props) => <li className="text-gray-900" {...props} />,
-                                    strong: (props) => <strong className="font-bold text-gray-900" {...props} />,
-                                    em: (props) => <em className="italic text-gray-900" {...props} />,
-                                    code: (props) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-900" {...props} />,
-                                    pre: (props) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2 text-sm text-gray-900" {...props} />,
-                                    blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-gray-700" {...props} />,
+                                    h1: (props) => <h1 className={`text-2xl font-bold mt-4 mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    h2: (props) => <h2 className={`text-xl font-bold mt-3 mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    h3: (props) => <h3 className={`text-lg font-bold mt-3 mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    h4: (props) => <h4 className={`text-base font-bold mt-2 mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    p: (props) => <p className={`mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    ul: (props) => <ul className={`list-disc list-inside mb-2 space-y-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    ol: (props) => <ol className={`list-decimal list-inside mb-2 space-y-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    li: (props) => <li className={isDark ? 'text-gray-100' : 'text-gray-900'} {...props} />,
+                                    strong: (props) => <strong className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    em: (props) => <em className={`italic ${isDark ? 'text-gray-100' : 'text-gray-900'}`} {...props} />,
+                                    code: (props) => <code className={`px-1 py-0.5 rounded text-sm font-mono ${isDark ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-900'}`} {...props} />,
+                                    pre: (props) => <pre className={`p-3 rounded overflow-x-auto mb-2 text-sm ${isDark ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-900'}`} {...props} />,
+                                    blockquote: (props) => <blockquote className={`border-l-4 pl-4 italic mb-2 ${isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'}`} {...props} />,
                                   }}
                                 >
                                   {msg.text}
@@ -960,19 +962,19 @@ export default function ProjectDetailPage() {
                   {/* Индикатор загрузки ответа с таймером */}
                   {isProcessing && (
                     <div className="flex flex-col items-start">
-                      <div className="max-w-[75%] rounded-2xl p-4 bg-white border border-gray-200 rounded-bl-none shadow-sm">
+                      <div className={`max-w-[75%] rounded-2xl p-4 rounded-bl-none shadow-sm border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-center gap-3">
                           {/* Таймер */}
-                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                            <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-sm font-mono font-medium text-gray-700">
+                            <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                               {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
                             </span>
                           </div>
                           {/* Текущее сообщение */}
-                          <span className="text-sm text-gray-600">
+                          <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                             {loadingMessages.length > 0 
                               ? loadingMessages[Math.min(Math.floor(elapsedSeconds / 3), loadingMessages.length - 1)]
                               : (loadingStage === 'processing' ? 'Обработка запроса...' : 
@@ -987,7 +989,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* Поле ввода */}
-              <div className="relative flex-shrink-0 bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all">
+              <div className={`relative flex-shrink-0 rounded-lg border focus-within:border-blue-500 transition-all ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                 {/* Textarea */}
                 <textarea
                   value={message}
@@ -1000,7 +1002,7 @@ export default function ProjectDetailPage() {
                   }}
                   placeholder="Введите сообщение..."
                   disabled={isProcessing}
-                  className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
+                  className={`w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base leading-relaxed disabled:opacity-50 ${isDark ? 'text-gray-100 placeholder:text-gray-400' : 'text-gray-900 placeholder:text-gray-500'}`}
                   style={{
                     minHeight: '6.5rem',
                     maxHeight: '6.5rem',
