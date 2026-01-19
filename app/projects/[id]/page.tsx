@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface UploadedFile {
   id: string;
@@ -16,6 +17,7 @@ interface UploadedFile {
 
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -158,7 +160,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
           <div className="mb-6">
             <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Ваше сообщение
+              {t('about.support.message')}
             </label>
             <textarea
               value={message}
@@ -170,7 +172,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400'
                   : 'border-gray-300 text-gray-900'
               }`}
-              placeholder="Опишите вашу проблему или вопрос..."
+              placeholder={t('about.support.placeholder.message')}
             />
             <div className="flex justify-end mt-2">
               <button
@@ -183,7 +185,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 }`}
               >
                 <i className="fas fa-paperclip mr-2 text-lg"></i>
-                Прикрепить файл
+                {t('about.support.attach')}
               </button>
               <input
                 ref={fileInputRef}
@@ -252,6 +254,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
 export default function ProjectDetailPage() {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const params = useParams();
   const projectId = params?.id as string;
   const [projectData, setProjectData] = useState<Project | null>(null);
@@ -582,7 +585,7 @@ export default function ProjectDetailPage() {
 
     // Добавляем сообщение о загрузке документов
     setMessages(prev => [...prev, {
-      text: `Загружено и обработано документов: ${processedDocuments.length} из ${newFiles.length} (${totalSizeKB} КБ)`,
+      text: `${t('project.uploadedProcessed')} ${processedDocuments.length} ${t('project.of')} ${newFiles.length} (${totalSizeKB} КБ)`,
       isUser: false,
       timestamp: new Date(),
     }]);
@@ -670,7 +673,7 @@ export default function ProjectDetailPage() {
         
         if (processedDocs.length === 0) {
           setMessages(prev => [...prev, {
-            text: 'Пожалуйста, сначала загрузите документы для анализа.',
+            text: t('project.pleaseUpload'),
             isUser: false,
             timestamp: new Date(),
           }]);
@@ -700,7 +703,7 @@ export default function ProjectDetailPage() {
         const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
         
         setMessages(prev => [...prev, {
-          text: data.answer || 'Не удалось получить ответ.',
+          text: data.answer || t('project.failedToGetAnswer'),
           isUser: false,
           timestamp: new Date(),
           generationTime: finalElapsedSeconds,
@@ -709,7 +712,7 @@ export default function ProjectDetailPage() {
         console.error('Ошибка при отправке сообщения:', error);
         const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
         setMessages(prev => [...prev, {
-          text: `Ошибка при обработке запроса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+          text: `${t('project.errorProcessing')} ${error instanceof Error ? error.message : t('project.unknownError')}`,
           isUser: false,
           timestamp: new Date(),
           generationTime: finalElapsedSeconds,
@@ -723,7 +726,7 @@ export default function ProjectDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className="text-gray-500">{t('project.loading')}</div>
       </div>
     );
   }
@@ -744,7 +747,7 @@ export default function ProjectDetailPage() {
           {/* Заголовок с бордером */}
           <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <h2 className={`text-lg font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Документы {hasFiles && `(${uploadedFiles.length})`}
+              {t('project.documents')} {hasFiles && `(${uploadedFiles.length})`}
             </h2>
           </div>
 
@@ -773,8 +776,8 @@ export default function ProjectDetailPage() {
                   <i className={`fas fa-download text-4xl ${isDark ? 'text-gray-500' : 'text-gray-400'}`}></i>
                 </div>
                 <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Перетащите файлы сюда<br />
-                  или нажмите кнопку ниже
+                  {t('project.dragFiles')}<br />
+                  {t('project.orClickButton')}
                 </p>
               </div>
             ) : (
@@ -852,7 +855,7 @@ export default function ProjectDetailPage() {
               className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
             >
               <i className="fas fa-plus"></i>
-              Добавить документы
+              {t('project.addDocuments')}
             </button>
           </div>
         </div>
@@ -865,7 +868,7 @@ export default function ProjectDetailPage() {
               <div className="text-center">
                 <i className={`fas fa-comments text-6xl mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}></i>
                 <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Загрузите документы, чтобы начать работу с ними
+                  {t('project.uploadDocuments')}
                 </p>
               </div>
             </div>
@@ -1021,7 +1024,7 @@ export default function ProjectDetailPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Введите сообщение..."
+                  placeholder={t('project.enterMessage')}
                   disabled={isProcessing}
                   className={`w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base leading-relaxed disabled:opacity-50 ${isDark ? 'text-gray-100 placeholder:text-gray-400' : 'text-gray-900 placeholder:text-gray-500'}`}
                   style={{

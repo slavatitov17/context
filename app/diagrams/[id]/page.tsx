@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -175,6 +176,7 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
 // Компонент модального окна поддержки
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -317,7 +319,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
           <div className="mb-6">
             <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Ваше сообщение
+              {t('about.support.message')}
             </label>
             <textarea
               value={message}
@@ -329,7 +331,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400'
                   : 'border-gray-300 text-gray-900'
               }`}
-              placeholder="Опишите вашу проблему или вопрос..."
+              placeholder={t('about.support.placeholder.message')}
             />
             <div className="flex justify-end mt-2">
               <button
@@ -342,7 +344,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 }`}
               >
                 <i className="fas fa-paperclip mr-2 text-lg"></i>
-                Прикрепить файл
+                {t('about.support.attach')}
               </button>
               <input
                 ref={fileInputRef}
@@ -973,6 +975,7 @@ interface UploadedFile {
 
 export default function DiagramDetailPage({ params }: { params: { id: string } }) {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const routeParams = useParams();
   const diagramId = routeParams?.id as string;
   const [diagramData, setDiagramData] = useState<Diagram | null>(null);
@@ -1108,7 +1111,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         } else if (diagram.selectedOption === 'scratch') {
           // Если создание с нуля и нет сообщений, показываем приветственное
           setMessages([{
-            text: "Опишите предметную область и конкретный объект, диаграмму которого нужно будет построить",
+            text: t('diagram.describeSubject'),
             isUser: false,
             timestamp: new Date()
           }]);
@@ -2111,8 +2114,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         /* Выбор типа диаграммы */
         <div>
           <div className={`mb-8 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Тип диаграммы</h1>
-            <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Выберите тип диаграммы</p>
+            <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.type')}</h1>
+            <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('diagram.selectType')}</p>
           </div>
 
           {/* Панель управления: Поиск, Фильтры, Сортировка */}
@@ -2121,7 +2124,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             <div className="flex flex-col md:flex-row gap-4">
               {/* Поиск */}
               <div className="flex-1">
-                <label className={`block text-xl font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Поиск</label>
+                <label className={`block text-xl font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('diagram.search')}</label>
                 <input
                   type="text"
                   value={searchQuery}
@@ -2133,7 +2136,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               
               {/* Сортировка */}
               <div className="md:w-64">
-                <label className={`block text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Сортировка</label>
+                <label className={`block text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.sort')}</label>
                 <div className="relative">
                   <select
                     value={sortBy}
@@ -2156,7 +2159,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             {/* Фильтры */}
             <div className={`rounded-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Фильтры</h3>
+                <h3 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.filters')}</h3>
                 {hasActiveFilters && (
                   <button
                     onClick={handleClearFilters}
@@ -2284,9 +2287,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           {/* Сообщение, если ничего не найдено или блок "Не нашли нужный тип?" */}
           {filteredAndSortedTypes.length === 0 ? (
             <div className="mt-12 text-center pb-8">
-              <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Не нашли нужный тип?</h3>
+              <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('diagram.notFound')}</h3>
               <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                В ближайшее время будут добавлены новые типы, следите за обновлениями в разделе{' '}
+                {t('diagram.notFoundDescription')}{' '}
                 <button
                   onClick={() => {
                     const aboutButton = document.querySelector('[data-about-button]') as HTMLButtonElement;
@@ -2294,15 +2297,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   }}
                   className="text-blue-600 hover:underline"
                 >
-                  о системе
+                  {t('diagram.aboutSystem')}
                 </button>
               </p>
             </div>
           ) : (
             <div className="mt-12 text-center pb-8">
-              <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Не нашли нужный тип?</h3>
+              <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('diagram.notFound')}</h3>
               <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                В ближайшее время будут добавлены новые типы, следите за обновлениями в разделе{' '}
+                {t('diagram.notFoundDescription')}{' '}
                 <button
                   onClick={() => {
                     const aboutButton = document.querySelector('[data-about-button]') as HTMLButtonElement;
@@ -2310,7 +2313,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   }}
                   className="text-blue-600 hover:underline"
                 >
-                  о системе
+                  {t('diagram.aboutSystem')}
                 </button>
               </p>
             </div>
@@ -2363,7 +2366,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               <div>
                 <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Создать с нуля</h2>
                 <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Опишите предметную область вручную
+                  {t('diagram.describeManually')}
                 </p>
               </div>
               <button
@@ -2673,7 +2676,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                         handleSendMessage();
                       }
                     }}
-                    placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
+                    placeholder={diagramType ? (selectedOption === 'projects' ? t('diagram.enterName') : t('diagram.describeArea')) : t('diagram.selectTypeFirst')}
                     disabled={isProcessing || !diagramType}
                     className={`w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base leading-relaxed disabled:opacity-50 ${
                       isDark

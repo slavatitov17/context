@@ -308,11 +308,10 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Настоящая Политика конфиденциальности определяет порядок обработки и защиты персональных данных пользователей сервиса Context (далее — «Сервис»). 
-                  Используя Сервис, вы соглашаетесь с условиями настоящей Политики конфиденциальности.
+                  {t('privacy.section1.text1')}
                 </p>
                 <p>
-                  Администрация Сервиса обязуется соблюдать конфиденциальность персональных данных пользователей в соответствии с действующим законодательством.
+                  {t('privacy.section1.text2')}
                 </p>
               </div>
             </div>
@@ -322,12 +321,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 {t('privacy.section2.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                <p>При использовании Сервиса мы собираем следующую информацию:</p>
+                <p>{t('privacy.section2.text1')}</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Электронный адрес (email) для идентификации пользователя</li>
-                  <li>Информация о проектах, созданных пользователем</li>
-                  <li>Загруженные пользователем файлы и документы</li>
-                  <li>Данные о взаимодействии с Сервисом (время использования, действия пользователя)</li>
+                  <li>{t('privacy.section2.item1')}</li>
+                  <li>{t('privacy.section2.item2')}</li>
+                  <li>{t('privacy.section2.item3')}</li>
+                  <li>{t('privacy.section2.item4')}</li>
                 </ul>
               </div>
             </div>
@@ -337,15 +336,15 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 {t('privacy.section3.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                <p>Собранные данные используются для следующих целей:</p>
+                <p>{t('privacy.section3.text1')}</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Предоставление доступа к функциям Сервиса</li>
-                  <li>Идентификация и аутентификация пользователей</li>
-                  <li>Обработка и анализ загруженных файлов для ответов на вопросы</li>
-                  <li>Создание диаграмм на основе загруженных данных</li>
-                  <li>Улучшение качества работы Сервиса</li>
-                  <li>Обеспечение безопасности и предотвращение мошенничества</li>
-                  <li>Информирование пользователей об изменениях в Сервисе</li>
+                  <li>{t('privacy.section3.item1')}</li>
+                  <li>{t('privacy.section3.item2')}</li>
+                  <li>{t('privacy.section3.item3')}</li>
+                  <li>{t('privacy.section3.item4')}</li>
+                  <li>{t('privacy.section3.item5')}</li>
+                  <li>{t('privacy.section3.item6')}</li>
+                  <li>{t('privacy.section3.item7')}</li>
                 </ul>
               </div>
             </div>
@@ -356,8 +355,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Администрация Сервиса принимает необходимые технические и организационные меры для защиты персональных данных от неправомерного доступа, 
-                  уничтожения, изменения, блокирования, копирования, распространения, а также от иных неправомерных действий.
+                  {t('privacy.section4.text1')}
                 </p>
               </div>
             </div>
@@ -368,12 +366,12 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Администрация Сервиса не передает персональные данные третьим лицам, за исключением следующих случаев:
+                  {t('privacy.section5.text1')}
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Пользователь дал согласие на такие действия</li>
-                  <li>Передача предусмотрена законодательством в рамках установленной процедуры</li>
-                  <li>Передача необходима для работы Сервиса или его функций (например, обработка файлов с использованием внешних сервисов)</li>
+                  <li>{t('privacy.section5.item1')}</li>
+                  <li>{t('privacy.section5.item2')}</li>
+                  <li>{t('privacy.section5.item3')}</li>
                 </ul>
               </div>
             </div>
@@ -383,14 +381,14 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 {t('privacy.section6.title')}
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                <p>Пользователь имеет право:</p>
+                <p>{t('privacy.section6.text1')}</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Получать информацию о своих персональных данных, обрабатываемых Сервисом</li>
-                  <li>Требовать уточнения, блокирования или уничтожения персональных данных</li>
-                  <li>Удалить свой аккаунт и связанные с ним данные</li>
+                  <li>{t('privacy.section6.item1')}</li>
+                  <li>{t('privacy.section6.item2')}</li>
+                  <li>{t('privacy.section6.item3')}</li>
                 </ul>
                 <p>
-                  Для реализации своих прав пользователь может обратиться к Администрации Сервиса через форму обратной связи на странице «О системе».
+                  {t('privacy.section6.text2')}
                 </p>
               </div>
             </div>
@@ -401,10 +399,10 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Сервис использует технологию cookies для обеспечения удобства использования и улучшения функциональности.
+                  {t('privacy.section7.text1')}
                 </p>
                 <p>
-                  Пользователь может настроить свой браузер для отказа от cookies, однако это может ограничить доступ к некоторым функциям Сервиса.
+                  {t('privacy.section7.text2')}
                 </p>
               </div>
             </div>
@@ -415,11 +413,10 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Администрация Сервиса оставляет за собой право вносить изменения в настоящую Политику конфиденциальности. 
-                  Актуальная версия всегда доступна на данной странице.
+                  {t('privacy.section8.text1')}
                 </p>
                 <p>
-                  При внесении существенных изменений пользователи будут уведомлены через Сервис или по электронной почте.
+                  {t('privacy.section8.text2')}
                 </p>
               </div>
             </div>
@@ -430,7 +427,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-4 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться к Администрации Сервиса через форму обратной связи на странице «О системе».
+                  {t('privacy.section9.text1')}
                 </p>
               </div>
             </div>
@@ -444,13 +441,13 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  CASE-средство Context позволяет быстро анализировать документы и создавать диаграммы по текстовому описанию. Возможности:
+                  {t('version.features.text1')}
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Загрузка документов различных форматов (PDF, DOCX и другие)</li>
-                  <li>Анализ и выдача ответов на вопросы по загруженным документам</li>
-                  <li>Создание и экспорт диаграмм различных типов (UML, ER и другие)</li>
-                  <li>Создание глоссария и кода (PlantUML) диаграмм различных типов</li>
+                  <li>{t('version.features.item1')}</li>
+                  <li>{t('version.features.item2')}</li>
+                  <li>{t('version.features.item3')}</li>
+                  <li>{t('version.features.item4')}</li>
                 </ul>
               </div>
             </div>
@@ -462,15 +459,15 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  В текущей версии доступны следующие типы диаграмм:
+                  {t('version.diagrams.text1')}
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Семейство UML: Use Case, Sequence и другие (всего 8 типов)</li>
-                  <li>Диаграмма Ганта (Gantt)</li>
-                  <li>Диаграмма сущность-связь (Entity-Relationships)</li>
-                  <li>Интеллект-карта (MindMap)</li>
-                  <li>Диаграмма обмена данными (JSON)</li>
-                  <li>Иерархическая структура работ (WBS)</li>
+                  <li>{t('version.diagrams.item1')}</li>
+                  <li>{t('version.diagrams.item2')}</li>
+                  <li>{t('version.diagrams.item3')}</li>
+                  <li>{t('version.diagrams.item4')}</li>
+                  <li>{t('version.diagrams.item5')}</li>
+                  <li>{t('version.diagrams.item6')}</li>
                 </ul>
               </div>
             </div>
@@ -482,13 +479,13 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Система поддерживает загрузку и обработку следующих типов файлов:
+                  {t('version.formats.text1')}
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>PDF документы (.pdf)</li>
-                  <li>Документы Microsoft Word (.docx)</li>
-                  <li>Таблицы Microsoft Excel (.xlsx)</li>
-                  <li>Текстовые файлы (.txt)</li>
+                  <li>{t('version.formats.item1')}</li>
+                  <li>{t('version.formats.item2')}</li>
+                  <li>{t('version.formats.item3')}</li>
+                  <li>{t('version.formats.item4')}</li>
                 </ul>
               </div>
             </div>
@@ -500,17 +497,17 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </h3>
               <div className={`space-y-3 text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <p>
-                  Система разработана с использованием:
+                  {t('version.technical.text1')}
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Библиотеки React для построения пользовательского интерфейса</li>
-                  <li>Фреймворка Next.js для создания веб-приложений</li>
-                  <li>Языка TypeScript для повышения надежности кода</li>
-                  <li>CSS-фреймворка Tailwind CSS для быстрой стилизации интерфейса</li>
-                  <li>Модели Mixtral 8x22B для анализа документов, генерации диаграмм</li>
-                  <li>API PlantUML для преобразования текстового описания в диаграммы</li>
-                  <li>Базы данных IndexedDB для хранения проектов и диаграмм в браузере</li>
-                  <li>Платформы Vercel для развертывания и хостинга веб-приложения</li>
+                  <li>{t('version.technical.item1')}</li>
+                  <li>{t('version.technical.item2')}</li>
+                  <li>{t('version.technical.item3')}</li>
+                  <li>{t('version.technical.item4')}</li>
+                  <li>{t('version.technical.item5')}</li>
+                  <li>{t('version.technical.item6')}</li>
+                  <li>{t('version.technical.item7')}</li>
+                  <li>{t('version.technical.item8')}</li>
                 </ul>
               </div>
             </div>
