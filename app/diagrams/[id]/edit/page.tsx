@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 import { useParams } from 'next/navigation';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 export default function EditDiagramPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const diagramId = params?.id as string;
   const [diagramName, setDiagramName] = useState('');
@@ -78,7 +80,7 @@ export default function EditDiagramPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка...</div>
+        <div className="text-gray-500">{t('diagrams.loading')}</div>
       </div>
     );
   }
@@ -86,23 +88,23 @@ export default function EditDiagramPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-8 pb-6 border-b border-gray-200">
-        <h1 className="text-3xl font-medium mb-2">Редактирование диаграммы</h1>
-        <p className="text-gray-600 text-base">Измените информацию о диаграмме</p>
+        <h1 className="text-3xl font-medium mb-2">{t('diagram.edit.title')}</h1>
+        <p className="text-gray-600 text-base">{t('diagram.edit.subtitle')}</p>
       </div>
 
       <div className="space-y-6">
         {/* Информация о полях */}
-        <p className="text-gray-500 text-base">* - обязательные поля</p>
+        <p className="text-gray-500 text-base">{t('diagram.edit.requiredFields')}</p>
 
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
-            Название диаграммы *
+            {t('diagram.edit.name')} *
           </label>
           <input
             type="text"
             value={diagramName}
             onChange={(e) => setDiagramName(e.target.value)}
-            placeholder="Введите название диаграммы..."
+            placeholder={t('diagram.edit.namePlaceholder')}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={saving}
           />
@@ -110,12 +112,12 @@ export default function EditDiagramPage() {
 
         <div>
           <label className="block text-lg font-medium text-gray-900 mb-3">
-            Краткое описание диаграммы
+            {t('diagram.edit.description')}
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Введите описание диаграммы..."
+            placeholder={t('diagram.edit.descriptionPlaceholder')}
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={saving}
@@ -128,14 +130,14 @@ export default function EditDiagramPage() {
             disabled={saving}
             className="flex-1 border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
-            Отмена
+            {t('diagram.edit.cancel')}
           </button>
           <button
             onClick={handleSave}
             disabled={!diagramName.trim() || saving}
             className="flex-1 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
-            {saving ? 'Сохранение...' : 'Сохранить'}
+            {saving ? t('diagram.edit.saving') : t('diagram.edit.save')}
           </button>
         </div>
       </div>
