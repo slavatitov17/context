@@ -73,7 +73,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         setIsAuthenticated(false);
         setProfilePhoto(null);
         if (!isAuthPage && !isPrivacyPage) {
-          router.push('/login');
+          router.push('/register');
         }
       }
     };
