@@ -174,6 +174,7 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
 
 // Компонент модального окна поддержки
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -277,17 +278,17 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Блюр фон */}
       <div 
-        className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+        className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
         onClick={onClose}
       />
       
       {/* Модальное окно */}
-      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div className={`relative rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Обратиться в поддержку</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -297,7 +298,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-900 font-medium mb-2">
+            <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Ваша электронная почта
             </label>
             <input
@@ -305,13 +306,17 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark
+                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400'
+                  : 'border-gray-300 text-gray-900'
+              }`}
               placeholder="example@mail.com"
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-900 font-medium mb-2">
+            <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Ваше сообщение
             </label>
             <textarea
@@ -319,14 +324,22 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={4}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+                isDark
+                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400'
+                  : 'border-gray-300 text-gray-900'
+              }`}
               placeholder="Опишите вашу проблему или вопрос..."
             />
             <div className="flex justify-end mt-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
+                className={`text-base font-medium flex items-center transition-colors ${
+                  isDark
+                    ? 'text-gray-400 hover:text-blue-400'
+                    : 'text-gray-500 hover:text-blue-600'
+                }`}
               >
                 <i className="fas fa-paperclip mr-2 text-lg"></i>
                 Прикрепить файл
@@ -344,22 +357,28 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             {attachedFiles.length > 0 && (
               <div className="mt-4 space-y-2">
                 {attachedFiles.map((fileData) => (
-                  <div key={fileData.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div key={fileData.id} className={`flex items-center gap-3 p-3 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
                     {fileData.preview ? (
                       <img src={fileData.preview} alt={fileData.file.name} className="w-12 h-12 object-cover rounded" />
                     ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                        <i className="fas fa-file text-gray-400"></i>
+                      <div className={`w-12 h-12 rounded flex items-center justify-center ${
+                        isDark ? 'bg-gray-600' : 'bg-gray-200'
+                      }`}>
+                        <i className={`fas fa-file ${isDark ? 'text-gray-400' : 'text-gray-400'}`}></i>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{fileData.file.name}</div>
-                      <div className="text-xs text-gray-500">{formatFileSize(fileData.file.size)}</div>
+                      <div className={`text-sm font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{fileData.file.name}</div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{formatFileSize(fileData.file.size)}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveFile(fileData.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
+                      className={`transition-colors ${isDark ? 'text-gray-400 hover:text-red-400' : 'text-gray-400 hover:text-red-600'}`}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -377,7 +396,9 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             className={`w-full py-3 rounded-lg font-medium transition-colors ${
               isFormValid
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : isDark
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
             Отправить
@@ -399,7 +420,8 @@ function DualFormatMessage({
   formatSelectors,
   setFormatSelectors,
   generationTime,
-  onOpenSupport
+  onOpenSupport,
+  isDark
 }: {
   msg: { plantUmlCode?: string; mermaidCode?: string; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; diagramImageUrl?: string };
   index: number;
@@ -411,6 +433,7 @@ function DualFormatMessage({
   setFormatSelectors: (selectors: Map<number, 'plantuml' | 'mermaid'>) => void;
   generationTime?: number;
   onOpenSupport: () => void;
+  isDark: boolean;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -498,21 +521,21 @@ function DualFormatMessage({
 
   return (
     <div className="flex flex-col items-start">
-      <div className="text-base text-gray-500 mb-1 px-1">
+      <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
         {dateStr} {timeStr}
       </div>
       <div className="max-w-full w-full">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className={`rounded-lg p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           {/* Верхняя панель: таймер и кнопка слева, свитчер по центру, кнопки справа */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
             {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
             <div className="flex items-center gap-3">
               {generationTime !== undefined && (
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-mono font-medium text-gray-700">
+                  <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                     {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
                   </span>
                 </div>
@@ -526,7 +549,7 @@ function DualFormatMessage({
             </div>
 
             {/* Свитчер Диаграмма/Код (по центру) */}
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mx-auto">
+            <div className={`flex items-center gap-2 rounded-lg p-1 mx-auto ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <button
                 onClick={() => {
                   const newModes = new Map(viewModes);
@@ -535,8 +558,12 @@ function DualFormatMessage({
                 }}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   currentViewMode === 'diagram'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? isDark
+                      ? 'bg-gray-600 text-gray-100 shadow-sm'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : isDark
+                      ? 'text-gray-400 hover:text-gray-200'
+                      : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Диаграмма
@@ -549,8 +576,12 @@ function DualFormatMessage({
                 }}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   currentViewMode === 'code'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? isDark
+                      ? 'bg-gray-600 text-gray-100 shadow-sm'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : isDark
+                      ? 'text-gray-400 hover:text-gray-200'
+                      : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Код
@@ -568,13 +599,17 @@ function DualFormatMessage({
                     newSelectors.set(index, e.target.value as 'plantuml' | 'mermaid');
                     setFormatSelectors(newSelectors);
                   }}
-                  className="border border-gray-300 rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 bg-white"
+                  className={`border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-gray-100'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
                 >
                   <option value="mermaid">Mermaid</option>
                   <option value="plantuml">PlantUML</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </div>
@@ -583,7 +618,11 @@ function DualFormatMessage({
                 {currentFormat === 'mermaid' && mermaidSvg && (
                   <button
                     onClick={downloadMermaidPNG}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                      isDark
+                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                   >
                     Скачать PNG
                   </button>
@@ -591,7 +630,11 @@ function DualFormatMessage({
                 {currentFormat === 'plantuml' && msg.diagramImageUrl && (
                   <button
                     onClick={downloadPlantUmlPNG}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                      isDark
+                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                   >
                     Скачать PNG
                   </button>
@@ -603,7 +646,11 @@ function DualFormatMessage({
                       alert('Код скопирован в буфер обмена');
                     }
                   }}
-                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                    isDark
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
                   Скопировать код
                 </button>
@@ -622,7 +669,7 @@ function DualFormatMessage({
                 />
               )}
               {currentFormat === 'plantuml' && msg.diagramImageUrl && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className={`border rounded-lg p-4 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                   <img
                     src={msg.diagramImageUrl}
                     alt="PlantUML диаграмма"
@@ -640,20 +687,20 @@ function DualFormatMessage({
 
           {/* Глоссарий (внизу, в том же сообщении) */}
           {currentGlossary && currentGlossary.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+            <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Глоссарий элементов диаграммы</h4>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
-                    <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                  <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Элемент</th>
+                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Описание</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentGlossary.map((item, idx) => (
-                    <tr key={idx} className="border-b border-gray-100">
-                      <td className="py-3 text-gray-900 font-medium">{item.element}</td>
-                      <td className="py-3 text-gray-600">{item.description}</td>
+                    <tr key={idx} className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                      <td className={`py-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{item.element}</td>
+                      <td className={`py-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.description}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2253,8 +2300,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
           ) : (
             <div className="mt-12 text-center pb-8">
-              <h3 className="text-2xl font-medium text-gray-900 mb-3">Не нашли нужный тип?</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Не нашли нужный тип?</h3>
+              <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 В ближайшее время будут добавлены новые типы, следите за обновлениями в разделе{' '}
                 <button
                   onClick={() => {
@@ -2292,11 +2339,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">
           {/* Блок 1: Выбрать из проектов */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-medium text-gray-900 mb-2">Выбрать из моих проектов</h2>
-                <p className="text-gray-500 text-base">
+                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Выбрать из моих проектов</h2>
+                <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Использовать данные из существующего проекта
                 </p>
               </div>
@@ -2311,11 +2358,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           </div>
 
           {/* Блок 2: Создать с нуля */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-medium text-gray-900 mb-2">Создать с нуля</h2>
-                <p className="text-gray-500 text-base">
+                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Создать с нуля</h2>
+                <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Опишите предметную область вручную
                 </p>
               </div>
@@ -2332,23 +2379,23 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       ) : selectedOption === 'projects' && !selectedProject ? (
         /* Таблица проектов */
         <div>
-          <h2 className="text-2xl font-medium mb-6">Выберите проект</h2>
+          <h2 className={`text-2xl font-medium mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Выберите проект</h2>
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">Загрузка...</div>
+              <div className={isDark ? 'text-gray-400' : 'text-gray-500'}>Загрузка...</div>
             </div>
           ) : projects.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-gray-500">У вас пока нет проектов</p>
+              <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>У вас пока нет проектов</p>
             </div>
           ) : (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className={`border rounded-lg overflow-hidden ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Название</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Краткое описание</th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">Дата создания</th>
+                <thead className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                  <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Название</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Краткое описание</th>
+                    <th className={`text-left py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Дата создания</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2356,15 +2403,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     <tr 
                       key={project.id} 
                       onClick={() => handleProjectSelect(project.id)}
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-100 hover:bg-gray-50'}`}
                     >
-                      <td className="py-4 px-6 text-gray-900 font-medium">
+                      <td className={`py-4 px-6 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                         {project.name}
                       </td>
-                      <td className="py-4 px-6 text-gray-600">
+                      <td className={`py-4 px-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         {project.description || ''}
                       </td>
-                      <td className="py-4 px-6 text-gray-500">
+                      <td className={`py-4 px-6 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                         {formatDate(project.created_at)}
                       </td>
                     </tr>
@@ -2380,7 +2427,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             {/* Чат */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
               {/* История сообщений */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0">
+              <div className={`flex-1 rounded-lg border p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();
@@ -2401,6 +2448,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           setFormatSelectors={setFormatSelectors}
                           generationTime={msg.generationTime}
                           onOpenSupport={() => setShowSupportModal(true)}
+                          isDark={isDark}
                         />
                       );
                     }
@@ -2425,20 +2473,20 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       const currentViewMode = viewModes.get(index) || 'diagram';
                       return (
                         <div key={index} className="flex flex-col items-start">
-                          <div className="text-base text-gray-500 mb-1 px-1">
+                          <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             {dateStr} {timeStr}
                           </div>
                           <div className="max-w-full w-full">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <div className={`rounded-lg p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                               <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
                                 {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
                                 <div className="flex items-center gap-3">
                                   {msg.generationTime !== undefined && (
-                                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                      <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
-                                      <span className="text-sm font-mono font-medium text-gray-700">
+                                      <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                                         {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
                                       </span>
                                     </div>
@@ -2452,7 +2500,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                 </div>
 
                                 {/* Свитчер Диаграмма/Код (по центру) */}
-                                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mx-auto">
+                                <div className={`flex items-center gap-2 rounded-lg p-1 mx-auto ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
                                   <button
                                     onClick={() => {
                                       const newModes = new Map(viewModes);
@@ -2461,8 +2509,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     }}
                                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                                       currentViewMode === 'diagram'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                        ? isDark
+                                          ? 'bg-gray-600 text-gray-100 shadow-sm'
+                                          : 'bg-white text-gray-900 shadow-sm'
+                                        : isDark
+                                          ? 'text-gray-400 hover:text-gray-200'
+                                          : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                   >
                                     Диаграмма
@@ -2475,8 +2527,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     }}
                                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                                       currentViewMode === 'code'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                        ? isDark
+                                          ? 'bg-gray-600 text-gray-100 shadow-sm'
+                                          : 'bg-white text-gray-900 shadow-sm'
+                                        : isDark
+                                          ? 'text-gray-400 hover:text-gray-200'
+                                          : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                   >
                                     Код
@@ -2489,7 +2545,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     <a
                                       href={msg.diagramImageUrl}
                                       download
-                                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                      className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                                        isDark
+                                          ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      }`}
                                     >
                                       Скачать PNG
                                     </a>
@@ -2501,7 +2561,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                         alert('Код скопирован в буфер обмена');
                                       }
                                     }}
-                                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                                      isDark
+                                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
                                   >
                                     Скопировать код
                                   </button>
@@ -2509,7 +2573,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                               </div>
                               {/* Показываем диаграмму или код в зависимости от выбранного режима */}
                               {currentViewMode === 'diagram' && msg.diagramImageUrl && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div className={`border rounded-lg p-4 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                   <img
                                     src={msg.diagramImageUrl}
                                     alt="PlantUML диаграмма"
@@ -2525,20 +2589,20 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                               {/* Глоссарий (внизу, в том же сообщении) */}
                               {msg.glossary && msg.glossary.length > 0 && (
-                                <div className="mt-6 pt-6 border-t border-gray-200">
-                                  <h4 className="font-medium text-lg mb-4">Глоссарий элементов диаграммы</h4>
+                                <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                  <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Глоссарий элементов диаграммы</h4>
                                   <table className="w-full">
                                     <thead>
-                                      <tr className="border-b border-gray-200">
-                                        <th className="text-left py-2 font-medium text-gray-900">Элемент</th>
-                                        <th className="text-left py-2 font-medium text-gray-900">Описание</th>
+                                      <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Элемент</th>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Описание</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {msg.glossary.map((item, idx) => (
-                                        <tr key={idx} className="border-b border-gray-100">
-                                          <td className="py-3 text-gray-900 font-medium">{item.element}</td>
-                                          <td className="py-3 text-gray-600">{item.description}</td>
+                                        <tr key={idx} className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                                          <td className={`py-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{item.element}</td>
+                                          <td className={`py-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.description}</td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -2553,15 +2617,17 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     
                     return (
                       <div key={index} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
-                        <div className="text-base text-gray-500 mb-1 px-1">
+                        <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           {dateStr} {timeStr}
                         </div>
                         <div className={`max-w-[75%] rounded-2xl p-4 ${
                           msg.isUser
                             ? 'bg-blue-600 text-white rounded-br-none'
-                            : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
+                            : isDark
+                              ? 'bg-gray-800 border border-gray-700 rounded-bl-none shadow-sm'
+                              : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
                         }`}>
-                          <p className={`text-base break-words ${msg.isUser ? 'text-white whitespace-pre-wrap' : 'text-gray-900'}`}>{msg.text}</p>
+                          <p className={`text-base break-words ${msg.isUser ? 'text-white whitespace-pre-wrap' : isDark ? 'text-gray-100' : 'text-gray-900'}`}>{msg.text}</p>
                         </div>
                       </div>
                     );
@@ -2569,19 +2635,19 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                   {/* Индикатор загрузки ответа с таймером */}
                   {isProcessing && (
                     <div className="flex flex-col items-start">
-                      <div className="max-w-[75%] rounded-2xl p-4 bg-white border border-gray-200 rounded-bl-none shadow-sm">
+                      <div className={`max-w-[75%] rounded-2xl p-4 border rounded-bl-none shadow-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-center gap-3">
                           {/* Таймер */}
-                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                            <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-sm font-mono font-medium text-gray-700">
+                            <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                               {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
                             </span>
                           </div>
                           {/* Текущее сообщение */}
-                          <span className="text-sm text-gray-600">
+                          <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                             {loadingMessages.length > 0 
                               ? loadingMessages[Math.floor(elapsedSeconds / 3) % loadingMessages.length]
                               : (loadingStage === 'processing' ? 'Обработка запроса' : 
@@ -2596,7 +2662,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
 
               {/* Поле ввода */}
-              <div className="relative flex-shrink-0 bg-white rounded-lg border border-gray-200 focus-within:border-blue-500 transition-all">
+              <div className={`relative flex-shrink-0 rounded-lg border focus-within:border-blue-500 transition-all ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   {/* Textarea */}
                   <textarea
                     value={message}
@@ -2609,7 +2675,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     }}
                     placeholder={diagramType ? (selectedOption === 'projects' ? "Введите название объекта или процесса для диаграммы..." : "Опишите предметную область и конкретный объект...") : "Сначала выберите тип диаграммы..."}
                     disabled={isProcessing || !diagramType}
-                    className="w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base text-gray-900 placeholder:text-gray-500 leading-relaxed disabled:opacity-50"
+                    className={`w-full bg-transparent border-0 rounded-lg px-4 py-3 pr-16 focus:ring-0 focus:outline-none resize-none overflow-y-auto text-base leading-relaxed disabled:opacity-50 ${
+                      isDark
+                        ? 'text-gray-100 placeholder:text-gray-500'
+                        : 'text-gray-900 placeholder:text-gray-500'
+                    }`}
                     style={{
                       minHeight: '6.5rem',
                       maxHeight: '6.5rem',

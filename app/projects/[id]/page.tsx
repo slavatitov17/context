@@ -15,6 +15,7 @@ interface UploadedFile {
 }
 
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
@@ -118,17 +119,17 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Блюр фон */}
       <div 
-        className="absolute inset-0 bg-white/80 backdrop-blur-sm"
+        className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
         onClick={onClose}
       />
       
       {/* Модальное окно */}
-      <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div className={`relative rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-gray-900">Обратиться в поддержку</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Обратиться в поддержку</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -138,7 +139,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-900 font-medium mb-2">
+            <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Ваша электронная почта
             </label>
             <input
@@ -146,13 +147,17 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark
+                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400'
+                  : 'border-gray-300 text-gray-900'
+              }`}
               placeholder="example@mail.com"
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-900 font-medium mb-2">
+            <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               Ваше сообщение
             </label>
             <textarea
@@ -160,14 +165,22 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={4}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+                isDark
+                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400'
+                  : 'border-gray-300 text-gray-900'
+              }`}
               placeholder="Опишите вашу проблему или вопрос..."
             />
             <div className="flex justify-end mt-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-gray-500 hover:text-gray-700 text-base font-medium flex items-center hover:text-blue-600 transition-colors"
+                className={`text-base font-medium flex items-center transition-colors ${
+                  isDark
+                    ? 'text-gray-400 hover:text-blue-400'
+                    : 'text-gray-500 hover:text-blue-600'
+                }`}
               >
                 <i className="fas fa-paperclip mr-2 text-lg"></i>
                 Прикрепить файл
@@ -185,22 +198,28 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             {attachedFiles.length > 0 && (
               <div className="mt-4 space-y-2">
                 {attachedFiles.map((fileData) => (
-                  <div key={fileData.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div key={fileData.id} className={`flex items-center gap-3 p-3 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
                     {fileData.preview ? (
                       <img src={fileData.preview} alt={fileData.file.name} className="w-12 h-12 object-cover rounded" />
                     ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                        <i className="fas fa-file text-gray-400"></i>
+                      <div className={`w-12 h-12 rounded flex items-center justify-center ${
+                        isDark ? 'bg-gray-600' : 'bg-gray-200'
+                      }`}>
+                        <i className={`fas fa-file ${isDark ? 'text-gray-400' : 'text-gray-400'}`}></i>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{fileData.file.name}</div>
-                      <div className="text-xs text-gray-500">{formatFileSize(fileData.file.size)}</div>
+                      <div className={`text-sm font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{fileData.file.name}</div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{formatFileSize(fileData.file.size)}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveFile(fileData.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
+                      className={`transition-colors ${isDark ? 'text-gray-400 hover:text-red-400' : 'text-gray-400 hover:text-red-600'}`}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -218,7 +237,9 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             className={`w-full py-3 rounded-lg font-medium transition-colors ${
               isFormValid
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : isDark
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
             Отправить
