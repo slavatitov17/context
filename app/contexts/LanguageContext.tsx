@@ -125,7 +125,6 @@ const translations: Record<Language, Record<string, string>> = {
     'diagrams.folder.moveButton': 'Переместить',
     'diagrams.folder.empty': 'Папки отсутствуют',
     'diagrams.loading': 'Загрузка...',
-    'common.loading': 'Loading...',
     
     // Layout (Sidebar)
     'sidebar.projects': 'Проекты',
@@ -242,6 +241,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagrams.folder.moveButton': 'Move',
     'diagrams.folder.empty': 'No Folders',
     'diagrams.loading': 'Loading...',
+    'common.loading': 'Loading...',
     
     // Layout (Sidebar)
     'sidebar.projects': 'Projects',
