@@ -9,9 +9,9 @@ import BackButton from './BackButton';
 import ProfileModal from './ProfileModal';
 import AboutModal from './AboutModal';
 import SettingsModal from './SettingsModal';
-import { ThemeProvider, useTheme } from '@/app/contexts/ThemeContext';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
-function LayoutWrapperContent({ children }: { children: React.ReactNode }) {
+export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const { isDark } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -272,15 +272,5 @@ function LayoutWrapperContent({ children }: { children: React.ReactNode }) {
         />
       )}
     </body>
-  );
-}
-
-export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider>
-      <LayoutWrapperContent>
-        {children}
-      </LayoutWrapperContent>
-    </ThemeProvider>
   );
 }

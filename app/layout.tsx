@@ -1,6 +1,7 @@
 // Создаем корневой layout приложения с метаданными и оберткой для всех страниц
 import './globals.css';
 import LayoutWrapper from './components/LayoutWrapper';
+import ThemeProviderWrapper from './providers/ThemeProviderWrapper';
 
 export const metadata = {
   title: 'Context: анализ файлов и создание диаграмм',
@@ -21,9 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
       </head>
-      <LayoutWrapper>
-        {children}
-      </LayoutWrapper>
+      <ThemeProviderWrapper>
+        <LayoutWrapper>
+          {children}
+        </LayoutWrapper>
+      </ThemeProviderWrapper>
     </html>
   );
 }
