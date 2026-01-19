@@ -128,7 +128,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       {/* Модальное окно */}
       <div className={`relative rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Обратиться в поддержку</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.contactSupport')}</h2>
           <button
             onClick={onClose}
             className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
@@ -142,7 +142,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Ваша электронная почта
+              {t('diagram.yourEmail')}
             </label>
             <input
               type="email"
@@ -244,7 +244,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Отправить
+            {t('diagram.send')}
           </button>
         </form>
       </div>
@@ -905,7 +905,7 @@ export default function ProjectDetailPage() {
                                 onClick={() => setShowSupportModal(true)}
                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                               >
-                                Сообщить об ошибке
+                                {t('diagram.reportError')}
                               </button>
                             </div>
                             
