@@ -287,7 +287,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       {/* Модальное окно */}
       <div className={`relative rounded-xl p-6 max-w-lg w-full shadow-xl z-10 max-h-[90vh] overflow-y-auto hide-scrollbar border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Обратиться в поддержку</h2>
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.contactSupport')}</h2>
           <button
             onClick={onClose}
             className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
@@ -301,7 +301,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Ваша электронная почта
+              {t('diagram.yourEmail')}
             </label>
             <input
               type="email"
@@ -403,7 +403,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Отправить
+            {t('diagram.send')}
           </button>
         </form>
       </div>
@@ -423,7 +423,8 @@ function DualFormatMessage({
   setFormatSelectors,
   generationTime,
   onOpenSupport,
-  isDark
+  isDark,
+  t
 }: {
   msg: { plantUmlCode?: string; mermaidCode?: string; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; diagramImageUrl?: string };
   index: number;
@@ -436,6 +437,7 @@ function DualFormatMessage({
   generationTime?: number;
   onOpenSupport: () => void;
   isDark: boolean;
+  t: (key: string) => string;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -546,7 +548,7 @@ function DualFormatMessage({
                 onClick={onOpenSupport}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Сообщить об ошибке
+                {t('diagram.reportError')}
               </button>
             </div>
 
@@ -568,7 +570,7 @@ function DualFormatMessage({
                       : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Диаграмма
+                {t('diagram.diagram')}
               </button>
               <button
                 onClick={() => {
@@ -586,7 +588,7 @@ function DualFormatMessage({
                       : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Код
+                {t('diagram.code')}
               </button>
             </div>
 
@@ -626,7 +628,7 @@ function DualFormatMessage({
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Скачать PNG
+                    {t('diagram.downloadPNG')}
                   </button>
                 )}
                 {currentFormat === 'plantuml' && msg.diagramImageUrl && (
@@ -638,14 +640,14 @@ function DualFormatMessage({
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Скачать PNG
+                    {t('diagram.downloadPNG')}
                   </button>
                 )}
                 <button
                   onClick={() => {
                     if (currentCode) {
                       navigator.clipboard.writeText(currentCode);
-                      alert('Код скопирован в буфер обмена');
+                      alert(t('diagram.codeCopied'));
                     }
                   }}
                   className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
@@ -654,7 +656,7 @@ function DualFormatMessage({
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Скопировать код
+                  {t('diagram.copyCode')}
                 </button>
               </div>
             </div>
@@ -690,12 +692,12 @@ function DualFormatMessage({
           {/* Глоссарий (внизу, в том же сообщении) */}
           {currentGlossary && currentGlossary.length > 0 && (
             <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Глоссарий элементов диаграммы</h4>
+              <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
               <table className="w-full">
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Элемент</th>
-                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Описание</th>
+                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.element')}</th>
+                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.description')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -724,7 +726,9 @@ function MermaidMessage({
   viewModes, 
   setViewModes,
   generationTime,
-  onOpenSupport
+  onOpenSupport,
+  isDark,
+  t
 }: { 
   msg: { mermaidCode?: string; glossary?: Array<{ element: string; description: string }> }; 
   index: number; 
@@ -734,6 +738,8 @@ function MermaidMessage({
   setViewModes: (modes: Map<number, 'diagram' | 'code'>) => void;
   generationTime?: number;
   onOpenSupport: () => void;
+  isDark: boolean;
+  t: (key: string) => string;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -864,7 +870,7 @@ function MermaidMessage({
                 onClick={onOpenSupport}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Сообщить об ошибке
+                {t('diagram.reportError')}
               </button>
             </div>
 
@@ -882,7 +888,7 @@ function MermaidMessage({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Диаграмма
+                {t('diagram.diagram')}
               </button>
               <button
                 onClick={() => {
@@ -896,7 +902,7 @@ function MermaidMessage({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Код
+                {t('diagram.code')}
               </button>
             </div>
 
@@ -1124,7 +1130,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               return `${file.name || 'Неизвестный файл'} (${sizeKB} KB)`;
             }).join(', ');
             setMessages([{
-              text: `Обработаны документы: ${filesList}. Теперь можно выбрать объект, по которому будет построена диаграмма.`,
+              text: `${t('diagram.documentsProcessed')} ${filesList}. ${t('diagram.nowSelectObject')}`,
               isUser: false,
               timestamp: new Date()
             }]);
@@ -1547,9 +1553,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     
     // Список статусов загрузки (каждый отображается 3 секунды)
     const statusMessages = [
-      'Обработка запроса',
-      'Определение требований',
-      'Формирование кода',
+      t('diagram.processingRequest'),
+      t('diagram.definingRequirements'),
+      t('diagram.generatingCode'),
       'Проверка кода',
       'Рендеринг диаграммы',
       'Проверка качества',
@@ -2062,6 +2068,32 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     }
   ];
 
+  // Функция для получения переведенного описания
+  const getTranslatedDescription = (type: string, originalDescription: string): string => {
+    const key = `diagram.type.${type.split('PlantUML')[0]}.description`;
+    return t(key) || originalDescription;
+  };
+
+  // Функция для получения переведенного тега
+  const getTranslatedTag = (tag: string): string => {
+    const key = `diagram.tag.${tag}`;
+    return t(key) || tag;
+  };
+
+  // Функция для получения переведенного стандарта
+  const getTranslatedStandard = (standard: string): string => {
+    if (standard === 'Все') return t('diagrams.chat.selectType.filter.all') || 'Все';
+    const key = `diagram.standard.${standard}`;
+    return t(key) || standard;
+  };
+
+  // Функция для получения переведенного назначения
+  const getTranslatedPurpose = (purpose: string): string => {
+    if (purpose === 'Все') return t('diagrams.chat.selectType.filter.all') || 'Все';
+    const key = `diagram.purpose.${purpose}`;
+    return t(key) || purpose;
+  };
+
   // Получаем уникальные значения для фильтров
   const allStandards = Array.from(new Set(diagramTypesInfo.map(d => d.standard)));
   const allPurposes = Array.from(new Set(diagramTypesInfo.map(d => d.purpose)));
@@ -2143,8 +2175,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'popularity')}
                     className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                   >
-                    <option value="alphabet">По алфавиту</option>
-                    <option value="popularity">По популярности</option>
+                    <option value="alphabet">{t('diagrams.chat.selectType.sort.alphabet')}</option>
+                    <option value="popularity">{t('diagrams.chat.selectType.sort.popularity')}</option>
                   </select>
                   {/* Кастомная стрелочка */}
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -2165,7 +2197,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     onClick={handleClearFilters}
                     className="text-base text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    Убрать фильтры
+                    {t('diagram.removeFilters')}
                   </button>
                 )}
               </div>
@@ -2173,7 +2205,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 {/* Фильтр по стандарту/нотации */}
                 <div>
                   <label className={`block text-base font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Стандарт или нотация
+                    {t('diagrams.chat.selectType.filter.standard')}
                   </label>
                   <div className="relative">
                     <select
@@ -2181,9 +2213,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onChange={(e) => setSelectedStandard(e.target.value)}
                       className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
-                      <option value="Все">Все</option>
+                      <option value="Все">{t('diagrams.chat.selectType.filter.all')}</option>
                       {allStandards.map(standard => (
-                        <option key={standard} value={standard}>{standard}</option>
+                        <option key={standard} value={standard}>{getTranslatedStandard(standard)}</option>
                       ))}
                     </select>
                     {/* Кастомная стрелочка */}
@@ -2198,7 +2230,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 {/* Фильтр по цели использования */}
                 <div>
                   <label className={`block text-base font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Цель использования
+                    {t('diagrams.chat.selectType.filter.purpose')}
                   </label>
                   <div className="relative">
                     <select
@@ -2206,9 +2238,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onChange={(e) => setSelectedPurpose(e.target.value)}
                       className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
-                      <option value="Все">Все</option>
+                      <option value="Все">{t('diagrams.chat.selectType.filter.all')}</option>
                       {allPurposes.map(purpose => (
-                        <option key={purpose} value={purpose}>{purpose}</option>
+                        <option key={purpose} value={purpose}>{getTranslatedPurpose(purpose)}</option>
                       ))}
                     </select>
                     {/* Кастомная стрелочка */}
@@ -2223,7 +2255,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                 {/* Фильтр по тегам */}
                 <div>
                   <label className={`block text-base font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Теги
+                    {t('diagrams.chat.selectType.filter.tag')}
                   </label>
                   <div className="relative">
                     <select
@@ -2231,9 +2263,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       onChange={(e) => setSelectedTag(e.target.value)}
                       className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
-                      <option value="Все">Все</option>
+                      <option value="Все">{t('diagrams.chat.selectType.filter.all')}</option>
                       {allTags.map(tag => (
-                        <option key={tag} value={tag}>{tag}</option>
+                        <option key={tag} value={tag}>{getTranslatedTag(tag)}</option>
                       ))}
                     </select>
                     {/* Кастомная стрелочка */}
@@ -2382,7 +2414,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       ) : selectedOption === 'projects' && !selectedProject ? (
         /* Таблица проектов */
         <div>
-          <h2 className={`text-2xl font-medium mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Выберите проект</h2>
+          <h2 className={`text-2xl font-medium mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.selectProject')}</h2>
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className={isDark ? 'text-gray-400' : 'text-gray-500'}>Загрузка...</div>
@@ -2452,6 +2484,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           generationTime={msg.generationTime}
                           onOpenSupport={() => setShowSupportModal(true)}
                           isDark={isDark}
+                          t={t}
                         />
                       );
                     }
@@ -2468,6 +2501,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           setViewModes={setViewModes}
                           generationTime={msg.generationTime}
                           onOpenSupport={() => setShowSupportModal(true)}
+                          isDark={isDark}
+                          t={t}
                         />
                       );
                     }
@@ -2561,7 +2596,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                     onClick={() => {
                                       if (msg.plantUmlCode) {
                                         navigator.clipboard.writeText(msg.plantUmlCode);
-                                        alert('Код скопирован в буфер обмена');
+                                        alert(t('diagram.codeCopied'));
                                       }
                                     }}
                                     className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
@@ -2593,7 +2628,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                               {/* Глоссарий (внизу, в том же сообщении) */}
                               {msg.glossary && msg.glossary.length > 0 && (
                                 <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                                  <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Глоссарий элементов диаграммы</h4>
+                                  <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
                                   <table className="w-full">
                                     <thead>
                                       <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -2653,9 +2688,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                             {loadingMessages.length > 0 
                               ? loadingMessages[Math.floor(elapsedSeconds / 3) % loadingMessages.length]
-                              : (loadingStage === 'processing' ? 'Обработка запроса' : 
-                                 loadingStage === 'generating' ? 'Формирование кода' : 
-                                 'Создание диаграммы')}
+                              : (loadingStage === 'processing' ? t('diagram.processingRequest') : 
+                                 loadingStage === 'generating' ? t('diagram.generatingCode') : 
+                                 t('diagram.creatingDiagram'))}
                           </span>
                         </div>
                       </div>
