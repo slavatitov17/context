@@ -506,7 +506,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   <li>{t('version.technical.item4')}</li>
                   <li>{t('version.technical.item5')}</li>
                   <li>{t('version.technical.item6')}</li>
-                  <li>{t('version.technical.item7')}</li>
                   <li>{t('version.technical.item8')}</li>
                 </ul>
               </div>

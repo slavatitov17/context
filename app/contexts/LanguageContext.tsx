@@ -126,7 +126,6 @@ const translations: Record<Language, Record<string, string>> = {
     'version.technical.item4': 'CSS-фреймворка Tailwind CSS для быстрой стилизации интерфейса',
     'version.technical.item5': 'Модели Mixtral 8x22B для анализа документов, генерации диаграмм',
     'version.technical.item6': 'API PlantUML для преобразования текстового описания в диаграммы',
-    'version.technical.item7': 'Базы данных IndexedDB для хранения проектов и диаграмм в браузере',
     'version.technical.item8': 'Платформы Vercel для развертывания и хостинга веб-приложения',
     
     // Projects Page
@@ -405,7 +404,6 @@ const translations: Record<Language, Record<string, string>> = {
     'version.technical.item4': 'Tailwind CSS framework for rapid interface styling',
     'version.technical.item5': 'Mixtral 8x22B model for document analysis, diagram generation',
     'version.technical.item6': 'PlantUML API for converting text descriptions into diagrams',
-    'version.technical.item7': 'IndexedDB database for storing projects and diagrams in the browser',
     'version.technical.item8': 'Vercel platform for deploying and hosting the web application',
     
     // Projects Page
