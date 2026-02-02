@@ -739,11 +739,11 @@ export default function ProjectDetailPage() {
   const hasSuccessfulFiles = uploadedFiles.some(f => f.status === 'success');
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 1rem - 2.5rem - 4rem)', maxHeight: 'calc(100vh - 1rem - 2.5rem - 4rem)' }}>
+    <div className="flex flex-col min-h-0" style={{ height: 'calc(100vh - 1rem - 2.5rem - 4rem)', maxHeight: 'calc(100vh - 1rem - 2.5rem - 4rem)' }}>
       
-      <div className="flex-1 flex gap-4 min-h-0" style={{ height: '100%', maxHeight: '100%' }}>
-        {/* Левая колонка: Боковое меню с файлами */}
-        <div className={`w-80 flex-shrink-0 flex flex-col rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`} style={{ height: '100%', maxHeight: '100%' }}>
+      <div className="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
+        {/* Левая колонка: на мобильных сверху с ограничением высоты, на md+ — боковая панель */}
+        <div className={`w-full md:w-80 flex-shrink-0 flex flex-col rounded-lg border min-h-0 max-h-[45vh] md:max-h-none ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
           {/* Заголовок с бордером */}
           <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <h2 className={`text-lg font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
@@ -860,8 +860,8 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
-        {/* Правая колонка: Чат */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ height: '100%', maxHeight: '100%' }}>
+        {/* Правая колонка: Чат — на мобильных занимает оставшееся место */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
           {!hasSuccessfulFiles ? (
             /* Пустое состояние чата */
             <div className={`flex-1 flex items-center justify-center rounded-lg border min-h-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>

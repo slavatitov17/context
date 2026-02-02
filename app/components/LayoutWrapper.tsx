@@ -28,6 +28,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Управляем overflow на html для страниц авторизации
@@ -40,11 +41,25 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     }
 
     return () => {
-      // Восстанавливаем overflow при размонтировании
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
     };
   }, [isAuthPage]);
+
+  useEffect(() => {
+    // На мобильных блокируем прокрутку при открытом сайдбаре
+    if (sidebarOpen && !isAuthPage && !isEditorPage) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [sidebarOpen, isAuthPage, isEditorPage]);
 
   useEffect(() => {
     // Проверяем текущего пользователя
@@ -157,78 +172,86 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     );
   }
 
+  const closeSidebar = () => setSidebarOpen(false);
+
+  const sidebarContent = (
+    <>
+      <div className="mb-10 flex items-center gap-3">
+        <i className={`fas fa-diagram-project text-2xl ${isDark ? 'text-white' : 'text-gray-900'}`}></i>
+        <h1 className={`text-3xl font-medium cursor-default ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          Context
+        </h1>
+      </div>
+      <nav className="space-y-3">
+        <Link href="/projects" onClick={closeSidebar} className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <i className={`fas fa-folder mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
+          <span className="font-medium">{t('sidebar.projects')}</span>
+        </Link>
+        <Link href="/diagrams" onClick={closeSidebar} className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <i className={`fas fa-sitemap mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
+          <span className="font-medium">{t('sidebar.diagrams')}</span>
+        </Link>
+        <button onClick={() => { setShowSettingsModal(true); closeSidebar(); }} className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <i className={`fas fa-cog mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
+          <span className="font-medium">{t('sidebar.settings')}</span>
+        </button>
+        <button onClick={() => { setShowAboutModal(true); closeSidebar(); }} data-about-button className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <i className={`fas fa-info-circle mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
+          <span className="font-medium">{t('sidebar.about')}</span>
+        </button>
+      </nav>
+      <div className="mt-auto pt-6">
+        <button onClick={() => { setShowProfileModal(true); closeSidebar(); }} className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`} title={userEmail}>
+          {profilePhoto ? (
+            <img src={profilePhoto} alt="Фото профиля" className={`mr-3 w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 group-hover:border-white transition-colors ${isDark ? 'border-gray-600' : 'border-gray-300'}`} />
+          ) : (
+            <i className={`fas fa-user-circle mr-3 group-hover:text-white transition-colors text-xl flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
+          )}
+          <span className="flex-1 font-medium min-w-0 truncate text-left">{getDisplayName(userEmail)}</span>
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <body className={`flex h-screen font-sans tracking-tight ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`} style={{ backgroundColor: isDark ? '#111827' : '#ffffff' }}>
-      {/* Боковое меню - показывается только если не страница авторизации, не редактор и пользователь авторизован */}
-      {!isAuthPage && !isEditorPage && isAuthenticated && (
-        <aside className={`fixed left-4 top-4 w-64 p-6 rounded-lg border flex flex-col ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`} style={{ height: 'calc(100vh - 2rem)' }}>
-          <div className="mb-10 flex items-center gap-3">
-            {/* Логотип - диаграмма с узлами (уменьшен) */}
-            <i className={`fas fa-diagram-project text-2xl ${isDark ? 'text-white' : 'text-gray-900'}`}></i>
-            <h1 className={`text-3xl font-medium cursor-default ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              Context
-            </h1>
-          </div>
-          <nav className="space-y-3">
-            <Link
-              href="/projects"
-              className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-            >
-              <i className={`fas fa-folder mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">{t('sidebar.projects')}</span>
-            </Link>
-            <Link
-              href="/diagrams"
-              className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-            >
-              <i className={`fas fa-sitemap mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">{t('sidebar.diagrams')}</span>
-            </Link>
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-            >
-              <i className={`fas fa-cog mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">{t('sidebar.settings')}</span>
-            </button>
-            <button
-              onClick={() => setShowAboutModal(true)}
-              data-about-button
-              className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-            >
-              <i className={`fas fa-info-circle mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              <span className="font-medium">{t('sidebar.about')}</span>
-            </button>
-          </nav>
+      {/* Оверлей для мобильного меню */}
+      {!isAuthPage && !isEditorPage && isAuthenticated && sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+      )}
 
-          {/* Блок профиля внизу */}
-          <div className="mt-auto pt-6">
-            <button 
-              onClick={() => setShowProfileModal(true)}
-              className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-              title={userEmail}
-            >
-              {profilePhoto ? (
-                <img 
-                  src={profilePhoto} 
-                  alt="Фото профиля" 
-                  className={`mr-3 w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 group-hover:border-white transition-colors ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
-                />
-              ) : (
-                <i className={`fas fa-user-circle mr-3 group-hover:text-white transition-colors text-xl flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
-              )}
-              <span className="flex-1 font-medium min-w-0 truncate text-left">
-                {getDisplayName(userEmail)}
-              </span>
-            </button>
-          </div>
+      {/* Боковое меню: на md+ — фиксированное слева; на мобильных — выезжающая панель */}
+      {!isAuthPage && !isEditorPage && isAuthenticated && (
+        <aside
+          className={`fixed top-0 left-0 z-50 w-64 max-w-[85vw] h-full p-6 border-r flex flex-col transition-transform duration-300 ease-out md:translate-x-0 md:left-4 md:top-4 md:w-64 md:h-[calc(100vh-2rem)] md:rounded-lg md:border ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`}
+        >
+          {sidebarContent}
         </aside>
       )}
 
-      {/* Основное пространство - БЕЛОЕ, с отступом под меню только если меню видно */}
-      <main className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''}`} style={{ paddingTop: isEditorPage ? '0' : '2.5rem', paddingBottom: isEditorPage ? '0' : '1rem', paddingLeft: isEditorPage ? '0' : '2rem', paddingRight: isEditorPage ? '0' : '2rem', height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}>
-        {/* Кнопка "Назад" - показывается только на страницах не первого уровня, но не в редакторе и не на страницах авторизации */}
-        {/* На странице privacy кнопка "Назад" уже встроена в компонент, поэтому здесь не показываем */}
+      {/* Основное пространство: на мобильных без отступа, на md+ — отступ под сайдбар */}
+      <main
+        className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-0 md:ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''} ${!isEditorPage ? 'px-4 pt-4 pb-4 md:px-8 md:pt-10 md:pb-4' : ''}`}
+        style={{ height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}
+      >
+        {/* Мобильная шапка с бургер-меню */}
+        {!isAuthPage && !isEditorPage && isAuthenticated && (
+          <div className="flex items-center gap-3 mb-4 md:hidden">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700' : 'border-gray-200 bg-gray-50 text-gray-900 hover:bg-gray-100'}`}
+              aria-label="Открыть меню"
+            >
+              <i className="fas fa-bars text-lg" />
+            </button>
+            <span className={`text-lg font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Context</span>
+          </div>
+        )}
         {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
         {children}
       </main>

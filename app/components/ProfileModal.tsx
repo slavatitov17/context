@@ -201,9 +201,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
         
         <div className="space-y-6">
-          {/* Загрузка фото профиля */}
-          <div className={`flex items-center gap-6 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex-shrink-0">
+          {/* Загрузка фото профиля: на мобильных — вертикально */}
+          <div className={`flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex-shrink-0 flex justify-center sm:justify-start">
               {profilePhoto ? (
                 <img 
                   src={profilePhoto} 
@@ -216,14 +216,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </div>
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 {t('profile.photo')}
               </label>
               <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 {t('profile.photo.upload')}
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -254,8 +254,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           {/* Личные данные */}
           <div>
             <div className="space-y-4">
-              {/* Фамилия, Имя, Отчество в одну строку */}
-              <div className="grid grid-cols-3 gap-4">
+              {/* Фамилия, Имя, Отчество: на мобильных — в столбец */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={`block font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     {t('profile.lastName')}
@@ -338,18 +338,18 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
           </div>
 
-          {/* Кнопки сохранения и выхода */}
-          <div className={`flex items-center justify-between pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          {/* Кнопки сохранения и выхода: на мобильных — в столбец с отступом */}
+          <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={handleSave}
               disabled={!hasChanges}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+              className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {t('profile.save')}
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium py-3"
             >
               <i className="fas fa-sign-out-alt"></i>
               {t('profile.logout')}

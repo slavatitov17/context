@@ -400,16 +400,16 @@ export default function DiagramsPage() {
 
   return (
     <div>
-      {/* Верхний блок: заголовок, описание и кнопки */}
-      <div className={`flex items-start justify-between mb-8 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-        <div>
-          <h1 className={`text-3xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagrams.title')}</h1>
-          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{t('diagrams.description')}</p>
+      {/* Верхний блок: заголовок, описание и кнопки — на мобильных в столбец */}
+      <div className={`flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6 sm:mb-8 pb-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="min-w-0">
+          <h1 className={`text-2xl sm:text-3xl font-medium mb-2 break-words ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagrams.title')}</h1>
+          <p className={`text-sm sm:text-base break-words ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('diagrams.description')}</p>
         </div>
         {hasDiagrams && (
-          <div className="flex gap-3">
+          <div className="flex-shrink-0">
             <Link href="/diagrams/new">
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+              <button className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
                 {t('diagrams.selectType')}
               </button>
             </Link>
@@ -419,46 +419,45 @@ export default function DiagramsPage() {
 
       {/* Контент: пустое состояние или таблица */}
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className={`text-2xl font-medium flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-            {currentFolder ? (
-              <>
-                <button
-                  onClick={() => setCurrentFolderId(null)}
-                  className="opacity-50 hover:opacity-100 transition-opacity"
-                >
-                  {t('diagrams.myDiagrams')}
-                </button>
-                <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>›</span>
-                <span>{currentFolder.name}</span>
-              </>
-            ) : (
-              t('diagrams.myDiagrams')
-            )}
-          </h2>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="min-w-0">
+            <h2 className={`text-xl sm:text-2xl font-medium flex flex-wrap items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+              {currentFolder ? (
+                <>
+                  <button
+                    onClick={() => setCurrentFolderId(null)}
+                    className="opacity-50 hover:opacity-100 transition-opacity"
+                  >
+                    {t('diagrams.myDiagrams')}
+                  </button>
+                  <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>›</span>
+                  <span className="break-words">{currentFolder.name}</span>
+                </>
+              ) : (
+                t('diagrams.myDiagrams')
+              )}
+            </h2>
+          </div>
           
           {hasDiagrams && (
-            <div className="flex items-center gap-4">
-              {/* Поиск */}
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:gap-4">
+              <div className="relative w-full sm:w-64">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('diagrams.search')}
-                  className={`border rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900'}`}
+                  className={`border rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400' : 'border-gray-300 text-gray-900'}`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <i className={`fas fa-search ${isDark ? 'text-gray-500' : 'text-gray-400'}`}></i>
                 </div>
               </div>
-              
-              {/* Сортировка */}
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'alphabet' | 'date')}
-                  className={`border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px] appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
+                  className={`border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:min-w-[160px] appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
                   <option value="date">{t('diagrams.sort.date')}</option>
                   <option value="alphabet">{t('diagrams.sort.alphabet')}</option>
@@ -496,11 +495,11 @@ export default function DiagramsPage() {
         ) : (
           /* Таблица диаграмм */
           <div>
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={handleEdit}
                 disabled={selectedDiagrams.size !== 1}
-                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base ${
                   selectedDiagrams.size === 1
                     ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
                     : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
@@ -512,7 +511,7 @@ export default function DiagramsPage() {
               <button
                 onClick={handleMoveToFolder}
                 disabled={selectedDiagrams.size === 0}
-                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base ${
                   selectedDiagrams.size > 0
                     ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
                     : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
@@ -524,7 +523,7 @@ export default function DiagramsPage() {
               <button
                 onClick={handleDeleteSelected}
                 disabled={selectedDiagrams.size === 0}
-                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-base ${
+                className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base ${
                   selectedDiagrams.size > 0
                     ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
                     : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'

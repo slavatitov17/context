@@ -150,12 +150,12 @@ export default function ProfilePage() {
       </div>
 
       {/* Блок: Личные данные */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-full overflow-hidden">
         <h2 className="text-xl font-medium text-gray-900 mb-6">Личные данные</h2>
         
         <div className="space-y-6">
-          {/* Фамилия, Имя, Отчество в одну строку */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Фамилия, Имя, Отчество: на мобильных в столбец */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-3">
                 Фамилия
@@ -237,18 +237,18 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Кнопки сохранения и выхода */}
-        <div className="mt-12 flex items-center gap-4">
+        {/* Кнопки сохранения и выхода: на мобильных в столбец с отступом */}
+        <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4">
           <button
             onClick={handleSave}
             disabled={!hasChanges}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+            className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
           >
             Сохранить изменения
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium py-3"
           >
             <i className="fas fa-sign-out-alt"></i>
             Выйти из аккаунта
