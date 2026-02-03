@@ -28,7 +28,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Управляем overflow на html для страниц авторизации
@@ -45,21 +44,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       document.body.style.overflow = '';
     };
   }, [isAuthPage]);
-
-  useEffect(() => {
-    // На мобильных блокируем прокрутку при открытом сайдбаре
-    if (sidebarOpen && !isAuthPage && !isEditorPage) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-    };
-  }, [sidebarOpen, isAuthPage, isEditorPage]);
 
   useEffect(() => {
     // Проверяем текущего пользователя
@@ -172,8 +156,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     );
   }
 
-  const closeSidebar = () => setSidebarOpen(false);
-
   const sidebarContent = (
     <>
       <div className="mb-10 flex items-center gap-3">
@@ -183,25 +165,25 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         </h1>
       </div>
       <nav className="space-y-3">
-        <Link href="/projects" onClick={closeSidebar} className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+        <Link href="/projects" className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
           <i className={`fas fa-folder mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
           <span className="font-medium">{t('sidebar.projects')}</span>
         </Link>
-        <Link href="/diagrams" onClick={closeSidebar} className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+        <Link href="/diagrams" className={`flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
           <i className={`fas fa-sitemap mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
           <span className="font-medium">{t('sidebar.diagrams')}</span>
         </Link>
-        <button onClick={() => { setShowSettingsModal(true); closeSidebar(); }} className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+        <button onClick={() => setShowSettingsModal(true)} className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
           <i className={`fas fa-cog mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
           <span className="font-medium">{t('sidebar.settings')}</span>
         </button>
-        <button onClick={() => { setShowAboutModal(true); closeSidebar(); }} data-about-button className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+        <button onClick={() => setShowAboutModal(true)} data-about-button className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
           <i className={`fas fa-info-circle mr-3 group-hover:text-white transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
           <span className="font-medium">{t('sidebar.about')}</span>
         </button>
       </nav>
       <div className="mt-auto pt-6">
-        <button onClick={() => { setShowProfileModal(true); closeSidebar(); }} className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`} title={userEmail}>
+        <button onClick={() => setShowProfileModal(true)} className={`w-full flex items-center py-3.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 group ${isDark ? 'text-gray-100' : 'text-gray-800'}`} title={userEmail}>
           {profilePhoto ? (
             <img src={profilePhoto} alt="Фото профиля" className={`mr-3 w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 group-hover:border-white transition-colors ${isDark ? 'border-gray-600' : 'border-gray-300'}`} />
           ) : (
@@ -215,49 +197,71 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <body className={`flex h-screen font-sans tracking-tight ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`} style={{ backgroundColor: isDark ? '#111827' : '#ffffff' }}>
-      {/* Оверлей для мобильного меню */}
-      {!isAuthPage && !isEditorPage && isAuthenticated && sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={closeSidebar}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Боковое меню: на md+ — фиксированное слева; на мобильных — выезжающая панель */}
+      {/* Боковое меню: только на десктопе (md+) */}
       {!isAuthPage && !isEditorPage && isAuthenticated && (
         <aside
-          className={`fixed top-0 left-0 z-50 w-64 max-w-[85vw] h-full p-6 border-r flex flex-col transition-transform duration-300 ease-out md:translate-x-0 md:left-4 md:top-4 md:w-64 md:h-[calc(100vh-2rem)] md:rounded-lg md:border ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`}
+          className={`hidden md:flex fixed left-4 top-4 z-40 w-64 h-[calc(100vh-2rem)] p-6 rounded-lg border flex-col ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`}
         >
           {sidebarContent}
         </aside>
       )}
 
-      {/* Основное пространство: на мобильных без отступа, на md+ — отступ под сайдбар */}
+      {/* Основное пространство: на мобильных — отступ снизу под нижнее меню */}
       <main
-        className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-0 md:ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''} ${!isEditorPage ? 'px-4 pt-4 pb-4 md:px-8 md:pt-10 md:pb-4' : ''}`}
+        className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-0 md:ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''} ${!isEditorPage ? 'px-4 pt-4 pb-24 md:px-8 md:pt-10 md:pb-4' : ''}`}
         style={{ height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}
       >
-        {/* Мобильная шапка: логотип с иконкой слева, бургер справа */}
+        {/* Мобильная шапка: логотип (ссылка на Проекты) слева, аватар (профиль) справа */}
         {!isAuthPage && !isEditorPage && isAuthenticated && (
           <div className="flex items-center justify-between gap-3 mb-4 md:hidden">
-            <div className="flex items-center gap-3 min-w-0">
+            <Link href="/projects" className="flex items-center gap-3 min-w-0">
               <i className={`fas fa-diagram-project text-xl flex-shrink-0 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} />
               <span className={`text-lg font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Context</span>
-            </div>
+            </Link>
             <button
               type="button"
-              onClick={() => setSidebarOpen(true)}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg border flex-shrink-0 ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700' : 'border-gray-200 bg-gray-50 text-gray-900 hover:bg-gray-100'}`}
-              aria-label="Открыть меню"
+              onClick={() => setShowProfileModal(true)}
+              className={`flex items-center justify-center flex-shrink-0 rounded-full overflow-hidden border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}
+              style={{ width: 40, height: 40 }}
+              aria-label={t('profile.title')}
+              title={userEmail}
             >
-              <i className="fas fa-bars text-lg" />
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <i className={`fas fa-user-circle text-2xl ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              )}
             </button>
           </div>
         )}
         {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
         {children}
       </main>
+
+      {/* Нижнее фиксированное меню — только на мобильных */}
+      {!isAuthPage && !isEditorPage && isAuthenticated && (
+        <nav
+          className={`fixed bottom-0 left-0 right-0 z-40 border-t md:hidden flex items-stretch justify-around py-2 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}
+          aria-label="Основное меню"
+        >
+          <Link href="/projects" className={`flex flex-col items-center justify-center flex-1 py-1 min-w-0 ${pathname === '/projects' ? (isDark ? 'text-blue-400' : 'text-blue-600') : (isDark ? 'text-gray-400' : 'text-gray-600')}`}>
+            <i className="fas fa-folder text-lg mb-0.5" />
+            <span className="text-xs font-medium truncate max-w-full">{t('sidebar.projects')}</span>
+          </Link>
+          <Link href="/diagrams" className={`flex flex-col items-center justify-center flex-1 py-1 min-w-0 ${pathname?.startsWith('/diagrams') ? (isDark ? 'text-blue-400' : 'text-blue-600') : (isDark ? 'text-gray-400' : 'text-gray-600')}`}>
+            <i className="fas fa-sitemap text-lg mb-0.5" />
+            <span className="text-xs font-medium truncate max-w-full">{t('sidebar.diagrams')}</span>
+          </Link>
+          <button type="button" onClick={() => setShowSettingsModal(true)} className={`flex flex-col items-center justify-center flex-1 py-1 min-w-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <i className="fas fa-cog text-lg mb-0.5" />
+            <span className="text-xs font-medium">{t('sidebar.settings')}</span>
+          </button>
+          <button type="button" onClick={() => setShowAboutModal(true)} data-about-button className={`flex flex-col items-center justify-center flex-1 py-1 min-w-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <i className="fas fa-info-circle text-lg mb-0.5" />
+            <span className="text-xs font-medium">{t('sidebar.about')}</span>
+          </button>
+        </nav>
+      )}
       
       {/* Модальное окно профиля */}
       {isAuthenticated && (
