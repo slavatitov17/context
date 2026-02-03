@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
@@ -871,15 +872,30 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          {/* Бордер и кнопка внизу */}
-          <div className={`p-4 border-t flex-shrink-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          {/* Бордер и кнопки внизу */}
+          <div className={`p-4 border-t flex-shrink-0 space-y-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={handleButtonClick}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors text-base font-medium ${
+                hasFiles
+                  ? isDark
+                    ? 'border-2 border-blue-500 text-blue-400 hover:bg-blue-500/10'
+                    : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
               <i className="fas fa-plus"></i>
               {t('project.addDocuments')}
             </button>
+            {hasFiles && (
+              <Link
+                href={`/diagrams/new?fromProject=${projectId}`}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
+              >
+                <i className="fas fa-diagram-project"></i>
+                {t('project.createDiagram')}
+              </Link>
+            )}
           </div>
           </div>
         </div>

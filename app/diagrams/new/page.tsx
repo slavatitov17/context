@@ -2,11 +2,13 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 
 export default function NewDiagramPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromProject = searchParams.get('fromProject');
 
   useEffect(() => {
     const createDiagram = () => {
@@ -29,8 +31,9 @@ export default function NewDiagramPage() {
           user_id: currentUser.id,
         });
 
-        // Перенаправляем в каталог типов диаграмм
-        router.push(`/diagrams/${newDiagram.id}`);
+        // Перенаправляем в каталог типов диаграмм (с fromProject при переходе из проекта)
+        const query = fromProject ? `?fromProject=${fromProject}` : '';
+        router.push(`/diagrams/${newDiagram.id}${query}`);
       } catch (error) {
         console.error('Ошибка при создании диаграммы:', error);
         alert('Не удалось создать диаграмму. Попробуйте еще раз.');
@@ -39,7 +42,7 @@ export default function NewDiagramPage() {
     };
 
     createDiagram();
-  }, [router]);
+  }, [router, fromProject]);
 
   return (
     <div className="flex items-center justify-center h-screen">

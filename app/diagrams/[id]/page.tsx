@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
@@ -983,7 +983,9 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const { isDark } = useTheme();
   const { t } = useLanguage();
   const routeParams = useParams();
+  const searchParams = useSearchParams();
   const diagramId = routeParams?.id as string;
+  const fromProject = searchParams.get('fromProject');
   const [diagramData, setDiagramData] = useState<Diagram | null>(null);
   const [selectedOption, setSelectedOption] = useState<'projects' | 'scratch' | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
@@ -1253,6 +1255,47 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     const currentUser = auth.getCurrentUser();
     if (currentUser && diagramId) {
       saveDiagram({ diagramType: type });
+    }
+
+    // Переход из проекта: пропускаем "Способ создания", сразу в чат с приветствием о документах
+    if (fromProject) {
+      setSelectedOption('projects');
+      if (currentUser && diagramId) {
+        saveDiagram({ selectedOption: 'projects', selectedProject: fromProject });
+      }
+      const projectId = fromProject;
+      setSelectedProject(projectId);
+      if (currentUser) {
+        const projectData = projectsStorage.getById(projectId, currentUser.id);
+        if (projectData) {
+          setSelectedProjectData(projectData);
+          if (projectData.files && Array.isArray(projectData.files) && projectData.files.length > 0) {
+            setUploadedFiles(projectData.files.map((file: any) => ({
+              id: file.id || `file-${Date.now()}`,
+              name: file.name || 'Неизвестный файл',
+              size: file.size || 0,
+              status: 'success' as const,
+              progress: 100,
+            })));
+            const filesList = projectData.files.map((file: any) => {
+              const sizeKB = Math.round((file.size || 0) / 1024);
+              return `${file.name || 'Неизвестный файл'} (${sizeKB} KB)`;
+            }).join(', ');
+            setMessages([{
+              text: `${t('diagram.documentsProcessed')} ${filesList}. ${t('diagram.nowSelectObject')}`,
+              isUser: false,
+              timestamp: new Date()
+            }]);
+          } else {
+            setUploadedFiles([]);
+            setMessages([{
+              text: t('diagram.nowSelectObject'),
+              isUser: false,
+              timestamp: new Date()
+            }]);
+          }
+        }
+      }
     }
   };
 
