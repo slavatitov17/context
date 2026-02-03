@@ -2341,7 +2341,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
           {/* Сообщение, если ничего не найдено или блок "Не нашли нужный тип?" */}
           {filteredAndSortedTypes.length === 0 ? (
-            <div className="mt-12 text-center pb-8">
+            <div className="mt-12 text-center pb-24 md:pb-8">
               <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('diagram.notFound')}</h3>
               <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {t('diagram.notFoundDescription')}{' '}
@@ -2357,7 +2357,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </p>
             </div>
           ) : (
-            <div className="mt-12 text-center pb-8">
+            <div className="mt-12 text-center pb-24 md:pb-8">
               <h3 className={`text-2xl font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('diagram.notFound')}</h3>
               <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {t('diagram.notFoundDescription')}{' '}
@@ -2407,7 +2407,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
               <button
                 onClick={() => handleOptionSelect('projects')}
-                className="w-full md:w-auto md:min-w-[180px] bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                className="w-full md:w-auto md:min-w-[180px] md:whitespace-nowrap bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 {t('diagram.selectProjectButton')}
                 <i className="fas fa-arrow-right"></i>
@@ -2426,7 +2426,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               </div>
               <button
                 onClick={() => handleOptionSelect('scratch')}
-                className="w-full md:w-auto md:min-w-[180px] bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                className="w-full md:w-auto md:min-w-[180px] md:whitespace-nowrap bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 {t('diagram.enterData')}
                 <i className="fas fa-arrow-right"></i>
