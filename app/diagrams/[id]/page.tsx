@@ -2396,18 +2396,18 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           {!selectedOption ? (
         /* Выбор источника данных */
         <div className="max-w-2xl space-y-6">
-          {/* Блок 1: Выбрать из проектов */}
+          {/* Блок 1: Выбрать из проектов — на мобильных заголовок и текст на всю ширину, кнопка снизу по центру */}
           <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.fromProjects')}</h2>
-                <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 w-full">
+                <h2 className={`text-xl font-medium mb-2 w-full ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.fromProjects')}</h2>
+                <p className={`text-base w-full ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('diagram.fromProjectsDescription')}
                 </p>
               </div>
               <button
                 onClick={() => handleOptionSelect('projects')}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
+                className="w-full md:w-auto md:min-w-[180px] bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 {t('diagram.selectProjectButton')}
                 <i className="fas fa-arrow-right"></i>
@@ -2415,18 +2415,18 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
             </div>
           </div>
 
-          {/* Блок 2: Создать с нуля */}
+          {/* Блок 2: Создать с нуля — на мобильных заголовок и текст на всю ширину, кнопка снизу по центру */}
           <div className={`rounded-xl p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.fromScratch')}</h2>
-                <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 w-full">
+                <h2 className={`text-xl font-medium mb-2 w-full ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.fromScratch')}</h2>
+                <p className={`text-base w-full ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('diagram.describeManually')}
                 </p>
               </div>
               <button
                 onClick={() => handleOptionSelect('scratch')}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 min-w-[180px] justify-center"
+                className="w-full md:w-auto md:min-w-[180px] bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 {t('diagram.enterData')}
                 <i className="fas fa-arrow-right"></i>

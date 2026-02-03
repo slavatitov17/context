@@ -238,18 +238,21 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-0 md:ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''} ${!isEditorPage ? 'px-4 pt-4 pb-4 md:px-8 md:pt-10 md:pb-4' : ''}`}
         style={{ height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}
       >
-        {/* Мобильная шапка с бургер-меню */}
+        {/* Мобильная шапка: логотип с иконкой слева, бургер справа */}
         {!isAuthPage && !isEditorPage && isAuthenticated && (
-          <div className="flex items-center gap-3 mb-4 md:hidden">
+          <div className="flex items-center justify-between gap-3 mb-4 md:hidden">
+            <div className="flex items-center gap-3 min-w-0">
+              <i className={`fas fa-diagram-project text-xl flex-shrink-0 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} />
+              <span className={`text-lg font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Context</span>
+            </div>
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700' : 'border-gray-200 bg-gray-50 text-gray-900 hover:bg-gray-100'}`}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg border flex-shrink-0 ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700' : 'border-gray-200 bg-gray-50 text-gray-900 hover:bg-gray-100'}`}
               aria-label="Открыть меню"
             >
               <i className="fas fa-bars text-lg" />
             </button>
-            <span className={`text-lg font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Context</span>
           </div>
         )}
         {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
