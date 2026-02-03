@@ -191,6 +191,8 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Project Detail Page
     'project.documents': 'Документы',
+    'project.documentsHide': 'Скрыть',
+    'project.documentsShow': 'Показать',
     'project.dragFiles': 'Перетащите файлы сюда',
     'project.orClickButton': 'или нажмите кнопку ниже',
     'project.addDocuments': 'Добавить документы',
@@ -469,6 +471,8 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Project Detail Page
     'project.documents': 'Documents',
+    'project.documentsHide': 'Hide',
+    'project.documentsShow': 'Show',
     'project.dragFiles': 'Drag files here',
     'project.orClickButton': 'or click the button below',
     'project.addDocuments': 'Add Documents',

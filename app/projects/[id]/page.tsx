@@ -270,6 +270,7 @@ export default function ProjectDetailPage() {
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [documentsCollapsed, setDocumentsCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -744,11 +745,30 @@ export default function ProjectDetailPage() {
       <div className="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
         {/* Левая колонка: на мобильных сверху с ограничением высоты, на md+ — боковая панель */}
         <div className={`w-full md:w-80 flex-shrink-0 flex flex-col rounded-lg border min-h-0 max-h-[45vh] md:max-h-none ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-          {/* Заголовок с бордером */}
-          <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <h2 className={`text-lg font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          {/* Заголовок: на мобильных — кнопка Скрыть/Показать */}
+          <div className={`p-4 border-b flex items-center justify-between gap-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h2 className={`text-lg font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               {t('project.documents')} {hasFiles && `(${uploadedFiles.length})`}
             </h2>
+            <div className="flex-shrink-0 md:hidden">
+              {documentsCollapsed ? (
+                <button
+                  type="button"
+                  onClick={() => setDocumentsCollapsed(false)}
+                  className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-gray-100'}`}
+                >
+                  {t('project.documentsShow')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setDocumentsCollapsed(true)}
+                  className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-gray-100'}`}
+                >
+                  {t('project.documentsHide')}
+                </button>
+              )}
+            </div>
           </div>
 
           <input
@@ -760,7 +780,10 @@ export default function ProjectDetailPage() {
             className="hidden"
           />
 
-          {/* Область drag-n-drop для всего бокового меню */}
+          {/* Область drag-n-drop: на мобильных скрыта при свёрнутом блоке */}
+          <div
+            className={`flex-1 flex flex-col min-h-0 ${documentsCollapsed ? 'hidden md:flex' : ''}`}
+          >
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -849,7 +872,7 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Бордер и кнопка внизу */}
-          <div className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className={`p-4 border-t flex-shrink-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={handleButtonClick}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
@@ -857,6 +880,7 @@ export default function ProjectDetailPage() {
               <i className="fas fa-plus"></i>
               {t('project.addDocuments')}
             </button>
+          </div>
           </div>
         </div>
 
@@ -883,7 +907,7 @@ export default function ProjectDetailPage() {
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     
-                    // Если это ответ системы с generationTime, показываем таймер, кнопку, девайдер и ответ
+                    // Если это ответ системы с generationTime: дата/время сверху, сообщение, затем таймер и кнопка снизу
                     if (!msg.isUser && msg.generationTime !== undefined) {
                       return (
                         <div key={index} className="flex flex-col items-start w-full">
@@ -891,27 +915,6 @@ export default function ProjectDetailPage() {
                             {dateStr} {timeStr}
                           </div>
                           <div className="max-w-[75%] w-full">
-                            {/* Таймер и кнопка "Сообщить об ошибке" */}
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                                <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                                  {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => setShowSupportModal(true)}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                              >
-                                {t('diagram.reportError')}
-                              </button>
-                            </div>
-                            
-                            {/* Девайдер */}
-                            <div className={`border-t mb-4 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}></div>
-                            
                             {/* Ответ системы */}
                             <div className={`rounded-2xl p-4 rounded-bl-none shadow-sm prose prose-sm max-w-none border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
                               <div className={`text-base break-words markdown-content ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
@@ -935,6 +938,23 @@ export default function ProjectDetailPage() {
                                   {msg.text}
                                 </ReactMarkdown>
                               </div>
+                            </div>
+                            {/* Таймер и кнопка "Сообщить об ошибке" — под сообщением */}
+                            <div className="flex items-center gap-3 mt-3">
+                              <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                                  {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => setShowSupportModal(true)}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                              >
+                                {t('diagram.reportError')}
+                              </button>
                             </div>
                           </div>
                         </div>

@@ -2090,28 +2090,33 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     return t(key) || originalDescription;
   };
 
-  // Функция для получения переведенного тега
+  // Функция для получения переведенного тега (только название, без префикса diagram.tag)
   const getTranslatedTag = (tag: string): string => {
     const key = `diagram.tag.${tag}`;
-    return t(key) || tag;
+    const val = t(key);
+    return (val && val !== key) ? val : tag;
   };
 
-  // Функция для получения переведенного стандарта
+  // Функция для получения переведенного стандарта (только название)
   const getTranslatedStandard = (standard: string): string => {
     if (standard === 'Все') return t('diagrams.chat.selectType.filter.all') || 'Все';
+    if (standard === 'Другие') return 'Другие';
+    if (standard === 'UML') return 'UML';
     const key = `diagram.standard.${standard}`;
-    return t(key) || standard;
+    const val = t(key);
+    return (val && val !== key) ? val : standard;
   };
 
-  // Функция для получения переведенного назначения
+  // Функция для получения переведенного назначения (только название, без префикса diagram.purpose)
   const getTranslatedPurpose = (purpose: string): string => {
     if (purpose === 'Все') return t('diagrams.chat.selectType.filter.all') || 'Все';
     const key = `diagram.purpose.${purpose}`;
-    return t(key) || purpose;
+    const val = t(key);
+    return (val && val !== key) ? val : purpose;
   };
 
-  // Получаем уникальные значения для фильтров
-  const allStandards = Array.from(new Set(diagramTypesInfo.map(d => d.standard)));
+  // Стандарт или нотация: только два варианта — UML и Другие
+  const standardFilterOptions: string[] = ['UML', 'Другие'];
   const allPurposes = Array.from(new Set(diagramTypesInfo.map(d => d.purpose)));
   const allTags = Array.from(new Set(diagramTypesInfo.flatMap(d => d.tags)));
 
@@ -2134,8 +2139,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         diagram.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         diagram.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // Фильтр по стандарту
-      const matchesStandard = selectedStandard === 'Все' || diagram.standard === selectedStandard;
+      // Фильтр по стандарту: «UML» — только UML, «Другие» — все не-UML
+      const matchesStandard = selectedStandard === 'Все' ||
+        (selectedStandard === 'UML' && diagram.standard === 'UML') ||
+        (selectedStandard === 'Другие' && diagram.standard !== 'UML');
       
       // Фильтр по цели
       const matchesPurpose = selectedPurpose === 'Все' || diagram.purpose === selectedPurpose;
@@ -2230,7 +2237,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10 ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
                       <option value="Все">{t('diagrams.chat.selectType.filter.all')}</option>
-                      {allStandards.map(standard => (
+                      {standardFilterOptions.map(standard => (
                         <option key={standard} value={standard}>{getTranslatedStandard(standard)}</option>
                       ))}
                     </select>
