@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { auth, diagrams as diagramsStorage, folders, type Diagram, type DiagramType, type Folder, type FolderType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import DeleteConfirmModal from '@/app/components/DeleteConfirmModal';
 
 // Объединенный тип для диаграмм
 type UnifiedDiagram = Diagram & { source: 'catalog' };
@@ -27,6 +28,8 @@ export default function DiagramsPage() {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const modalWasOpenRef = useRef(false);
   const initialLoadDoneRef = useRef(false);
   const router = useRouter();
@@ -162,61 +165,41 @@ export default function DiagramsPage() {
 
   const handleDelete = (diagramId: string) => {
     if (!user) return;
-    
-    if (!confirm(language === 'ru' ? 'Вы уверены, что хотите удалить эту диаграмму?' : 'Are you sure you want to delete this diagram?')) {
-      return;
-    }
+    setSelectedDiagrams(new Set([diagramId]));
+    setSelectedFolders(new Set());
+    setShowDeleteModal(true);
+  };
 
+  const handleDeleteConfirm = () => {
+    if (!user) return;
     try {
-      const success = diagramsStorage.delete(diagramId, user.id);
-      if (success) {
-        setDiagrams(diagrams.filter(d => d.id !== diagramId));
-        setSelectedDiagrams(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(diagramId);
-          return newSet;
-        });
+      selectedDiagrams.forEach(diagramId => {
+        diagramsStorage.delete(diagramId, user.id);
+      });
+      selectedFolders.forEach(folderId => {
+        const allUserDiagrams = diagramsStorage.getAll(user.id);
+        allUserDiagrams.filter(d => d.folder_id === folderId).forEach(d => diagramsStorage.delete(d.id, user.id));
+        folders.delete(folderId, user.id);
+      });
+      const wasCurrentFolderDeleted = currentFolderId !== null && selectedFolders.has(currentFolderId);
+      if (wasCurrentFolderDeleted) {
+        setCurrentFolderId(null);
+        loadDiagrams(user.id, null, false);
       } else {
-        alert(language === 'ru' ? 'Не удалось удалить диаграмму. Попробуйте еще раз.' : 'Failed to delete diagram. Please try again.');
+        loadDiagrams(user.id, currentFolderId, false);
       }
+      setSelectedDiagrams(new Set());
+      setSelectedFolders(new Set());
+      setShowDeleteModal(false);
     } catch (error) {
-      console.error('Ошибка при удалении диаграммы:', error);
-      alert(language === 'ru' ? 'Не удалось удалить диаграмму. Попробуйте еще раз.' : 'Failed to delete diagram. Please try again.');
+      console.error('Ошибка при удалении:', error);
+      alert(language === 'ru' ? 'Не удалось удалить. Попробуйте еще раз.' : 'Failed to delete. Please try again.');
     }
   };
 
   const handleBulkDelete = () => {
-    if (!user || selectedDiagrams.size === 0) return;
-    
-    const count = selectedDiagrams.size;
-    const confirmText = language === 'ru' 
-      ? `Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`
-      : `Are you sure you want to delete ${count} ${count === 1 ? 'diagram' : 'diagrams'}?`;
-    if (!confirm(confirmText)) {
-      return;
-    }
-
-    try {
-      let successCount = 0;
-      selectedDiagrams.forEach(diagramId => {
-        const success = diagramsStorage.delete(diagramId, user.id);
-        if (success) {
-          successCount++;
-        }
-      });
-
-      if (successCount > 0) {
-        setDiagrams(diagrams.filter(d => !selectedDiagrams.has(d.id)));
-        setSelectedDiagrams(new Set());
-      }
-
-      if (successCount < count) {
-        alert(language === 'ru' ? `Удалено ${successCount} из ${count} диаграмм.` : `Deleted ${successCount} of ${count} diagrams.`);
-      }
-    } catch (error) {
-      console.error('Ошибка при массовом удалении диаграмм:', error);
-      alert(language === 'ru' ? 'Произошла ошибка при удалении диаграмм.' : 'An error occurred while deleting diagrams.');
-    }
+    if (!user || (selectedDiagrams.size === 0 && selectedFolders.size === 0)) return;
+    setShowDeleteModal(true);
   };
 
   const handleEdit = () => {
@@ -301,17 +284,18 @@ export default function DiagramsPage() {
   };
 
   const handleDeleteSelected = () => {
-    if (selectedDiagrams.size === 0 || !user) return;
-    
-    const count = selectedDiagrams.size;
-    const confirmText = language === 'ru' 
-      ? `Вы уверены, что хотите удалить ${count} ${count === 1 ? 'диаграмму' : count < 5 ? 'диаграммы' : 'диаграмм'}?`
-      : `Are you sure you want to delete ${count} ${count === 1 ? 'diagram' : 'diagrams'}?`;
-    if (!confirm(confirmText)) {
-      return;
-    }
+    if ((selectedDiagrams.size === 0 && selectedFolders.size === 0) || !user) return;
+    setShowDeleteModal(true);
+  };
 
-    handleBulkDelete();
+  const getDeleteModalTitle = () => {
+    const hasDiagrams = selectedDiagrams.size > 0;
+    const hasFolders = selectedFolders.size > 0;
+    if (hasFolders && !hasDiagrams) return t('deleteModal.title.folderDiagrams');
+    if (hasDiagrams && selectedDiagrams.size === 1 && !hasFolders) return t('deleteModal.title.diagram');
+    if (hasDiagrams && !hasFolders) return t('deleteModal.title.diagrams');
+    if (hasFolders && hasDiagrams) return t('deleteModal.title.diagrams');
+    return t('deleteModal.title.folderDiagrams');
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -320,6 +304,15 @@ export default function DiagramsPage() {
     } else {
       setSelectedDiagrams(new Set());
     }
+  };
+
+  const handleSelectFolder = (folderId: string, checked: boolean) => {
+    setSelectedFolders(prev => {
+      const newSet = new Set(prev);
+      if (checked) newSet.add(folderId);
+      else newSet.delete(folderId);
+      return newSet;
+    });
   };
 
   const handleSelectDiagram = (diagramId: string, checked: boolean) => {
@@ -381,6 +374,7 @@ export default function DiagramsPage() {
       'Radar': 'Radar',
       'UserJourney': 'User Journey',
       'XY': 'XY',
+      'BPMN': 'BPMN',
     };
     
     return typeNames[diagramType] || '—';
@@ -396,7 +390,7 @@ export default function DiagramsPage() {
 
   const hasDiagrams = (user && (diagrams.length > 0 || (!currentFolderId && folders.getAllByType(user.id, 'diagrams').length > 0))) || false;
   const allSelected = filteredAndSortedItems.diagrams.length > 0 && filteredAndSortedItems.diagrams.every(d => selectedDiagrams.has(d.id));
-  const someSelected = selectedDiagrams.size > 0;
+  const someSelected = selectedDiagrams.size > 0 || selectedFolders.size > 0;
 
   return (
     <div>
@@ -522,9 +516,9 @@ export default function DiagramsPage() {
               </button>
               <button
                 onClick={handleDeleteSelected}
-                disabled={selectedDiagrams.size === 0}
+                disabled={selectedDiagrams.size === 0 && selectedFolders.size === 0}
                 className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base ${
-                  selectedDiagrams.size > 0
+                  selectedDiagrams.size > 0 || selectedFolders.size > 0
                     ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
                     : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
@@ -564,8 +558,8 @@ export default function DiagramsPage() {
                       <td className="py-4 px-6">
                         <input
                           type="checkbox"
-                          checked={false}
-                          onChange={() => {}}
+                          checked={selectedFolders.has(folder.id)}
+                          onChange={(e) => handleSelectFolder(folder.id, e.target.checked)}
                           onClick={(e) => e.stopPropagation()}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                         />
@@ -767,6 +761,16 @@ export default function DiagramsPage() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        title={getDeleteModalTitle()}
+        message={t('deleteModal.message')}
+        backLabel={t('deleteModal.back')}
+        confirmLabel={t('deleteModal.confirm')}
+        onBack={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

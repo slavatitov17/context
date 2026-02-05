@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { auth, projects as projectsStorage, folders, type Project, type Folder, type FolderType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import DeleteConfirmModal from '@/app/components/DeleteConfirmModal';
 
 export default function ProjectsPage() {
   const { isDark } = useTheme();
@@ -24,6 +25,8 @@ export default function ProjectsPage() {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const modalWasOpenRef = useRef(false);
   const initialLoadDoneRef = useRef(false);
   const router = useRouter();
@@ -156,61 +159,46 @@ export default function ProjectsPage() {
 
   const handleDelete = (projectId: string) => {
     if (!user) return;
-    
-    if (!confirm(language === 'ru' ? 'Вы уверены, что хотите удалить этот проект?' : 'Are you sure you want to delete this project?')) {
-      return;
-    }
+    setSelectedProjects(new Set([projectId]));
+    setSelectedFolders(new Set());
+    setShowDeleteModal(true);
+  };
 
+  const handleDeleteConfirm = () => {
+    if (!user) return;
     try {
-      const success = projectsStorage.delete(projectId, user.id);
-      if (success) {
-        setProjects(projects.filter(p => p.id !== projectId));
-        setSelectedProjects(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(projectId);
-          return newSet;
-        });
+      selectedProjects.forEach(projectId => {
+        projectsStorage.delete(projectId, user.id);
+      });
+      selectedFolders.forEach(folderId => {
+        const allUserProjects = projectsStorage.getAll(user.id);
+        allUserProjects.filter(p => p.folder_id === folderId).forEach(p => projectsStorage.delete(p.id, user.id));
+        folders.delete(folderId, user.id);
+      });
+      const wasCurrentFolderDeleted = currentFolderId !== null && selectedFolders.has(currentFolderId);
+      if (wasCurrentFolderDeleted) {
+        setCurrentFolderId(null);
+        loadProjects(user.id, null, false);
       } else {
-        alert(language === 'ru' ? 'Не удалось удалить проект. Попробуйте еще раз.' : 'Failed to delete project. Please try again.');
+        loadProjects(user.id, currentFolderId, false);
       }
+      setSelectedProjects(new Set());
+      setSelectedFolders(new Set());
+      setShowDeleteModal(false);
     } catch (error) {
-      console.error('Ошибка при удалении проекта:', error);
-      alert(language === 'ru' ? 'Не удалось удалить проект. Попробуйте еще раз.' : 'Failed to delete project. Please try again.');
+      console.error('Ошибка при удалении:', error);
+      alert(language === 'ru' ? 'Не удалось удалить. Попробуйте еще раз.' : 'Failed to delete. Please try again.');
     }
   };
 
-  const handleBulkDelete = () => {
-    if (!user || selectedProjects.size === 0) return;
-    
-    const count = selectedProjects.size;
-    const confirmText = language === 'ru' 
-      ? `Вы уверены, что хотите удалить ${count} ${count === 1 ? 'проект' : count < 5 ? 'проекта' : 'проектов'}?`
-      : `Are you sure you want to delete ${count} ${count === 1 ? 'project' : 'projects'}?`;
-    if (!confirm(confirmText)) {
-      return;
-    }
-
-    try {
-      let successCount = 0;
-      selectedProjects.forEach(projectId => {
-        const success = projectsStorage.delete(projectId, user.id);
-        if (success) {
-          successCount++;
-        }
-      });
-
-      if (successCount > 0) {
-        setProjects(projects.filter(p => !selectedProjects.has(p.id)));
-        setSelectedProjects(new Set());
-      }
-
-      if (successCount < count) {
-        alert(language === 'ru' ? `Удалено ${successCount} из ${count} проектов.` : `Deleted ${successCount} of ${count} projects.`);
-      }
-    } catch (error) {
-      console.error('Ошибка при массовом удалении проектов:', error);
-      alert(language === 'ru' ? 'Произошла ошибка при удалении проектов.' : 'An error occurred while deleting projects.');
-    }
+  const getDeleteModalTitle = () => {
+    const hasProjects = selectedProjects.size > 0;
+    const hasFolders = selectedFolders.size > 0;
+    if (hasFolders && !hasProjects) return t('deleteModal.title.folderProjects');
+    if (hasProjects && selectedProjects.size === 1 && !hasFolders) return t('deleteModal.title.project');
+    if (hasProjects && !hasFolders) return t('deleteModal.title.projects');
+    if (hasFolders && hasProjects) return t('deleteModal.title.projects');
+    return t('deleteModal.title.folderProjects');
   };
 
   const handleEdit = () => {
@@ -295,17 +283,8 @@ export default function ProjectsPage() {
   };
 
   const handleDeleteSelected = () => {
-    if (selectedProjects.size === 0 || !user) return;
-    
-    const count = selectedProjects.size;
-    const confirmText = language === 'ru' 
-      ? `Вы уверены, что хотите удалить ${count} ${count === 1 ? 'проект' : count < 5 ? 'проекта' : 'проектов'}?`
-      : `Are you sure you want to delete ${count} ${count === 1 ? 'project' : 'projects'}?`;
-    if (!confirm(confirmText)) {
-      return;
-    }
-
-    handleBulkDelete();
+    if ((selectedProjects.size === 0 && selectedFolders.size === 0) || !user) return;
+    setShowDeleteModal(true);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -328,6 +307,15 @@ export default function ProjectsPage() {
     });
   };
 
+  const handleSelectFolder = (folderId: string, checked: boolean) => {
+    setSelectedFolders(prev => {
+      const newSet = new Set(prev);
+      if (checked) newSet.add(folderId);
+      else newSet.delete(folderId);
+      return newSet;
+    });
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
@@ -346,7 +334,7 @@ export default function ProjectsPage() {
 
   const hasProjects = (user && (projects.length > 0 || (!currentFolderId && folders.getAllByType(user.id, 'projects').length > 0))) || false;
   const allSelected = filteredAndSortedItems.projects.length > 0 && filteredAndSortedItems.projects.every(p => selectedProjects.has(p.id));
-  const someSelected = selectedProjects.size > 0;
+  const someSelected = selectedProjects.size > 0 || selectedFolders.size > 0;
 
   return (
     <div>
@@ -468,9 +456,9 @@ export default function ProjectsPage() {
               </button>
               <button
                 onClick={handleDeleteSelected}
-                disabled={selectedProjects.size === 0}
+                disabled={selectedProjects.size === 0 && selectedFolders.size === 0}
                 className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base ${
-                  selectedProjects.size > 0
+                  selectedProjects.size > 0 || selectedFolders.size > 0
                     ? isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-[#f9fafb] text-gray-900 hover:bg-gray-100'
                     : isDark ? 'bg-gray-700 text-gray-500 opacity-50 cursor-not-allowed' : 'bg-[#f9fafb] text-gray-400 opacity-50 cursor-not-allowed'
                 }`}
@@ -510,8 +498,8 @@ export default function ProjectsPage() {
                       <td className="py-4 px-6">
                         <input
                           type="checkbox"
-                          checked={false}
-                          onChange={() => {}}
+                          checked={selectedFolders.has(folder.id)}
+                          onChange={(e) => handleSelectFolder(folder.id, e.target.checked)}
                           onClick={(e) => e.stopPropagation()}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                         />
@@ -713,6 +701,16 @@ export default function ProjectsPage() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        title={getDeleteModalTitle()}
+        message={t('deleteModal.message')}
+        backLabel={t('deleteModal.back')}
+        confirmLabel={t('deleteModal.confirm')}
+        onBack={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

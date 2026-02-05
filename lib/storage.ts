@@ -73,7 +73,8 @@ export type DiagramType =
   | 'Quadrant'
   | 'Radar'
   | 'UserJourney'
-  | 'XY';
+  | 'XY'
+  | 'BPMN';
 
 export interface Diagram {
   id: string;

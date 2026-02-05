@@ -179,6 +179,15 @@ const translations: Record<Language, Record<string, string>> = {
     'diagrams.folder.createNew': 'Создать новую папку',
     'diagrams.folder.moveButton': 'Переместить',
     'diagrams.folder.empty': 'Папки отсутствуют',
+    'deleteModal.title.diagram': 'Удалить диаграмму?',
+    'deleteModal.title.diagrams': 'Удалить выбранные диаграммы?',
+    'deleteModal.title.folderDiagrams': 'Удалить папку и все диаграммы в ней?',
+    'deleteModal.title.project': 'Удалить проект?',
+    'deleteModal.title.projects': 'Удалить выбранные проекты?',
+    'deleteModal.title.folderProjects': 'Удалить папку и все проекты в ней?',
+    'deleteModal.message': 'Это действие нельзя отменить. Удалённые данные восстановить будет невозможно.',
+    'deleteModal.back': 'Назад',
+    'deleteModal.confirm': 'Удалить',
     'diagrams.loading': 'Загрузка...',
     
     // Diagram Type Selection
@@ -289,6 +298,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.type.ER.description': 'Диаграмма сущность-связь моделирует структуру базы данных, показывая сущности, их атрибуты и связи между ними с указанием типов отношений',
     'diagram.type.WBS.description': 'Иерархическая структура работ декомпозирует проект на задачи, показывая иерархию работ, их взаимосвязи в структуре проекта и уровни детализации',
     'diagram.type.JSON.description': 'Диаграмма JSON визуализирует структуру данных в формате JSON, показывая объекты, массивы, их вложенность с указанием типов данных и значений',
+    'diagram.type.BPMN.description': '',
     
     // Layout (Sidebar)
     'sidebar.projects': 'Проекты',
@@ -459,6 +469,15 @@ const translations: Record<Language, Record<string, string>> = {
     'diagrams.folder.createNew': 'Create New Folder',
     'diagrams.folder.moveButton': 'Move',
     'diagrams.folder.empty': 'No Folders',
+    'deleteModal.title.diagram': 'Delete diagram?',
+    'deleteModal.title.diagrams': 'Delete selected diagrams?',
+    'deleteModal.title.folderDiagrams': 'Delete folder and all diagrams in it?',
+    'deleteModal.title.project': 'Delete project?',
+    'deleteModal.title.projects': 'Delete selected projects?',
+    'deleteModal.title.folderProjects': 'Delete folder and all projects in it?',
+    'deleteModal.message': 'This action cannot be undone. Deleted data cannot be recovered.',
+    'deleteModal.back': 'Back',
+    'deleteModal.confirm': 'Delete',
     'diagrams.loading': 'Loading...',
     'common.loading': 'Loading...',
     
@@ -570,6 +589,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.type.ER.description': 'An entity-relationship diagram models the structure of a database, showing entities, their attributes, and relationships with relationship type indication',
     'diagram.type.WBS.description': 'A work breakdown structure decomposes a project into tasks, showing the hierarchy of work, their interconnections in the project structure, and levels of detail',
     'diagram.type.JSON.description': 'A JSON diagram visualizes data structure in JSON format, showing objects, arrays, their nesting with data type and value indication',
+    'diagram.type.BPMN.description': '',
     
     // Diagram Type Cards - Tags and Filters
     'diagram.tag.UML': 'UML',

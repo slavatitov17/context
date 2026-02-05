@@ -1698,6 +1698,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           if (type === 'Activity2') return 'Activity';
           if (type === 'Gantt2') return 'Gantt';
           if (type === 'ER2') return 'ER';
+          if (type === 'BPMN') return 'BPMN';
           return type;
         };
 
@@ -1710,6 +1711,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           if (type === 'Activity2') return 'ActivityMermaid';
           if (type === 'Gantt2') return 'GanttMermaid';
           if (type === 'ER2') return 'ERMermaid';
+          if (type === 'BPMN') return 'BPMN';
           return type;
         };
         
@@ -1978,6 +1980,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'Radar': 'Radar',
     'UserJourney': 'User Journey',
     'XY': 'XY',
+    'BPMN': 'BPMN',
   };
 
   // Расширенная информация о типах диаграмм
@@ -2108,6 +2111,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Данные',
       tags: ['Структура', 'Данные', 'Формат'],
       popularity: 10
+    },
+    {
+      type: 'BPMN',
+      name: 'BPMN',
+      description: '',
+      standard: 'Другие',
+      purpose: 'Бизнес-процессы',
+      tags: ['', '', ''],
+      popularity: 10
     }
   ];
 
@@ -2128,6 +2140,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       'ERPlantUML': 'diagram.type.ER.description',
       'WBSPlantUML': 'diagram.type.WBS.description',
       'JSONPlantUML': 'diagram.type.JSON.description',
+      'BPMN': 'diagram.type.BPMN.description',
     };
     const key = typeMap[type] || `diagram.type.${type.split('PlantUML')[0]}.description`;
     return t(key) || originalDescription;
