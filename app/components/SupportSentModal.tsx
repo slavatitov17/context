@@ -36,7 +36,7 @@ export default function SupportSentModal({ isOpen, onClose }: SupportSentModalPr
           <button
             type="button"
             onClick={onClose}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${isDark ? 'bg-gray-700 text-gray-100 hover:bg-gray-600' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
+            className="px-6 py-3 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
           >
             {t('supportSent.close')}
           </button>

@@ -56,7 +56,7 @@ const translations: Record<Language, Record<string, string>> = {
     'about.support.placeholder.email': 'example@mail.com',
     'about.support.placeholder.message': 'Опишите вашу проблему или вопрос...',
     'supportSent.title': 'Сообщение отправлено',
-    'supportSent.message': 'Спасибо за обращение. Мы свяжемся с вами по указанной почте.',
+    'supportSent.message': 'Спасибо за обращение. По указанной почте мы свяжемся с Вами в течение дня.',
     'supportSent.close': 'Закрыть',
     
     // Privacy Policy
@@ -350,7 +350,7 @@ const translations: Record<Language, Record<string, string>> = {
     'about.support.placeholder.email': 'example@mail.com',
     'about.support.placeholder.message': 'Describe your problem or question...',
     'supportSent.title': 'Message sent',
-    'supportSent.message': 'Thank you for your message. We will contact you at the email provided.',
+    'supportSent.message': 'Thank you for your message. We will contact you at the email provided within the day.',
     'supportSent.close': 'Close',
     
     // Privacy Policy
