@@ -29,9 +29,19 @@ function getContextFromDocuments(documents: any[]): string {
   return allChunks.join('\n\n---\n\n');
 }
 
-/** Исправляет типичные ошибки BPMN XML от модели: убирает incoming/outgoing у шлюзов, добавляет недостающие sequenceFlow. */
+const XSI_NS = 'http://www.w3.org/2001/XMLSchema-instance';
+
+/** Исправляет типичные ошибки BPMN XML от модели: xsi namespace, incoming/outgoing у шлюзов, недостающие sequenceFlow. */
 function fixBpmnXml(xml: string): string {
   let out = xml;
+
+  // Если в XML есть xsi:type (например в conditionExpression), но нет xmlns:xsi — добавляем
+  if (/xsi:type\b/i.test(out) && !/xmlns:xsi\s*=/i.test(out)) {
+    out = out.replace(
+      /(<bpmn:definitions)(\s[^>]*)?>/i,
+      (_, tag, rest) => `${tag}${rest || ''} xmlns:xsi="${XSI_NS}" >`
+    );
+  }
 
   // Удаляем атрибуты incoming и outgoing у шлюзов (bpmn-js строит граф по sequenceFlow)
   out = out.replace(
