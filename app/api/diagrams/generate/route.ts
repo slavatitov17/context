@@ -29,6 +29,72 @@ function getContextFromDocuments(documents: any[]): string {
   return allChunks.join('\n\n---\n\n');
 }
 
+/** Исправляет типичные ошибки BPMN XML от модели: убирает incoming/outgoing у шлюзов, добавляет недостающие sequenceFlow. */
+function fixBpmnXml(xml: string): string {
+  let out = xml;
+
+  // Удаляем атрибуты incoming и outgoing у шлюзов (bpmn-js строит граф по sequenceFlow)
+  out = out.replace(
+    /(<bpmn:(?:exclusive|parallel)Gateway[^>]*)\s+incoming="[^"]*"/gi,
+    '$1'
+  );
+  out = out.replace(
+    /(<bpmn:(?:exclusive|parallel)Gateway[^>]*)\s+outgoing="[^"]*"/gi,
+    '$1'
+  );
+
+  const processMatch = out.match(/<bpmn:process[^>]*>([\s\S]*?)<\/bpmn:process>/);
+  if (!processMatch) return out;
+
+  const processBody = processMatch[1];
+  const processOpen = out.substring(0, out.indexOf(processMatch[0]) + processMatch[0].indexOf('>') + 1);
+  const processClose = '</bpmn:process>';
+  const afterProcess = out.substring(out.indexOf(processClose) + processClose.length);
+
+  const targetRefs = new Set<string>();
+  const sourceRefs = new Set<string>();
+  const flowIds = new Set<string>();
+  for (const m of processBody.matchAll(/<bpmn:sequenceFlow[^>]*\ssourceRef="([^"]*)"[^>]*\stargetRef="([^"]*)"/gi)) {
+    sourceRefs.add(m[1]);
+    targetRefs.add(m[2]);
+  }
+  for (const m of processBody.matchAll(/<bpmn:sequenceFlow[^>]*\stargetRef="([^"]*)"[^>]*\ssourceRef="([^"]*)"/gi)) {
+    sourceRefs.add(m[2]);
+    targetRefs.add(m[1]);
+  }
+  for (const m of processBody.matchAll(/<bpmn:sequenceFlow[^>]*\sid="([^"]+)"/gi)) {
+    flowIds.add(m[1]);
+  }
+
+  const gatewayIds: string[] = [];
+  for (const m of processBody.matchAll(/<bpmn:(?:exclusive|parallel)Gateway[^>]*\sid="([^"]+)"/gi)) {
+    gatewayIds.push(m[1]);
+  }
+  const taskIds: string[] = [];
+  for (const m of processBody.matchAll(/<bpmn:task[^>]*\sid="([^"]+)"/gi)) {
+    taskIds.push(m[1]);
+  }
+
+  const gatewaysWithoutIncoming = gatewayIds.filter((id) => !targetRefs.has(id));
+  const tasksWithoutOutgoing = taskIds.filter((id) => !sourceRefs.has(id));
+
+  if (gatewaysWithoutIncoming.length === 0 || tasksWithoutOutgoing.length === 0) {
+    return out;
+  }
+
+  const gatewayId = gatewaysWithoutIncoming[0];
+  const taskId = tasksWithoutOutgoing[0];
+  let flowId = `Flow_${taskId}_${gatewayId}`;
+  let n = 0;
+  while (flowIds.has(flowId)) {
+    flowId = `Flow_fix_${++n}`;
+  }
+
+  const newFlow = `\n    <bpmn:sequenceFlow id="${flowId}" sourceRef="${taskId}" targetRef="${gatewayId}"/>`;
+  const newProcessBody = processBody.trimEnd() + newFlow + '\n  ';
+  return processOpen + newProcessBody + processClose + afterProcess;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -116,6 +182,7 @@ export async function POST(request: NextRequest) {
   </bpmn:process>
 </bpmn:definitions>`;
       }
+      bpmnXml = fixBpmnXml(bpmnXml);
       return NextResponse.json({ bpmnXml, glossary });
     }
 
