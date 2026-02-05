@@ -15,6 +15,15 @@ export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: strin
     const initViewer = async () => {
       setError(null);
       try {
+        // Добавляем разметку диаграммы (bpmndi), если её нет — иначе bpmn-js покажет "no diagram to display"
+        const { layoutProcess } = await import('bpmn-auto-layout');
+        let xmlToImport = bpmnXml;
+        try {
+          xmlToImport = await layoutProcess(bpmnXml);
+        } catch (_) {
+          // Если auto-layout не сработал, пробуем импортировать исходный XML
+        }
+
         const BpmnViewerClass = (await import('bpmn-js')).default;
         if (viewerRef.current) {
           viewerRef.current.destroy();
@@ -24,7 +33,7 @@ export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: strin
         if (!container) return;
         const viewer = new BpmnViewerClass({ container });
         viewerRef.current = viewer;
-        await viewer.importXML(bpmnXml);
+        await viewer.importXML(xmlToImport);
         const canvas = viewer.get('canvas') as { zoom?: (value: string) => void } | undefined;
         if (canvas?.zoom) {
           canvas.zoom('fit-viewport');
