@@ -25,8 +25,8 @@ export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: strin
         const viewer = new BpmnViewerClass({ container });
         viewerRef.current = viewer;
         await viewer.importXML(bpmnXml);
-        const canvas = viewer.get('canvas');
-        if (canvas && typeof canvas.zoom === 'function') {
+        const canvas = viewer.get('canvas') as { zoom?: (value: string) => void } | undefined;
+        if (canvas?.zoom) {
           canvas.zoom('fit-viewport');
         }
       } catch (err) {
