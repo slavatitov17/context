@@ -7,6 +7,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import SupportSentModal from '@/app/components/SupportSentModal';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -174,7 +175,7 @@ function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: numb
 }
 
 // Компонент модального окна поддержки
-function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function SupportModal({ isOpen, onClose, onSubmitSuccess }: { isOpen: boolean; onClose: () => void; onSubmitSuccess?: () => void }) {
   const { isDark } = useTheme();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
@@ -266,12 +267,11 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
     setAttachedFiles([]);
     onClose();
+    onSubmitSuccess?.();
   };
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
@@ -1007,6 +1007,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [formatSelectors, setFormatSelectors] = useState<Map<number, 'plantuml' | 'mermaid'>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showSupportSentModal, setShowSupportSentModal] = useState(false);
   
   // Состояния для поиска, фильтров и сортировки типов диаграмм
   const [searchQuery, setSearchQuery] = useState('');
@@ -2115,10 +2116,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     {
       type: 'BPMN',
       name: 'BPMN',
-      description: '',
+      description: 'Диаграмма BPMN визуализирует бизнес-процессы, показывая последовательность действий, события, шлюзы и потоки управления',
       standard: 'Другие',
       purpose: 'Бизнес-процессы',
-      tags: ['', '', ''],
+      tags: ['Взаимодействие', 'Функции', 'Связи'],
       popularity: 10
     }
   ];
@@ -2821,7 +2822,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         )}
         </div>
       )}
-      <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
+      <SupportModal
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        onSubmitSuccess={() => setShowSupportSentModal(true)}
+      />
+      <SupportSentModal isOpen={showSupportSentModal} onClose={() => setShowSupportSentModal(false)} />
     </div>
   );
 }

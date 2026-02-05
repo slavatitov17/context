@@ -3,17 +3,19 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import SupportSentModal from '@/app/components/SupportSentModal';
 
 export default function AboutPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [showSupportSentModal, setShowSupportSentModal] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
     setEmail('');
     setMessage('');
+    setShowSupportSentModal(true);
   };
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
@@ -122,6 +124,7 @@ export default function AboutPage() {
           </form>
         </div>
       </div>
+      <SupportSentModal isOpen={showSupportSentModal} onClose={() => setShowSupportSentModal(false)} />
     </div>
   );
 }

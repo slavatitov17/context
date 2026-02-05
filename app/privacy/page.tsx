@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/storage';
+import SupportSentModal from '@/app/components/SupportSentModal';
 
 export default function PrivacyPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function PrivacyPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [showSupportSentModal, setShowSupportSentModal] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,9 +29,9 @@ export default function PrivacyPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}`);
     setEmail('');
     setMessage('');
+    setShowSupportSentModal(true);
   };
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
@@ -275,6 +277,7 @@ export default function PrivacyPage() {
           </div>
         </div>
       </div>
+      <SupportSentModal isOpen={showSupportSentModal} onClose={() => setShowSupportSentModal(false)} />
     </div>
   );
 }

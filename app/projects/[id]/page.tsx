@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import SupportSentModal from '@/app/components/SupportSentModal';
 
 interface UploadedFile {
   id: string;
@@ -16,7 +17,7 @@ interface UploadedFile {
   progress: number;
 }
 
-function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function SupportModal({ isOpen, onClose, onSubmitSuccess }: { isOpen: boolean; onClose: () => void; onSubmitSuccess?: () => void }) {
   const { isDark } = useTheme();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
@@ -108,12 +109,11 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
     setAttachedFiles([]);
     onClose();
+    onSubmitSuccess?.();
   };
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
@@ -270,6 +270,7 @@ export default function ProjectDetailPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showSupportSentModal, setShowSupportSentModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [documentsCollapsed, setDocumentsCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1086,7 +1087,12 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
-      <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
+      <SupportModal
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        onSubmitSuccess={() => setShowSupportSentModal(true)}
+      />
+      <SupportSentModal isOpen={showSupportSentModal} onClose={() => setShowSupportSentModal(false)} />
     </div>
   );
 }

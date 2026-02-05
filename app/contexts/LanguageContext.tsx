@@ -55,6 +55,9 @@ const translations: Record<Language, Record<string, string>> = {
     'about.support.send': 'Отправить',
     'about.support.placeholder.email': 'example@mail.com',
     'about.support.placeholder.message': 'Опишите вашу проблему или вопрос...',
+    'supportSent.title': 'Сообщение отправлено',
+    'supportSent.message': 'Спасибо за обращение. Мы свяжемся с вами по указанной почте.',
+    'supportSent.close': 'Закрыть',
     
     // Privacy Policy
     'privacy.section1.title': '1. Общие положения',
@@ -298,7 +301,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.type.ER.description': 'Диаграмма сущность-связь моделирует структуру базы данных, показывая сущности, их атрибуты и связи между ними с указанием типов отношений',
     'diagram.type.WBS.description': 'Иерархическая структура работ декомпозирует проект на задачи, показывая иерархию работ, их взаимосвязи в структуре проекта и уровни детализации',
     'diagram.type.JSON.description': 'Диаграмма JSON визуализирует структуру данных в формате JSON, показывая объекты, массивы, их вложенность с указанием типов данных и значений',
-    'diagram.type.BPMN.description': '',
+    'diagram.type.BPMN.description': 'Диаграмма BPMN визуализирует бизнес-процессы, показывая последовательность действий, события, шлюзы и потоки управления',
     
     // Layout (Sidebar)
     'sidebar.projects': 'Проекты',
@@ -346,6 +349,9 @@ const translations: Record<Language, Record<string, string>> = {
     'about.support.send': 'Send',
     'about.support.placeholder.email': 'example@mail.com',
     'about.support.placeholder.message': 'Describe your problem or question...',
+    'supportSent.title': 'Message sent',
+    'supportSent.message': 'Thank you for your message. We will contact you at the email provided.',
+    'supportSent.close': 'Close',
     
     // Privacy Policy
     'privacy.section1.title': '1. General Provisions',
@@ -589,7 +595,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.type.ER.description': 'An entity-relationship diagram models the structure of a database, showing entities, their attributes, and relationships with relationship type indication',
     'diagram.type.WBS.description': 'A work breakdown structure decomposes a project into tasks, showing the hierarchy of work, their interconnections in the project structure, and levels of detail',
     'diagram.type.JSON.description': 'A JSON diagram visualizes data structure in JSON format, showing objects, arrays, their nesting with data type and value indication',
-    'diagram.type.BPMN.description': '',
+    'diagram.type.BPMN.description': 'BPMN diagram visualizes business processes, showing the sequence of actions, events, gateways and control flows',
     
     // Diagram Type Cards - Tags and Filters
     'diagram.tag.UML': 'UML',

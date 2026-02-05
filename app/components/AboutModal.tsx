@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { auth } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import SupportSentModal from '@/app/components/SupportSentModal';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; file: File; preview?: string }>>([]);
+  const [showSupportSentModal, setShowSupportSentModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -106,11 +108,10 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const filesInfo = attachedFiles.map(f => f.file.name).join(', ');
-    alert(`Сообщение отправлено (заглушка)\nEmail: ${email}\nСообщение: ${message}${filesInfo ? `\nФайлы: ${filesInfo}` : ''}`);
     setEmail('');
     setMessage('');
     setAttachedFiles([]);
+    setShowSupportSentModal(true);
   };
 
   const isFormValid = email.trim() !== '' && message.trim() !== '';
@@ -513,6 +514,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
           </div>
         ) : null}
       </div>
+      <SupportSentModal isOpen={showSupportSentModal} onClose={() => setShowSupportSentModal(false)} />
     </div>
   );
 }
