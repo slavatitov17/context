@@ -64,6 +64,61 @@ export async function POST(request: NextRequest) {
       context = getContextFromDocuments(documents);
     }
 
+    // BPMN: генерируем BPMN 2.0 XML
+    if (diagramType === 'BPMN') {
+      let bpmnInstructions = '';
+      try {
+        const instructionsPath = join(process.cwd(), 'prompts', 'bpmn-instructions.md');
+        bpmnInstructions = readFileSync(instructionsPath, 'utf-8');
+      } catch (e) {
+        console.error('Ошибка чтения bpmn-instructions.md:', e);
+        bpmnInstructions = 'Сгенерируй валидный BPMN 2.0 XML с одним процессом (bpmn:process), startEvent, endEvent, task, sequenceFlow с корректными sourceRef и targetRef. Все name на русском.';
+      }
+      const systemPromptBpmn = `Ты эксперт по BPMN 2.0. Твоя задача — по описанию процесса сгенерировать только валидный BPMN 2.0 XML и глоссарий. Не объясняй, не добавляй текст вне блоков. Ответ: один блок с меткой \`\`\`xml или \`\`\`bpmn с полным BPMN 2.0 XML (корень bpmn:definitions, один bpmn:process, уникальные id у всех элементов, name на русском, все sourceRef/targetRef ссылаются на существующие id). Затем один блок \`\`\`json с массивом глоссария [{"element": "название на русском", "description": "описание"}].`;
+      const userPromptBpmn = `Описание процесса:\n\n${objectDescription}\n\n${bpmnInstructions}${context ? `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}` : ''}\n\nСгенерируй BPMN 2.0 XML и глоссарий в указанном формате.`;
+      const chatResponse = await client.chat.complete({
+        model: 'pixtral-12b-2409',
+        messages: [
+          { role: 'system', content: systemPromptBpmn },
+          { role: 'user', content: userPromptBpmn },
+        ],
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+      const responseContent = chatResponse.choices?.[0]?.message?.content;
+      let responseText = '';
+      if (typeof responseContent === 'string') responseText = responseContent;
+      else if (Array.isArray(responseContent)) {
+        responseText = responseContent.map((c: any) => typeof c === 'string' ? c : ('text' in c && typeof c.text === 'string' ? c.text : '')).join('');
+      } else responseText = String(responseContent || '');
+      const xmlMatch = responseText.match(/```(?:xml|bpmn)\s*\n([\s\S]*?)\n```/i) || responseText.match(/(<\?xml[\s\S]*?<\/bpmn:definitions>)/i);
+      let bpmnXml = xmlMatch ? (xmlMatch[1] || xmlMatch[0]).trim() : '';
+      if (bpmnXml && !bpmnXml.startsWith('<?xml')) bpmnXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + bpmnXml;
+      const glossaryMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/i);
+      let glossary: Array<{ element: string; description: string }> = [];
+      if (glossaryMatch) {
+        try {
+          glossary = JSON.parse(glossaryMatch[1]);
+        } catch (_) {
+          glossary = [];
+        }
+      }
+      if (!Array.isArray(glossary)) glossary = [];
+      if (!bpmnXml) {
+        bpmnXml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1" name="Начало"/>
+    <bpmn:task id="Task_1" name="Задача"/>
+    <bpmn:endEvent id="EndEvent_1" name="Конец"/>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+      }
+      return NextResponse.json({ bpmnXml, glossary });
+    }
+
     // Проверяем, является ли это Mermaid диаграммой
     const isMermaid = diagramType === 'MindMapMermaid' || 
                       diagramType === 'MindMapMax' ||

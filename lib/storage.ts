@@ -88,6 +88,7 @@ export interface Diagram {
   selectedObject?: string | null;
   plantUmlCode?: string | null;
   diagramImageUrl?: string | null;
+  bpmnXml?: string | null;
   glossary?: Array<{ element: string; description: string }> | null;
   files?: any[];
   messages?: any[];

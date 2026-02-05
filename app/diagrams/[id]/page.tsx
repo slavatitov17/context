@@ -8,6 +8,7 @@ import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Pr
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import BpmnViewer from '@/app/components/BpmnViewer';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -993,7 +994,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date; generationTime?: number }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat' | 'bpmn'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; bpmnXml?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date; generationTime?: number }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -1110,6 +1111,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               plantUmlCode: msg.plantUmlCode,
               mermaidCode: msg.mermaidCode,
               diagramImageUrl: msg.diagramImageUrl,
+              bpmnXml: msg.bpmnXml,
               glossary: msg.glossary,
               plantUmlGlossary: msg.plantUmlGlossary,
               mermaidGlossary: msg.mermaidGlossary,
@@ -1240,8 +1242,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           isUser: msg.isUser,
           type: msg.type,
           plantUmlCode: msg.plantUmlCode,
+          mermaidCode: msg.mermaidCode,
           diagramImageUrl: msg.diagramImageUrl,
+          bpmnXml: msg.bpmnXml,
           glossary: msg.glossary,
+          plantUmlGlossary: msg.plantUmlGlossary,
+          mermaidGlossary: msg.mermaidGlossary,
+          generationTime: msg.generationTime,
           timestamp: msg.timestamp || new Date(),
         }));
         saveDiagram({ messages: messagesData as any });
@@ -1863,6 +1870,29 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               type: 'mermaid',
               mermaidCode,
               glossary,
+              generationTime: finalElapsedSeconds,
+              timestamp: new Date()
+            }
+          ]);
+          setShowDiagram(true);
+        } else if (diagramType === 'BPMN' && generateData.bpmnXml) {
+          if (currentUser && diagramId) {
+            saveDiagram({
+              diagramType,
+              selectedObject: objectDescription,
+              bpmnXml: generateData.bpmnXml,
+              glossary: generateData.glossary,
+            });
+          }
+          const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
+          setMessages(prev => [
+            ...prev,
+            {
+              text: '',
+              isUser: false,
+              type: 'bpmn',
+              bpmnXml: generateData.bpmnXml,
+              glossary: generateData.glossary,
               generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
@@ -2584,6 +2614,84 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           isDark={isDark}
                           t={t}
                         />
+                      );
+                    }
+
+                    if (msg.type === 'bpmn' && msg.bpmnXml) {
+                      const currentViewMode = viewModes.get(index) || 'diagram';
+                      return (
+                        <div key={index} className="flex flex-col items-start">
+                          <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {dateStr} {timeStr}
+                          </div>
+                          <div className="max-w-full w-full">
+                            <div className={`rounded-lg p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                              <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                                <div className="flex items-center gap-3">
+                                  {msg.generationTime !== undefined && (
+                                    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                      <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                                        {Math.floor((msg.generationTime || 0) / 60)}:{((msg.generationTime || 0) % 60).toString().padStart(2, '0')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => setShowSupportModal(true)}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                  >
+                                    {t('diagram.reportError')}
+                                  </button>
+                                </div>
+                                <div className={`flex items-center gap-2 rounded-lg p-1 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                  <button
+                                    onClick={() => { const m = new Map(viewModes); m.set(index, 'diagram'); setViewModes(m); }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium ${currentViewMode === 'diagram' ? (isDark ? 'bg-gray-600 text-gray-100' : 'bg-white text-gray-900') : (isDark ? 'text-gray-400' : 'text-gray-600')}`}
+                                  >
+                                    {t('diagram.diagram')}
+                                  </button>
+                                  <button
+                                    onClick={() => { const m = new Map(viewModes); m.set(index, 'code'); setViewModes(m); }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium ${currentViewMode === 'code' ? (isDark ? 'bg-gray-600 text-gray-100' : 'bg-white text-gray-900') : (isDark ? 'text-gray-400' : 'text-gray-600')}`}
+                                  >
+                                    {t('diagram.code')}
+                                  </button>
+                                </div>
+                              </div>
+                              {currentViewMode === 'diagram' && (
+                                <BpmnViewer bpmnXml={msg.bpmnXml} className={`rounded-lg overflow-hidden border ${isDark ? 'border-gray-600 bg-gray-900' : 'border-gray-200 bg-gray-50'}`} />
+                              )}
+                              {currentViewMode === 'code' && (
+                                <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto max-h-96">
+                                  <pre className="whitespace-pre-wrap">{msg.bpmnXml}</pre>
+                                </div>
+                              )}
+                              {msg.glossary && msg.glossary.length > 0 && (
+                                <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                  <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.element')}</th>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.description')}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {msg.glossary.map((item: { element: string; description: string }, idx: number) => (
+                                        <tr key={idx} className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                                          <td className={`py-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{item.element}</td>
+                                          <td className={`py-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.description}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       );
                     }
                     
