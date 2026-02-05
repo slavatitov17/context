@@ -20,13 +20,13 @@ function ensureXsiNamespace(xml: string): string {
 
 export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: string; className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<{ get: (name: string) => { zoom: (a?: number | 'fit-viewport', b?: { x: number; y: number }) => number } } | null>(null);
+  const viewerRef = useRef<{ get: (name: string) => unknown; destroy: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  const getCanvas = useCallback(() => {
+  const getCanvas = useCallback((): { zoom: (a?: number | 'fit-viewport', b?: { x: number; y: number }) => number } | undefined => {
     const v = viewerRef.current;
-    return v?.get?.('canvas');
+    return v?.get?.('canvas') as { zoom: (a?: number | 'fit-viewport', b?: { x: number; y: number }) => number } | undefined;
   }, []);
 
   const zoomIn = useCallback(() => {
@@ -83,7 +83,7 @@ export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: strin
         const container = containerRef.current;
         if (!container) return;
         const viewer = new NavigatedViewer({ container });
-        viewerRef.current = viewer as unknown as typeof viewerRef.current;
+        viewerRef.current = viewer;
         await viewer.importXML(xmlToImport);
         const canvas = viewer.get('canvas') as { zoom: (value?: number | 'fit-viewport', center?: { x: number; y: number }) => number };
         if (canvas?.zoom) {
