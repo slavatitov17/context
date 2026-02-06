@@ -155,6 +155,58 @@ function fixBpmnXml(xml: string): string {
   return processOpen + newProcessBody + processClose + afterProcess;
 }
 
+/** Добавляет в DI фигуры для lane (дорожек), чтобы они отображались как пулы/полосы. */
+function injectLaneShapesIntoDi(xml: string): string {
+  const processMatch = xml.match(/<bpmn:process[^>]*>([\s\S]*?)<\/bpmn:process>/);
+  const planeMatch = xml.match(/<bpmndi:BPMNPlane\s+id="([^"]+)"\s+bpmnElement="([^"]+)"\s*>([\s\S]*?)<\/bpmndi:BPMNPlane>/);
+  if (!processMatch || !planeMatch) return xml;
+  const processBody = processMatch[1];
+  const [planeFull, planeId, planeBpmnElement, planeContent] = planeMatch;
+  const lanes: { id: string; refs: string[] }[] = [];
+  const laneBlockMatch = processBody.match(/<bpmn:laneSet[^>]*>([\s\S]*?)<\/bpmn:laneSet>/);
+  if (!laneBlockMatch) return xml;
+  for (const laneTag of laneBlockMatch[1].matchAll(/<bpmn:lane\s+id="([^"]+)"[^>]*>([\s\S]*?)<\/bpmn:lane>/g)) {
+    const refs = [...laneTag[2].matchAll(/<bpmn:flowNodeRef>([^<]+)<\/bpmn:flowNodeRef>/g)].map((m) => m[1].trim());
+    lanes.push({ id: laneTag[1], refs });
+  }
+  if (lanes.length === 0) return xml;
+  const boundsByElement: Record<string, { x: number; y: number; w: number; h: number }> = {};
+  for (const shape of planeContent.matchAll(/<bpmndi:BPMNShape[^>]*bpmnElement="([^"]+)"[^>]*>[\s\S]*?<dc:Bounds\s+x="([^"]+)"\s+y="([^"]+)"\s+width="([^"]+)"\s+height="([^"]+)"\s*\/>/gi)) {
+    boundsByElement[shape[1]] = {
+      x: Number(shape[2]) || 0,
+      y: Number(shape[3]) || 0,
+      w: Number(shape[4]) || 40,
+      h: Number(shape[5]) || 40,
+    };
+  }
+  const PAD = 20;
+  const laneShapes: string[] = [];
+  for (const lane of lanes) {
+    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    for (const ref of lane.refs) {
+      const b = boundsByElement[ref];
+      if (b) {
+        minX = Math.min(minX, b.x);
+        minY = Math.min(minY, b.y);
+        maxX = Math.max(maxX, b.x + b.w);
+        maxY = Math.max(maxY, b.y + b.h);
+      }
+    }
+    if (minX === 1e9) continue;
+    const x = Math.max(0, minX - PAD);
+    const y = Math.max(0, minY - PAD);
+    const w = maxX - minX + 2 * PAD;
+    const h = maxY - minY + 2 * PAD;
+    laneShapes.push(
+      `<bpmndi:BPMNShape id="${lane.id}_di" bpmnElement="${lane.id}"><dc:Bounds x="${x}" y="${y}" width="${w}" height="${h}"/></bpmndi:BPMNShape>`
+    );
+  }
+  if (laneShapes.length === 0) return xml;
+  const newPlaneContent = '\n      ' + laneShapes.join('\n      ') + '\n      ' + planeContent.trimStart();
+  const newPlane = `<bpmndi:BPMNPlane id="${planeId}" bpmnElement="${planeBpmnElement}">${newPlaneContent}</bpmndi:BPMNPlane>`;
+  return xml.replace(planeFull, newPlane);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -248,6 +300,7 @@ export async function POST(request: NextRequest) {
       try {
         const { layoutProcess } = await import('bpmn-auto-layout');
         bpmnXml = await layoutProcess(bpmnXml);
+        bpmnXml = injectLaneShapesIntoDi(bpmnXml);
       } catch (layoutErr) {
         console.error('BPMN layoutProcess failed:', layoutErr);
       }

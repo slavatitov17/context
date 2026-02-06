@@ -25,11 +25,19 @@
 - **parallelGateway** — разветвление/слияние параллельных веток.
 - **sequenceFlow** — связь между элементами. **Обязательно** соедини все элементы: старт → задачи → шлюзы → задачи → концы. Ни одна задача и ни один шлюз не должны остаться без входящего и без исходящего потока (кроме старта и концов).
 
-**Дорожки (lanes) и данные (обязательно, где уместно):**
+**Пулы/дорожки (обязательно при нескольких ролях):**
 
-- **bpmn:laneSet** и **bpmn:lane** — если в процессе несколько ролей (клиент, менеджер, склад и т.п.), разбей процесс на дорожки: внутри `bpmn:process` добавь `bpmn:laneSet`, в нём `bpmn:lane` с `id` и `name`, у каждой задачи укажи `bpmn:flowNodeRef` в соответствующей lane (или размещай элементы в lane через flowNodeRef в lane).
-- **bpmn:dataObjectReference** — документы (заказ, счёт, акт): объяви в процессе `bpmn:dataObjectReference` с `id` и `name`, привяжи к задачам через `bpmn:dataInputAssociation` / `bpmn:dataOutputAssociation` (источник/цель — задача и dataObjectRef).
-- **bpmn:dataStoreReference** — хранилища данных (склад, БД): объяви `bpmn:dataStoreReference`, привяжи к задачам через dataInputAssociation/dataOutputAssociation где нужно.
+- **Минимум один пул (процесс) с дорожками.** Если в процессе участвуют разные роли (клиент, банк, получатель; менеджер, склад; пользователь, система) — обязательно добавь **bpmn:laneSet** и несколько **bpmn:lane** с уникальными `id` и `name` на русском (например Lane_Client «Клиент», Lane_Bank «Система банка», Lane_Recipient «Получатель»). В каждой lane перечисли принадлежащие ей элементы через **bpmn:flowNodeRef**: укажи id стартовых событий, задач, шлюзов и конечных событий, которые выполняет эта роль. Без дорожек диаграмма неполная.
+
+**Документы и хранилища — обязательно со связями (стрелками):**
+
+- **bpmn:dataObjectReference** (документы: заказ, счёт, учётные данные и т.д.) и **bpmn:dataStoreReference** (хранилище: БД, склад) должны быть **привязаны к задачам линиями**. Иначе они бесполезны. Для каждой такой сущности сделай:
+  1. Объяви в процессе `bpmn:dataObjectReference` или `bpmn:dataStoreReference` с `id` и `name`.
+  2. У задачи, которая **читает** этот объект, добавь блок:
+     `<bpmn:ioSpecification><bpmn:dataInput id="ИмяЗадачи_In_ИмяДанных"/><bpmn:dataOutput id="ИмяЗадачи_Out_1"/><bpmn:inputSet><bpmn:dataInputRefs>ИмяЗадачи_In_ИмяДанных</bpmn:dataInputRefs></bpmn:inputSet><bpmn:outputSet><bpmn:dataOutputRefs>ИмяЗадачи_Out_1</bpmn:dataOutputRefs></bpmn:outputSet></bpmn:ioSpecification>`
+     и `<bpmn:dataInputAssociation><bpmn:sourceRef>id_объекта_данных</bpmn:sourceRef><bpmn:targetRef>ИмяЗадачи_In_ИмяДанных</bpmn:targetRef></bpmn:dataInputAssociation>`.
+  3. У задачи, которая **создаёт или обновляет** объект, добавь ioSpecification с dataOutput и `<bpmn:dataOutputAssociation><bpmn:sourceRef>id_dataOutput_задачи</bpmn:sourceRef><bpmn:targetRef>id_объекта_данных</bpmn:targetRef></bpmn:dataOutputAssociation>`.
+- Пример: задача «Проверка учётных данных» читает данные «Учётные данные клиента» — у задачи ioSpecification с dataInput `Task_Verify_In_Credentials`, dataInputAssociation sourceRef="Data_ClientCredentials" targetRef="Task_Verify_In_Credentials". Задача «Обновление балансов» пишет в «Журнал транзакций» — dataOutputAssociation от dataOutput задачи к Data_TransactionLog.
 - Подпроцессы и дополнительные ветвления — если процесс сложный.
 
 Пространства имён в корне (обязательно):
