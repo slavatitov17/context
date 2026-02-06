@@ -25,20 +25,18 @@
 - **parallelGateway** — разветвление/слияние параллельных веток.
 - **sequenceFlow** — связь между элементами. **Обязательно** соедини все элементы: старт → задачи → шлюзы → задачи → концы. Ни одна задача и ни один шлюз не должны остаться без входящего и без исходящего потока (кроме старта и концов).
 
-**Пулы/дорожки (обязательно при нескольких ролях):**
+**Горизонтальные пулы/дорожки (обязательно при нескольких ролях):**
 
-- **Минимум один пул (процесс) с дорожками.** Если в процессе участвуют разные роли (клиент, банк, получатель; менеджер, склад; пользователь, система) — обязательно добавь **bpmn:laneSet** и несколько **bpmn:lane** с уникальными `id` и `name` на русском (например Lane_Client «Клиент», Lane_Bank «Система банка», Lane_Recipient «Получатель»). В каждой lane перечисли принадлежащие ей элементы через **bpmn:flowNodeRef**: укажи id стартовых событий, задач, шлюзов и конечных событий, которые выполняет эта роль. Без дорожек диаграмма неполная.
+- Нужны **горизонтальные пулы** (дорожки — горизонтальные полосы по ролям). Один процесс с **bpmn:laneSet** и несколькими **bpmn:lane** с уникальными `id` и `name` на русском (Lane_Client «Клиент», Lane_Bank «Система банка», Lane_Driver «Водитель» и т.д.). В каждой lane перечисли **только её** элементы через **bpmn:flowNodeRef**.
+- **Критично: каждый элемент (startEvent, task, gateway, endEvent) должен быть ровно в одной lane** — укажи каждый id только в одном flowNodeRef. Один и тот же id не должен повторяться в разных lane. Стрелки (sequenceFlow) могут идти между элементами из разных дорожек.
+- Без дорожек и с дублированием flowNodeRef диаграмма отображается некорректно.
 
 **Документы и хранилища — обязательно со связями (стрелками):**
 
-- **bpmn:dataObjectReference** (документы: заказ, счёт, учётные данные и т.д.) и **bpmn:dataStoreReference** (хранилище: БД, склад) должны быть **привязаны к задачам линиями**. Иначе они бесполезны. Для каждой такой сущности сделай:
-  1. Объяви в процессе `bpmn:dataObjectReference` или `bpmn:dataStoreReference` с `id` и `name`.
-  2. У задачи, которая **читает** этот объект, добавь блок:
-     `<bpmn:ioSpecification><bpmn:dataInput id="ИмяЗадачи_In_ИмяДанных"/><bpmn:dataOutput id="ИмяЗадачи_Out_1"/><bpmn:inputSet><bpmn:dataInputRefs>ИмяЗадачи_In_ИмяДанных</bpmn:dataInputRefs></bpmn:inputSet><bpmn:outputSet><bpmn:dataOutputRefs>ИмяЗадачи_Out_1</bpmn:dataOutputRefs></bpmn:outputSet></bpmn:ioSpecification>`
-     и `<bpmn:dataInputAssociation><bpmn:sourceRef>id_объекта_данных</bpmn:sourceRef><bpmn:targetRef>ИмяЗадачи_In_ИмяДанных</bpmn:targetRef></bpmn:dataInputAssociation>`.
-  3. У задачи, которая **создаёт или обновляет** объект, добавь ioSpecification с dataOutput и `<bpmn:dataOutputAssociation><bpmn:sourceRef>id_dataOutput_задачи</bpmn:sourceRef><bpmn:targetRef>id_объекта_данных</bpmn:targetRef></bpmn:dataOutputAssociation>`.
-- Пример: задача «Проверка учётных данных» читает данные «Учётные данные клиента» — у задачи ioSpecification с dataInput `Task_Verify_In_Credentials`, dataInputAssociation sourceRef="Data_ClientCredentials" targetRef="Task_Verify_In_Credentials". Задача «Обновление балансов» пишет в «Журнал транзакций» — dataOutputAssociation от dataOutput задачи к Data_TransactionLog.
-- Подпроцессы и дополнительные ветвления — если процесс сложный.
+- **bpmn:dataObjectReference** и **bpmn:dataStoreReference** должны быть **привязаны к задачам** через dataInputAssociation/dataOutputAssociation, иначе на диаграмме не будет линий к документам/хранилищам.
+- **ioSpecification — только внутри элемента задачи**, никогда не ставь ioSpecification прямым потомком process. Внутри `<bpmn:task id="Task_X" ...>` добавь: `<bpmn:ioSpecification><bpmn:dataInput id="Task_X_In_DataId"/><bpmn:dataOutput id="Task_X_Out_1"/><bpmn:inputSet><bpmn:dataInputRefs>Task_X_In_DataId</bpmn:dataInputRefs></bpmn:inputSet><bpmn:outputSet><bpmn:dataOutputRefs>Task_X_Out_1</bpmn:dataOutputRefs></bpmn:outputSet></bpmn:ioSpecification>` и `<bpmn:dataInputAssociation><bpmn:sourceRef>Data_XXX</bpmn:sourceRef><bpmn:targetRef>Task_X_In_DataId</bpmn:targetRef></bpmn:dataInputAssociation>` (для входа) или `<bpmn:dataOutputAssociation><bpmn:sourceRef>Task_X_Out_1</bpmn:sourceRef><bpmn:targetRef>Data_XXX</bpmn:targetRef></bpmn:dataOutputAssociation>` (для выхода).
+- Для каждой задачи, работающей с данными: ioSpecification и соответствующие dataInputAssociation/dataOutputAssociation внутри этой задачи.
+- Подпроцессы и ветвления — по смыслу процесса.
 
 Пространства имён в корне (обязательно):
 

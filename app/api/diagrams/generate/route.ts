@@ -207,6 +207,62 @@ function injectLaneShapesIntoDi(xml: string): string {
   return xml.replace(planeFull, newPlane);
 }
 
+/** Добавляет BPMNEdge в DI, если их нет (стрелки между элементами). */
+function ensureBpmnEdgesInDi(xml: string): string {
+  const processMatch = xml.match(/<bpmn:process[^>]*>([\s\S]*?)<\/bpmn:process>/);
+  const planeMatch = xml.match(/<bpmndi:BPMNPlane\s+id="([^"]+)"\s+bpmnElement="([^"]+)"\s*>([\s\S]*?)<\/bpmndi:BPMNPlane>/);
+  if (!processMatch || !planeMatch) return xml;
+  const processBody = processMatch[1];
+  const [planeFull, planeId, planeBpmnElement, planeContent] = planeMatch;
+  if (/<bpmndi:BPMNEdge\s/i.test(planeContent)) return xml;
+  const flows: { id: string; sourceRef: string; targetRef: string }[] = [];
+  for (const m of processBody.matchAll(/<bpmn:sequenceFlow\s+id="([^"]+)"[^>]*\ssourceRef="([^"]+)"[^>]*\stargetRef="([^"]+)"/gi)) {
+    flows.push({ id: m[1], sourceRef: m[2], targetRef: m[3] });
+  }
+  for (const m of processBody.matchAll(/<bpmn:sequenceFlow[^>]*\stargetRef="([^"]+)"[^>]*\ssourceRef="([^"]+)"[^>]*\sid="([^"]+)"/gi)) {
+    flows.push({ id: m[3], sourceRef: m[2], targetRef: m[1] });
+  }
+  if (flows.length === 0) return xml;
+  const boundsByElement: Record<string, { x: number; y: number; w: number; h: number }> = {};
+  for (const shape of planeContent.matchAll(/<bpmndi:BPMNShape[^>]*bpmnElement="([^"]+)"[^>]*>[\s\S]*?<dc:Bounds\s+x="([^"]+)"\s+y="([^"]+)"\s+width="([^"]+)"\s+height="([^"]+)"\s*\/>/gi)) {
+    boundsByElement[shape[1]] = {
+      x: Number(shape[2]) || 0,
+      y: Number(shape[3]) || 0,
+      w: Number(shape[4]) || 40,
+      h: Number(shape[5]) || 40,
+    };
+  }
+  const edges: string[] = [];
+  for (const flow of flows) {
+    const src = boundsByElement[flow.sourceRef];
+    const tgt = boundsByElement[flow.targetRef];
+    if (!src || !tgt) continue;
+    const x1 = Math.round(src.x + src.w / 2);
+    const y1 = Math.round(src.y + src.h / 2);
+    const x2 = Math.round(tgt.x + tgt.w / 2);
+    const y2 = Math.round(tgt.y + tgt.h / 2);
+    edges.push(
+      `<bpmndi:BPMNEdge id="${flow.id}_di" bpmnElement="${flow.id}"><di:waypoint x="${x1}" y="${y1}"/><di:waypoint x="${x2}" y="${y2}"/></bpmndi:BPMNEdge>`
+    );
+  }
+  if (edges.length === 0) return xml;
+  const newPlaneContent = planeContent.trimEnd() + '\n      ' + edges.join('\n      ') + '\n    ';
+  const newPlane = `<bpmndi:BPMNPlane id="${planeId}" bpmnElement="${planeBpmnElement}">${newPlaneContent}</bpmndi:BPMNPlane>`;
+  return xml.replace(planeFull, newPlane);
+}
+
+/** Транспонирует DI (x↔y), чтобы поток шёл горизонтально, пулы — горизонтальные полосы. */
+function transposeDiToHorizontal(xml: string): string {
+  let out = xml;
+  out = out.replace(/<dc:Bounds\s+x="([^"]+)"\s+y="([^"]+)"\s+width="([^"]+)"\s+height="([^"]+)"\s*\/>/g, (_: string, x: string, y: string, w: string, h: string) => {
+    return `<dc:Bounds x="${y}" y="${x}" width="${h}" height="${w}"/>`;
+  });
+  out = out.replace(/<di:waypoint\s+x="([^"]+)"\s+y="([^"]+)"\s*\/>/g, (_: string, x: string, y: string) => {
+    return `<di:waypoint x="${y}" y="${x}"/>`;
+  });
+  return out;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -300,7 +356,9 @@ export async function POST(request: NextRequest) {
       try {
         const { layoutProcess } = await import('bpmn-auto-layout');
         bpmnXml = await layoutProcess(bpmnXml);
+        bpmnXml = ensureBpmnEdgesInDi(bpmnXml);
         bpmnXml = injectLaneShapesIntoDi(bpmnXml);
+        bpmnXml = transposeDiToHorizontal(bpmnXml);
       } catch (layoutErr) {
         console.error('BPMN layoutProcess failed:', layoutErr);
       }
