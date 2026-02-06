@@ -21,13 +21,15 @@
 - **startEvent** — одно или несколько начальных событий (инициатор процесса).
 - **endEvent** — несколько конечных событий, если процесс может завершиться по-разному (успех, отмена, ошибка и т.д.).
 - **task** — много задач (шагов процесса). Названия на русском, конкретные действия (не «Обработка», а «Проверка наличия на складе», «Согласование с менеджером» и т.п.).
-- **exclusiveGateway** — ветвление «один из вариантов» (условия: да/нет, статус заказа и т.д.). У каждого шлюза: один входящий поток и два или более исходящих. **Не указывай** атрибуты `incoming` и `outgoing` на элементе шлюза — только `bpmn:sequenceFlow` с `sourceRef`/`targetRef`. Для условных переходов можно добавить в поток дочерний элемент `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">условие</bpmn:conditionExpression>` и в корень definitions — `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`.
-- **parallelGateway** — где процесс разбивается на параллельные ветки или ветки снова сходятся.
+- **exclusiveGateway** — ветвление «один из вариантов». У каждого шлюза: один входящий и два или более исходящих `sequenceFlow`. Для условий добавь в поток `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">условие</bpmn:conditionExpression>` и в корень definitions — `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`.
+- **parallelGateway** — разветвление/слияние параллельных веток.
 - **sequenceFlow** — связь между элементами. **Обязательно** соедини все элементы: старт → задачи → шлюзы → задачи → концы. Ни одна задача и ни один шлюз не должны остаться без входящего и без исходящего потока (кроме старта и концов).
 
-По желанию (если уместно по смыслу):
+**Дорожки (lanes) и данные (обязательно, где уместно):**
 
-- **bpmn:dataObjectReference** / **bpmn:dataStoreReference** — документы, хранилища данных (если процесс оперирует документами или хранилищами).
+- **bpmn:laneSet** и **bpmn:lane** — если в процессе несколько ролей (клиент, менеджер, склад и т.п.), разбей процесс на дорожки: внутри `bpmn:process` добавь `bpmn:laneSet`, в нём `bpmn:lane` с `id` и `name`, у каждой задачи укажи `bpmn:flowNodeRef` в соответствующей lane (или размещай элементы в lane через flowNodeRef в lane).
+- **bpmn:dataObjectReference** — документы (заказ, счёт, акт): объяви в процессе `bpmn:dataObjectReference` с `id` и `name`, привяжи к задачам через `bpmn:dataInputAssociation` / `bpmn:dataOutputAssociation` (источник/цель — задача и dataObjectRef).
+- **bpmn:dataStoreReference** — хранилища данных (склад, БД): объяви `bpmn:dataStoreReference`, привяжи к задачам через dataInputAssociation/dataOutputAssociation где нужно.
 - Подпроцессы и дополнительные ветвления — если процесс сложный.
 
 Пространства имён в корне (обязательно):

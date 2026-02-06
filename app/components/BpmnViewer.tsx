@@ -9,13 +9,24 @@ const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 1.25;
 
-/** Добавляет xmlns:xsi в definitions, если в XML есть xsi:type и нет объявления. */
-function ensureXsiNamespace(xml: string): string {
-  if (!/xsi:type\b/i.test(xml) || /xmlns:xsi\s*=/i.test(xml)) return xml;
-  return xml.replace(
-    /(<bpmn:definitions)(\s[^>]*)?>/i,
-    (_, tag, rest) => `${tag}${rest || ''} xmlns:xsi="${XSI_NS}" >`
-  );
+/** Нормализует BPMN XML: убирает обёртки ```xml, комментарии, добавляет xmlns:xsi при необходимости. */
+function normalizeBpmnXml(xml: string): string {
+  let out = xml.trim();
+  const xmlMatch = out.match(/```(?:xml|bpmn)?\s*\n?([\s\S]*?)```/i) || out.match(/(<\?xml[\s\S]*?<\/bpmn:definitions>)/i);
+  if (xmlMatch) {
+    out = (xmlMatch[1] || xmlMatch[0]).trim();
+  }
+  if (!out.startsWith('<?xml')) {
+    out = out.replace(/^[\s\S]*?(<\?xml)/i, '$1');
+  }
+  out = out.replace(/<!--[\s\S]*?-->/g, '');
+  if (/xsi:type\b/i.test(out) && !/xmlns:xsi\s*=/i.test(out)) {
+    out = out.replace(
+      /(<bpmn:definitions)(\s[^>]*)?>/i,
+      (_, tag, rest) => `${tag}${rest || ''} xmlns:xsi="${XSI_NS}" >`
+    );
+  }
+  return out.trim();
 }
 
 export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: string; className?: string }) {
@@ -66,13 +77,26 @@ export default function BpmnViewer({ bpmnXml, className = '' }: { bpmnXml: strin
       setError(null);
       setReady(false);
       try {
-        const normalizedXml = ensureXsiNamespace(bpmnXml);
-        const { layoutProcess } = await import('bpmn-auto-layout');
+        const normalizedXml = normalizeBpmnXml(bpmnXml);
         let xmlToImport = normalizedXml;
-        try {
-          xmlToImport = await layoutProcess(normalizedXml);
-        } catch (_) {
-          // Если auto-layout не сработал, импортируем исходный XML
+        const hasDi = /bpmndi:BPMNPlane|BPMNPlane_/i.test(normalizedXml);
+        if (!hasDi) {
+          try {
+            const { layoutProcess } = await import('bpmn-auto-layout');
+            xmlToImport = await layoutProcess(normalizedXml);
+          } catch (_) {
+            try {
+              const res = await fetch('/api/bpmn/layout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ xml: normalizedXml }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.xml) xmlToImport = data.xml;
+              }
+            } catch (_2) {}
+          }
         }
 
         const { default: NavigatedViewer } = await import('bpmn-js/lib/NavigatedViewer');

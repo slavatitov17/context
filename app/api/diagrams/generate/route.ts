@@ -43,15 +43,7 @@ function fixBpmnXml(xml: string): string {
     );
   }
 
-  // Удаляем атрибуты incoming и outgoing у шлюзов (bpmn-js строит граф по sequenceFlow)
-  out = out.replace(
-    /(<bpmn:(?:exclusive|parallel)Gateway[^>]*)\s+incoming="[^"]*"/gi,
-    '$1'
-  );
-  out = out.replace(
-    /(<bpmn:(?:exclusive|parallel)Gateway[^>]*)\s+outgoing="[^"]*"/gi,
-    '$1'
-  );
+  // Не удаляем incoming/outgoing у шлюзов — bpmn-auto-layout использует их для обхода графа и построения рёбер (BPMNEdge)
 
   const processMatch = out.match(/<bpmn:process[^>]*>([\s\S]*?)<\/bpmn:process>/);
   if (!processMatch) return out;
@@ -252,6 +244,13 @@ export async function POST(request: NextRequest) {
 </bpmn:definitions>`;
       }
       bpmnXml = fixBpmnXml(bpmnXml);
+      bpmnXml = bpmnXml.replace(/<!--[\s\S]*?-->/g, '');
+      try {
+        const { layoutProcess } = await import('bpmn-auto-layout');
+        bpmnXml = await layoutProcess(bpmnXml);
+      } catch (layoutErr) {
+        console.error('BPMN layoutProcess failed:', layoutErr);
+      }
       return NextResponse.json({ bpmnXml, glossary });
     }
 
