@@ -56,7 +56,7 @@ function fixBpmnXml(xml: string): string {
   const processMatch = out.match(/<bpmn:process[^>]*>([\s\S]*?)<\/bpmn:process>/);
   if (!processMatch) return out;
 
-  const processBody = processMatch[1];
+  let processBody = processMatch[1];
   const processOpen = out.substring(0, out.indexOf(processMatch[0]) + processMatch[0].indexOf('>') + 1);
   const processClose = '</bpmn:process>';
   const afterProcess = out.substring(out.indexOf(processClose) + processClose.length);
@@ -76,32 +76,90 @@ function fixBpmnXml(xml: string): string {
     flowIds.add(m[1]);
   }
 
+  const startIds: string[] = [];
+  const endIds: string[] = [];
   const gatewayIds: string[] = [];
-  for (const m of processBody.matchAll(/<bpmn:(?:exclusive|parallel)Gateway[^>]*\sid="([^"]+)"/gi)) {
-    gatewayIds.push(m[1]);
-  }
   const taskIds: string[] = [];
-  for (const m of processBody.matchAll(/<bpmn:task[^>]*\sid="([^"]+)"/gi)) {
-    taskIds.push(m[1]);
-  }
+  for (const m of processBody.matchAll(/<bpmn:startEvent[^>]*\sid="([^"]+)"/gi)) startIds.push(m[1]);
+  for (const m of processBody.matchAll(/<bpmn:endEvent[^>]*\sid="([^"]+)"/gi)) endIds.push(m[1]);
+  for (const m of processBody.matchAll(/<bpmn:(?:exclusive|parallel)Gateway[^>]*\sid="([^"]+)"/gi)) gatewayIds.push(m[1]);
+  for (const m of processBody.matchAll(/<bpmn:task[^>]*\sid="([^"]+)"/gi)) taskIds.push(m[1]);
 
   const gatewaysWithoutIncoming = gatewayIds.filter((id) => !targetRefs.has(id));
   const tasksWithoutOutgoing = taskIds.filter((id) => !sourceRefs.has(id));
+  const tasksWithoutIncoming = taskIds.filter((id) => !targetRefs.has(id));
+  const gatewaysWithoutOutgoing = gatewayIds.filter((id) => !sourceRefs.has(id));
+  const endsWithoutIncoming = endIds.filter((id) => !targetRefs.has(id));
 
-  if (gatewaysWithoutIncoming.length === 0 || tasksWithoutOutgoing.length === 0) {
-    return out;
+  const newFlows: string[] = [];
+  const usedFlowIds = new Set(flowIds);
+  const genFlowId = (src: string, tgt: string): string => {
+    let id = `Flow_${src}_${tgt}`;
+    let n = 0;
+    while (usedFlowIds.has(id)) id = `Flow_fix_${++n}`;
+    usedFlowIds.add(id);
+    return id;
+  };
+
+  const startId = startIds[0];
+  const endId = endIds[0];
+
+  for (let i = 0; i < Math.min(tasksWithoutOutgoing.length, gatewaysWithoutIncoming.length); i++) {
+    const src = tasksWithoutOutgoing[i];
+    const tgt = gatewaysWithoutIncoming[i];
+    newFlows.push(`<bpmn:sequenceFlow id="${genFlowId(src, tgt)}" sourceRef="${src}" targetRef="${tgt}"/>`);
+    sourceRefs.add(src);
+    targetRefs.add(tgt);
+  }
+  const remainingGatewaysNoIn = gatewaysWithoutIncoming.slice(tasksWithoutOutgoing.length);
+  const remainingTasksNoOut = tasksWithoutOutgoing.slice(gatewaysWithoutIncoming.length);
+
+  if (startId) {
+    for (const tgt of remainingGatewaysNoIn) {
+      newFlows.push(`<bpmn:sequenceFlow id="${genFlowId(startId, tgt)}" sourceRef="${startId}" targetRef="${tgt}"/>`);
+      targetRefs.add(tgt);
+    }
   }
 
-  const gatewayId = gatewaysWithoutIncoming[0];
-  const taskId = tasksWithoutOutgoing[0];
-  let flowId = `Flow_${taskId}_${gatewayId}`;
-  let n = 0;
-  while (flowIds.has(flowId)) {
-    flowId = `Flow_fix_${++n}`;
+  if (endId) {
+    for (const src of remainingTasksNoOut) {
+      newFlows.push(`<bpmn:sequenceFlow id="${genFlowId(src, endId)}" sourceRef="${src}" targetRef="${endId}"/>`);
+      sourceRefs.add(src);
+      targetRefs.add(endId);
+    }
   }
 
-  const newFlow = `\n    <bpmn:sequenceFlow id="${flowId}" sourceRef="${taskId}" targetRef="${gatewayId}"/>`;
-  const newProcessBody = processBody.trimEnd() + newFlow + '\n  ';
+  if (startId) {
+    for (const tgt of tasksWithoutIncoming) {
+      if (!targetRefs.has(tgt)) {
+        newFlows.push(`<bpmn:sequenceFlow id="${genFlowId(startId, tgt)}" sourceRef="${startId}" targetRef="${tgt}"/>`);
+        targetRefs.add(tgt);
+      }
+    }
+  }
+
+  if (endId) {
+    for (const src of gatewaysWithoutOutgoing) {
+      if (!sourceRefs.has(src)) {
+        newFlows.push(`<bpmn:sequenceFlow id="${genFlowId(src, endId)}" sourceRef="${src}" targetRef="${endId}"/>`);
+        sourceRefs.add(src);
+      }
+    }
+  }
+
+  const anySource = [...taskIds, ...gatewayIds, ...startIds].find((id) => sourceRefs.has(id)) || startId;
+  if (anySource) {
+    for (const tgt of endsWithoutIncoming) {
+      if (!targetRefs.has(tgt)) {
+        newFlows.push(`<bpmn:sequenceFlow id="${genFlowId(anySource, tgt)}" sourceRef="${anySource}" targetRef="${tgt}"/>`);
+        targetRefs.add(tgt);
+      }
+    }
+  }
+
+  if (newFlows.length === 0) return out;
+  const newFlowBlock = '\n    ' + newFlows.join('\n    ') + '\n  ';
+  const newProcessBody = processBody.trimEnd() + newFlowBlock;
   return processOpen + newProcessBody + processClose + afterProcess;
 }
 
@@ -150,16 +208,17 @@ export async function POST(request: NextRequest) {
         console.error('Ошибка чтения bpmn-instructions.md:', e);
         bpmnInstructions = 'Сгенерируй валидный BPMN 2.0 XML с одним процессом (bpmn:process), startEvent, endEvent, task, sequenceFlow с корректными sourceRef и targetRef. Все name на русском.';
       }
-      const systemPromptBpmn = `Ты эксперт по BPMN 2.0. Твоя задача — по описанию процесса сгенерировать только валидный BPMN 2.0 XML и глоссарий. Не объясняй, не добавляй текст вне блоков. Ответ: один блок с меткой \`\`\`xml или \`\`\`bpmn с полным BPMN 2.0 XML (корень bpmn:definitions, один bpmn:process, уникальные id у всех элементов, name на русском, все sourceRef/targetRef ссылаются на существующие id). Затем один блок \`\`\`json с массивом глоссария [{"element": "название на русском", "description": "описание"}].`;
-      const userPromptBpmn = `Описание процесса:\n\n${objectDescription}\n\n${bpmnInstructions}${context ? `\n\nДополнительный контекст из документов:\n${context.substring(0, 3000)}` : ''}\n\nСгенерируй BPMN 2.0 XML и глоссарий в указанном формате.`;
+      const systemPromptBpmn = `Ты эксперт по BPMN 2.0. Генерируй только валидный BPMN 2.0 XML и глоссарий. Без пояснений вне блоков. Критично: диаграмма должна быть подробной (много задач, шлюзы, ветвления), и у каждого элемента обязательно должны быть связи: для каждой задачи и каждого шлюза — входящий sequenceFlow (targetRef=id элемента) и исходящий sequenceFlow (sourceRef=id элемента). Старт — только исходящие, концы — только входящие. Ответ: один блок \`\`\`xml или \`\`\`bpmn с полным BPMN 2.0 XML (bpmn:definitions, один bpmn:process, уникальные id, name на русском, все sourceRef/targetRef совпадают с id элементов). Затем блок \`\`\`json с массивом [{"element": "название", "description": "описание"}].`;
+      const contextLimit = isFromProject && context ? 8000 : 0;
+      const userPromptBpmn = `Описание процесса:\n\n${objectDescription}\n\n${bpmnInstructions}${context && contextLimit ? `\n\nДополнительный контекст из документов проекта (учитывай детали для подробной диаграммы):\n${context.substring(0, contextLimit)}` : ''}\n\nСгенерируй максимально подробный BPMN 2.0 XML со всеми связями (sequenceFlow) между элементами и глоссарий в указанном формате.`;
       const chatResponse = await client.chat.complete({
         model: 'pixtral-12b-2409',
         messages: [
           { role: 'system', content: systemPromptBpmn },
           { role: 'user', content: userPromptBpmn },
         ],
-        maxTokens: 4096,
-        temperature: 0.3,
+        maxTokens: 8192,
+        temperature: 0.25,
       });
       const responseContent = chatResponse.choices?.[0]?.message?.content;
       let responseText = '';
