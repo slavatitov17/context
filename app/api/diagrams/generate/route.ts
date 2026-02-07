@@ -64,6 +64,96 @@ export async function POST(request: NextRequest) {
       context = getContextFromDocuments(documents);
     }
 
+    // Ветка BPMN: генерация BPMN 2.0 XML по инструкции из prompts/bpmn-instructions.md
+    if (diagramType === 'BPMN') {
+      let bpmnInstructions = '';
+      try {
+        const instructionsPath = join(process.cwd(), 'prompts', 'bpmn-instructions.md');
+        bpmnInstructions = readFileSync(instructionsPath, 'utf-8');
+      } catch (err) {
+        console.error('Ошибка при чтении bpmn-instructions.md:', err);
+        return NextResponse.json(
+          { error: 'Инструкции для BPMN не найдены' },
+          { status: 500 }
+        );
+      }
+
+      const bpmnSystemPrompt = `Ты эксперт по нотации BPMN 2.0. Твоя задача — по запросу пользователя сгенерировать полный, корректный BPMN 2.0 XML и глоссарий в JSON.
+
+Строго следуй инструкции ниже. Не отклоняйся от формата ответа (один блок XML, один блок JSON).
+
+${bpmnInstructions}`;
+
+      let bpmnUserPrompt = `Запрос пользователя на создание BPMN-диаграммы: ${objectDescription}.`;
+      if (context) {
+        bpmnUserPrompt += `\n\nКонтекст из документов проекта (используй для деталей процесса, ролей, документов и хранилищ):\n\n${context.substring(0, 8000)}`;
+      }
+      bpmnUserPrompt += `\n\nСгенерируй полный BPMN 2.0 XML со всеми связями (sequenceFlow), при необходимости с горизонтальными пулами (laneSet/lane), документами, хранилищами и разветвлениями. Затем выведи глоссарий в JSON. Формат ответа — только два блока кода:\n\`\`\`xml\n...полный BPMN 2.0 XML...\n\`\`\`\n\n\`\`\`json\n[ {"element": "название", "description": "описание"}, ... ]\n\`\`\``;
+
+      try {
+        const chatResponse = await client.chat.complete({
+          model: 'pixtral-12b-2409',
+          messages: [
+            { role: 'system', content: bpmnSystemPrompt },
+            { role: 'user', content: bpmnUserPrompt },
+          ],
+          maxTokens: 8192,
+          temperature: 0.2,
+        });
+
+        const responseContent = chatResponse.choices?.[0]?.message?.content;
+        let responseText = '';
+        if (typeof responseContent === 'string') {
+          responseText = responseContent;
+        } else if (Array.isArray(responseContent)) {
+          responseText = responseContent
+            .map((c: unknown) => {
+              if (typeof c === 'string') return c;
+              if (c && typeof c === 'object' && 'text' in c && typeof (c as { text: string }).text === 'string') return (c as { text: string }).text;
+              return '';
+            })
+            .join('');
+        } else {
+          responseText = String(responseContent || '');
+        }
+
+        const xmlMatch = responseText.match(/```(?:xml|bpmn)\s*\n([\s\S]*?)```/i);
+        const jsonMatch = responseText.match(/```json\s*\n([\s\S]*?)```/i);
+
+        let bpmnXml = (xmlMatch && xmlMatch[1] ? xmlMatch[1].trim() : '') || '';
+        let glossary: Array<{ element: string; description: string }> = [];
+
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            glossary = JSON.parse(jsonMatch[1]);
+          } catch {
+            glossary = [{ element: objectDescription, description: 'Процесс по запросу' }];
+          }
+        } else {
+          glossary = [{ element: objectDescription, description: 'Процесс по запросу' }];
+        }
+
+        if (!Array.isArray(glossary)) {
+          glossary = [{ element: objectDescription, description: 'Процесс по запросу' }];
+        }
+
+        if (!bpmnXml || !bpmnXml.includes('definitions')) {
+          return NextResponse.json(
+            { error: 'Модель не вернула валидный BPMN 2.0 XML. Попробуйте переформулировать запрос.' },
+            { status: 502 }
+          );
+        }
+
+        return NextResponse.json({ bpmnXml, glossary });
+      } catch (apiError) {
+        console.error('Ошибка BPMN генерации (Mistral):', apiError);
+        return NextResponse.json(
+          { error: `Ошибка при генерации BPMN: ${apiError instanceof Error ? apiError.message : 'Неизвестная ошибка'}` },
+          { status: 500 }
+        );
+      }
+    }
+
     // Проверяем, является ли это Mermaid диаграммой
     const isMermaid = diagramType === 'MindMapMermaid' || 
                       diagramType === 'MindMapMax' ||

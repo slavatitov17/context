@@ -8,6 +8,7 @@ import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Pr
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import BpmnViewer from '@/app/components/BpmnViewer';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -993,7 +994,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date; generationTime?: number }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat' | 'bpmn'; plantUmlCode?: string; mermaidCode?: string; bpmnXml?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date; generationTime?: number }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -1109,6 +1110,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               type: msg.type,
               plantUmlCode: msg.plantUmlCode,
               mermaidCode: msg.mermaidCode,
+              bpmnXml: msg.bpmnXml || (msg.type === 'bpmn' && diagram.plantUmlCode ? diagram.plantUmlCode : undefined),
               diagramImageUrl: msg.diagramImageUrl,
               glossary: msg.glossary,
               plantUmlGlossary: msg.plantUmlGlossary,
@@ -1240,6 +1242,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           isUser: msg.isUser,
           type: msg.type,
           plantUmlCode: msg.plantUmlCode,
+          bpmnXml: msg.bpmnXml,
           diagramImageUrl: msg.diagramImageUrl,
           glossary: msg.glossary,
           timestamp: msg.timestamp || new Date(),
@@ -1679,6 +1682,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         }
 
         const generateData = await generateResponse.json();
+        const isBpmn = diagramType === 'BPMN';
+        const bpmnXml = generateData.bpmnXml;
         const isMermaid = diagramType === 'MindMapMax' || diagramType === 'ActivityMax';
         const isDualFormat = diagramType.endsWith('2');
         // Проверяем, является ли тип чисто Mermaid (новые типы)
@@ -1716,7 +1721,30 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           return type;
         };
         
-        if (isDualFormat) {
+        if (isBpmn && bpmnXml) {
+          if (currentUser && diagramId) {
+            saveDiagram({
+              diagramType: 'BPMN',
+              selectedObject: objectDescription,
+              plantUmlCode: bpmnXml,
+              glossary: glossary || [],
+            });
+          }
+          const finalElapsedSeconds = Math.max(3, Math.floor((Date.now() - generationStartTime) / 1000));
+          setMessages(prev => [
+            ...prev,
+            {
+              text: '',
+              isUser: false,
+              type: 'bpmn',
+              bpmnXml,
+              glossary: glossary || [],
+              generationTime: finalElapsedSeconds,
+              timestamp: new Date(),
+            },
+          ]);
+          setShowDiagram(true);
+        } else if (isDualFormat) {
           // Для всех (2) типов генерируем оба формата
           const baseType = getBaseType(diagramType);
           const mermaidType = getMermaidType(diagramType);
@@ -2584,6 +2612,39 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           isDark={isDark}
                           t={t}
                         />
+                      );
+                    }
+
+                    if (msg.type === 'bpmn' && (msg.bpmnXml || msg.plantUmlCode)) {
+                      const bpmnXml = msg.bpmnXml || msg.plantUmlCode || '';
+                      return (
+                        <div key={index} className="flex flex-col items-start">
+                          <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {dateStr} {timeStr}
+                          </div>
+                          <div className="max-w-full w-full">
+                            <div className={`rounded-lg p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                              {msg.generationTime !== undefined && (
+                                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 mb-4 w-fit ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                  <span className={`text-sm font-mono ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                  </span>
+                                </div>
+                              )}
+                              <BpmnViewer xml={bpmnXml} className="mb-4" />
+                              {msg.glossary && msg.glossary.length > 0 && (
+                                <details className={`mt-4 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                                  <summary className="px-4 py-2 cursor-pointer font-medium">Глоссарий</summary>
+                                  <ul className="px-4 py-2 list-disc list-inside space-y-1 text-sm">
+                                    {msg.glossary.map((g, i) => (
+                                      <li key={i}><strong>{g.element}</strong>: {g.description}</li>
+                                    ))}
+                                  </ul>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       );
                     }
                     
