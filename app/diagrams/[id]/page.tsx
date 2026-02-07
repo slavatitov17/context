@@ -8,7 +8,6 @@ import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Pr
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
-import BpmnViewer from '@/app/components/BpmnViewer';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -1722,11 +1721,26 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         };
         
         if (isBpmn && bpmnXml) {
+          let bpmnImageUrl: string | undefined;
+          try {
+            const renderBpmnResponse = await fetch('/api/diagrams/render-bpmn', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bpmnXml }),
+            });
+            if (renderBpmnResponse.ok) {
+              const renderData = await renderBpmnResponse.json();
+              bpmnImageUrl = renderData.imageUrl;
+            }
+          } catch (renderErr) {
+            console.error('Ошибка рендера BPMN:', renderErr);
+          }
           if (currentUser && diagramId) {
             saveDiagram({
               diagramType: 'BPMN',
               selectedObject: objectDescription,
               plantUmlCode: bpmnXml,
+              diagramImageUrl: bpmnImageUrl || undefined,
               glossary: glossary || [],
             });
           }
@@ -1738,6 +1752,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               isUser: false,
               type: 'bpmn',
               bpmnXml,
+              diagramImageUrl: bpmnImageUrl,
               glossary: glossary || [],
               generationTime: finalElapsedSeconds,
               timestamp: new Date(),
@@ -2659,6 +2674,20 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   </button>
                                 </div>
                                 <div className="flex space-x-2">
+                                  {msg.diagramImageUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const a = document.createElement('a');
+                                        a.href = msg.diagramImageUrl!;
+                                        a.download = 'bpmn-diagram.png';
+                                        a.click();
+                                      }}
+                                      className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    >
+                                      {t('diagram.downloadPNG')}
+                                    </button>
+                                  )}
                                   <a
                                     href="https://app.diagrams.net/"
                                     target="_blank"
@@ -2676,7 +2705,23 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                 </div>
                               </div>
                               {currentViewMode === 'diagram' && (
-                                <BpmnViewer xml={bpmnXml} className="mb-4" />
+                                <>
+                                  {msg.diagramImageUrl ? (
+                                    <div className={`border rounded-lg p-4 mb-4 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                      <img
+                                        src={msg.diagramImageUrl}
+                                        alt="BPMN диаграмма"
+                                        className="max-w-full h-auto mx-auto"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className={`mb-4 rounded-lg border p-6 min-h-[120px] flex flex-col items-center justify-center text-center ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        Изображение диаграммы не сгенерировано. Переключитесь на «Код» для просмотра XML.
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
                               )}
                               {currentViewMode === 'code' && (
                                 <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
