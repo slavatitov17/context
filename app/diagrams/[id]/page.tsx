@@ -8,6 +8,7 @@ import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Pr
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import BpmnViewer from '@/app/components/BpmnViewer';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -2616,7 +2617,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                     if (msg.type === 'bpmn' && (msg.bpmnXml || msg.plantUmlCode)) {
                       const bpmnXml = msg.bpmnXml || msg.plantUmlCode || '';
-                      const currentViewMode = viewModes.get(index) ?? 'code';
+                      const currentViewMode = viewModes.get(index) ?? 'diagram';
                       return (
                         <div key={index} className="flex flex-col items-start">
                           <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -2675,22 +2676,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                 </div>
                               </div>
                               {currentViewMode === 'diagram' && (
-                                <div className={`mb-4 rounded-lg border p-6 min-h-[200px] flex flex-col items-center justify-center text-center ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                                  <p className={`mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                                    Диаграмма в формате BPMN 2.0. Встроенный просмотр в браузере для этого формата не поддерживается.
-                                  </p>
-                                  <p className={`mb-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    Переключитесь на «Код», чтобы скопировать XML, или откройте draw.io и импортируйте файл (Файл → Импорт).
-                                  </p>
-                                  <a
-                                    href="https://app.diagrams.net/"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium"
-                                  >
-                                    Открыть в draw.io
-                                  </a>
-                                </div>
+                                <BpmnViewer xml={bpmnXml} className="mb-4" />
                               )}
                               {currentViewMode === 'code' && (
                                 <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
