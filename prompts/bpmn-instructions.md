@@ -61,7 +61,7 @@
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   id="Definitions_1"
-                  targetNamespace="http://bpmn.io/schema/bpmn">
+                  targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
 ```
 
 3.2. Назначение пространств: `xmlns:bpmn` — модель BPMN; `xmlns:bpmndi` — диаграмма; `xmlns:dc` и `xmlns:di` — размеры и позиции для отображения; `xmlns:xsi` необходим при использовании `xsi:type` (например в conditionExpression). Рекомендуется всегда добавлять `xmlns:xsi`.
@@ -972,7 +972,7 @@
 
 Избегай создания процессов из одной задачи и одного события без ветвлений и без дорожек, если запрос подразумевает многошаговый процесс. Минимум: один старт, несколько задач, хотя бы один шлюз, один или несколько концов, все соединены sequenceFlow.
 
-Пространства имён в корневом элементе definitions должны быть объявлены так, чтобы парсер BPMN 2.0 и визуализаторы (например bpmn-js) не выдавали ошибок. Стандартный набор: xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL", xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI", xmlns:dc="http://www.omg.org/spec/DD/20100524/DC", xmlns:di="http://www.omg.org/spec/DD/20100524/DI". При использовании conditionExpression добавь xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" и при необходимости укажи xsi:type для conditionExpression согласно схеме BPMN.
+Пространства имён в корневом элементе definitions должны быть объявлены так, чтобы парсер BPMN 2.0 и визуализаторы (в том числе draw.io) не выдавали ошибок. Стандартный набор: xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL", xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI", xmlns:dc="http://www.omg.org/spec/DD/20100524/DC", xmlns:di="http://www.omg.org/spec/DD/20100524/DI". При использовании conditionExpression добавь xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" и при необходимости укажи xsi:type для conditionExpression согласно схеме BPMN.
 
 Элемент bpmndi:BPMNDiagram и вложенный bpmndi:BPMNPlane не обязательны для семантической корректности процесса, но многие визуализаторы ожидают их наличие для отображения. Если инструкция или платформа требуют визуального отображения, включи секцию BPMNDiagram с BPMNShape и BPMNEdge для основных элементов, привязанных к элементам процесса через bpmnElement. Если платформа сама расставляет элементы по умолчанию, можно сгенерировать только семантическую часть (process с flow nodes и sequenceFlow) и при необходимости пустой BPMNDiagram.
 

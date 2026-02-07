@@ -8,7 +8,7 @@ import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Pr
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
-import BpmnViewer from '@/app/components/BpmnViewer';
+import DrawioBpmnViewer from '@/app/components/DrawioBpmnViewer';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -2617,6 +2617,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
                     if (msg.type === 'bpmn' && (msg.bpmnXml || msg.plantUmlCode)) {
                       const bpmnXml = msg.bpmnXml || msg.plantUmlCode || '';
+                      const currentViewMode = viewModes.get(index) ?? 'diagram';
                       return (
                         <div key={index} className="flex flex-col items-start">
                           <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -2624,23 +2625,84 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           </div>
                           <div className="max-w-full w-full">
                             <div className={`rounded-lg p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                              {msg.generationTime !== undefined && (
-                                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 mb-4 w-fit ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                                  <span className={`text-sm font-mono ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
-                                  </span>
+                              <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                                <div className="flex items-center gap-3">
+                                  {msg.generationTime !== undefined && (
+                                    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                      <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                                        {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => setShowSupportModal(true)}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                  >
+                                    {t('diagram.reportError')}
+                                  </button>
+                                </div>
+                                <div className={`flex items-center gap-2 rounded-lg p-1 mx-auto ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                  <button
+                                    onClick={() => { const m = new Map(viewModes); m.set(index, 'diagram'); setViewModes(m); }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${currentViewMode === 'diagram' ? (isDark ? 'bg-gray-600 text-gray-100 shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900')}`}
+                                  >
+                                    {t('diagram.diagram')}
+                                  </button>
+                                  <button
+                                    onClick={() => { const m = new Map(viewModes); m.set(index, 'code'); setViewModes(m); }}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${currentViewMode === 'code' ? (isDark ? 'bg-gray-600 text-gray-100 shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900')}`}
+                                  >
+                                    {t('diagram.code')}
+                                  </button>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <a
+                                    href="https://app.diagrams.net/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                  >
+                                    Открыть в draw.io
+                                  </a>
+                                  <button
+                                    onClick={() => { navigator.clipboard.writeText(bpmnXml); alert(t('diagram.codeCopied')); }}
+                                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                  >
+                                    {t('diagram.copyCode')}
+                                  </button>
+                                </div>
+                              </div>
+                              {currentViewMode === 'diagram' && (
+                                <DrawioBpmnViewer xml={bpmnXml} className="mb-4" />
+                              )}
+                              {currentViewMode === 'code' && (
+                                <div className="bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded overflow-x-auto">
+                                  <pre className="whitespace-pre-wrap">{bpmnXml}</pre>
                                 </div>
                               )}
-                              <BpmnViewer xml={bpmnXml} className="mb-4" />
                               {msg.glossary && msg.glossary.length > 0 && (
-                                <details className={`mt-4 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                                  <summary className="px-4 py-2 cursor-pointer font-medium">Глоссарий</summary>
-                                  <ul className="px-4 py-2 list-disc list-inside space-y-1 text-sm">
-                                    {msg.glossary.map((g, i) => (
-                                      <li key={i}><strong>{g.element}</strong>: {g.description}</li>
-                                    ))}
-                                  </ul>
-                                </details>
+                                <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                  <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.element')}</th>
+                                        <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.description')}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {msg.glossary.map((item, idx) => (
+                                        <tr key={idx} className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                                          <td className={`py-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{item.element}</td>
+                                          <td className={`py-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.description}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               )}
                             </div>
                           </div>
