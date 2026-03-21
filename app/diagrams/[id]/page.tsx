@@ -2112,15 +2112,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Данные',
       tags: ['Структура', 'Данные', 'Формат'],
       popularity: 10
-    },
-    {
-      type: 'BPMN',
-      name: 'BPMN',
-      description: 'Диаграмма BPMN визуализирует бизнес-процессы, показывая последовательность действий, события, шлюзы и потоки управления',
-      standard: 'Другие',
-      purpose: 'Бизнес-процессы',
-      tags: ['Взаимодействие', 'Функции', 'Связи'],
-      popularity: 10
     }
   ];
 

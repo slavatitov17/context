@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -19,7 +18,7 @@ export default function LoginPage() {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isValidEmail = emailRegex.test(email.trim());
   const isValidPassword = password.length > 0;
-  const isFormValid = isValidEmail && isValidPassword && privacyAgreed;
+  const isFormValid = isValidEmail && isValidPassword;
 
   const handleLogin = async () => {
     setError('');
@@ -114,23 +113,6 @@ export default function LoginPage() {
               <p className="text-red-600 text-base">{error}</p>
             </div>
           )}
-
-          {/* Чекбокс согласия */}
-          <div className="flex items-start">
-            <input
-              type="checkbox"
-              id="privacy"
-              checked={privacyAgreed}
-              onChange={(e) => setPrivacyAgreed(e.target.checked)}
-              className="mt-1 mr-3 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor="privacy" className="text-base text-gray-900">
-              Я согласен с{' '}
-              <Link href="/privacy?from=login" className="text-blue-600 hover:underline">
-                Политикой конфиденциальности
-              </Link>
-            </label>
-          </div>
 
           {/* Кнопка Войти */}
           <button
