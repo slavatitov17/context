@@ -15,12 +15,20 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** Слова запроса без пунктуации по краям («документе?» → «документе»), длина > 2 */
+function tokenizeQueryWords(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''))
+    .filter((w) => w.length > 2);
+}
+
 type ScoredChunk = { chunk: string; keywordScore: number; index: number };
 
-// Поиск чанков по пересечению слов запроса (без «фиктивного» балла — иначе в контекст попадал случайный текст)
+// Поиск чанков по пересечению слов запроса (без «фиктивного» балла за порядок чанков)
 function scoreChunksByQuery(query: string, chunks: string[]): ScoredChunk[] {
-  const queryLower = query.toLowerCase();
-  const queryWords = queryLower.split(/\s+/).filter((w) => w.length > 2);
+  const queryWords = tokenizeQueryWords(query);
 
   return chunks.map((chunk, index) => {
     const chunkLower = chunk.toLowerCase();
@@ -83,43 +91,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const queryWords = query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 2);
+    const queryWords = tokenizeQueryWords(query);
     const scored = scoreChunksByQuery(query, allChunks);
 
     let relevantChunks: string[];
     if (queryWords.length === 0) {
-      // Очень короткий запрос — берём начало документа, жёсткие правила в промпте ограничивают «фантазии» модели
+      // Очень короткий запрос — начало документа
       relevantChunks = allChunks.slice(0, 5);
     } else {
       const bestKeyword = scored.reduce((m, c) => Math.max(m, c.keywordScore), 0);
-      // Нет пересечения значимых слов запроса с текстом — не вызываем модель
-      if (bestKeyword === 0) {
-        return NextResponse.json({
-          answer:
-            'В загруженных документах нет информации, по которой можно ответить на этот вопрос. Задайте вопрос по содержанию документов или уточните формулировку.',
-          thinking: null,
-        });
+      if (bestKeyword > 0) {
+        relevantChunks = findRelevantChunks(scored, 5);
+      } else {
+        // Общий вопрос без совпадения по словам («что в документе», перефраз) — даём начало текста, модель отвечает по контексту
+        relevantChunks = allChunks.slice(0, 5);
       }
-      relevantChunks = findRelevantChunks(scored, 5);
     }
 
     const context = relevantChunks.join('\n\n---\n\n');
 
-    const systemPrompt = `Ты отвечаешь в режиме RAG: используешь ТОЛЬКО факты из переданного ниже контекста (фрагменты загруженных документов).
+    const systemPrompt = `Ты отвечаешь в режиме RAG: опираешься только на переданный контекст (фрагменты загруженных документов).
 ПРАВИЛА:
-- Если в контексте нет данных для прямого ответа на вопрос — напиши кратко, что в документах нет такой информации. ЗАПРЕЩЕНО дополнять ответ сведениями из общих знаний, энциклопедии, «на самом деле», шутками или пояснениями «если интересно».
-- Не пересказывай нерелевантные части документов, если они не отвечают на вопрос.
-- Язык ответа — как у вопроса пользователя (для русского вопроса отвечай по-русски).`;
+- Если вопрос общий о содержании документа (например «что указано в документе», «о чём документ», «кратко содержание») — дай сжатый ответ по тому, что реально есть в контексте.
+- Если в контексте нет нужных данных для конкретного факта — скажи, что в приведённых фрагментах документов этой информации нет. Не выдумывай и не дополняй ответ фактами из общих знаний, энциклопедии, фразами «если интересно», «на самом деле» и т.п.
+- Не отвлекайся на темы вне контекста.
+- Язык ответа — как у вопроса пользователя.`;
 
-    const userPrompt = `Контекст из документов (единственный допустимый источник фактов):
+    const userPrompt = `Контекст из документов:
 ${context}
 
 Вопрос: ${query}
 
-Сформулируй ответ. Если контекст не содержит ответа — только сообщение об отсутствии информации в документах, без любых фактов вне контекста.`;
+Ответь по контексту. Если контекста недостаточно для фактического ответа — укажи это; не добавляй сведений вне контекста.`;
 
     // Получаем клиент Mistral AI
     const client = getMistralClient();
@@ -148,7 +151,7 @@ ${context}
           },
         ],
         maxTokens: 2048,
-        temperature: 0.2,
+        temperature: 0.35,
       });
 
       // Извлекаем ответ из ответа API
