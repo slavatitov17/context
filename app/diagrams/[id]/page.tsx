@@ -8,6 +8,8 @@ import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Pr
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import { FeedbackCopyButton } from '@/app/components/FeedbackCopyButton';
+import { formatGlossaryForClipboard } from '@/lib/format-glossary-clipboard';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -643,21 +645,16 @@ function DualFormatMessage({
                     {t('diagram.downloadPNG')}
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    if (currentCode) {
-                      navigator.clipboard.writeText(currentCode);
-                      alert(t('diagram.codeCopied'));
-                    }
+                <FeedbackCopyButton
+                  defaultLabel={t('diagram.copyCode')}
+                  copiedLabel={t('diagram.codeCopied')}
+                  isDark={isDark}
+                  variant="toolbar"
+                  disabled={!currentCode}
+                  onCopy={() => {
+                    if (currentCode) navigator.clipboard.writeText(currentCode);
                   }}
-                  className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                    isDark
-                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {t('diagram.copyCode')}
-                </button>
+                />
               </div>
             </div>
           </div>
@@ -692,7 +689,20 @@ function DualFormatMessage({
           {/* Глоссарий (внизу, в том же сообщении) */}
           {currentGlossary && currentGlossary.length > 0 && (
             <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+                <FeedbackCopyButton
+                  defaultLabel={t('diagram.copyGlossary')}
+                  copiedLabel={t('diagram.glossaryCopied')}
+                  isDark={isDark}
+                  variant="toolbar"
+                  onCopy={() =>
+                    navigator.clipboard.writeText(
+                      formatGlossaryForClipboard(currentGlossary, t('diagram.element'), t('diagram.description'))
+                    )
+                  }
+                />
+              </div>
               <table className="w-full">
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -727,7 +737,7 @@ function MermaidMessage({
   setViewModes,
   generationTime,
   onOpenSupport,
-  isDark,
+  isDark = false,
   t
 }: { 
   msg: { mermaidCode?: string; glossary?: Array<{ element: string; description: string }> }; 
@@ -738,7 +748,7 @@ function MermaidMessage({
   setViewModes: (modes: Map<number, 'diagram' | 'code'>) => void;
   generationTime?: number;
   onOpenSupport: () => void;
-  isDark: boolean;
+  isDark?: boolean;
   t: (key: string) => string;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
@@ -848,20 +858,20 @@ function MermaidMessage({
   
   return (
     <div className="flex flex-col items-start">
-      <div className="text-base text-gray-500 mb-1 px-1">
+      <div className={`text-base mb-1 px-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
         {dateStr} {timeStr}
       </div>
       <div className="max-w-full w-full">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className={`border rounded-lg p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
             {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
             <div className="flex items-center gap-3">
               {generationTime !== undefined && (
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-mono font-medium text-gray-700">
+                  <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                     {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
                   </span>
                 </div>
@@ -875,7 +885,7 @@ function MermaidMessage({
             </div>
 
             {/* Свитчер Диаграмма/Код (по центру) */}
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 mx-auto">
+            <div className={`flex items-center gap-2 rounded-lg p-1 mx-auto ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <button
                 onClick={() => {
                   const newModes = new Map(viewModes);
@@ -884,8 +894,12 @@ function MermaidMessage({
                 }}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   currentViewMode === 'diagram'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? isDark
+                      ? 'bg-gray-600 text-gray-100 shadow-sm'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : isDark
+                      ? 'text-gray-400 hover:text-gray-200'
+                      : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 {t('diagram.diagram')}
@@ -898,8 +912,12 @@ function MermaidMessage({
                 }}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   currentViewMode === 'code'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? isDark
+                      ? 'bg-gray-600 text-gray-100 shadow-sm'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : isDark
+                      ? 'text-gray-400 hover:text-gray-200'
+                      : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 {t('diagram.code')}
@@ -911,22 +929,25 @@ function MermaidMessage({
               {mermaidSvg && (
                 <button
                   onClick={downloadPNG}
-                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                    isDark
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
                   {t('diagram.downloadPNG')}
                 </button>
               )}
-              <button
-                onClick={() => {
-                  if (msg.mermaidCode) {
-                    navigator.clipboard.writeText(msg.mermaidCode);
-                    alert(t('diagram.codeCopied'));
-                  }
+              <FeedbackCopyButton
+                defaultLabel={t('diagram.copyCode')}
+                copiedLabel={t('diagram.codeCopied')}
+                isDark={isDark}
+                variant="toolbar"
+                disabled={!msg.mermaidCode}
+                onCopy={() => {
+                  if (msg.mermaidCode) navigator.clipboard.writeText(msg.mermaidCode);
                 }}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                {t('diagram.copyCode')}
-              </button>
+              />
             </div>
           </div>
           {/* Показываем диаграмму или код в зависимости от выбранного режима */}
@@ -945,20 +966,33 @@ function MermaidMessage({
 
           {/* Глоссарий (внизу, в том же сообщении) */}
           {msg.glossary && msg.glossary.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="font-medium text-lg mb-4">{t('diagram.glossaryTitle')}</h4>
+            <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+                <FeedbackCopyButton
+                  defaultLabel={t('diagram.copyGlossary')}
+                  copiedLabel={t('diagram.glossaryCopied')}
+                  isDark={isDark}
+                  variant="toolbar"
+                  onCopy={() =>
+                    navigator.clipboard.writeText(
+                      formatGlossaryForClipboard(msg.glossary!, t('diagram.element'), t('diagram.description'))
+                    )
+                  }
+                />
+              </div>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 font-medium text-gray-900">{t('diagram.element')}</th>
-                    <th className="text-left py-2 font-medium text-gray-900">{t('diagram.description')}</th>
+                  <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.element')}</th>
+                    <th className={`text-left py-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.description')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {msg.glossary.map((item, idx) => (
-                    <tr key={idx} className="border-b border-gray-100">
-                      <td className="py-3 text-gray-900 font-medium">{item.element}</td>
-                      <td className="py-3 text-gray-600">{item.description}</td>
+                    <tr key={idx} className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                      <td className={`py-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{item.element}</td>
+                      <td className={`py-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.description}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2663,21 +2697,16 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                       {t('diagram.downloadPNG')}
                                     </a>
                                   )}
-                                  <button
-                                    onClick={() => {
-                                      if (msg.plantUmlCode) {
-                                        navigator.clipboard.writeText(msg.plantUmlCode);
-                                        alert(t('diagram.codeCopied'));
-                                      }
+                                  <FeedbackCopyButton
+                                    defaultLabel={t('diagram.copyCode')}
+                                    copiedLabel={t('diagram.codeCopied')}
+                                    isDark={isDark}
+                                    variant="toolbar"
+                                    disabled={!msg.plantUmlCode}
+                                    onCopy={() => {
+                                      if (msg.plantUmlCode) navigator.clipboard.writeText(msg.plantUmlCode);
                                     }}
-                                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                                      isDark
-                                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                  >
-                                    {t('diagram.copyCode')}
-                                  </button>
+                                  />
                                 </div>
                               </div>
                               {/* Показываем диаграмму или код в зависимости от выбранного режима */}
@@ -2699,7 +2728,20 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                               {/* Глоссарий (внизу, в том же сообщении) */}
                               {msg.glossary && msg.glossary.length > 0 && (
                                 <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                                  <h4 className={`font-medium text-lg mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+                                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                    <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
+                                    <FeedbackCopyButton
+                                      defaultLabel={t('diagram.copyGlossary')}
+                                      copiedLabel={t('diagram.glossaryCopied')}
+                                      isDark={isDark}
+                                      variant="toolbar"
+                                      onCopy={() =>
+                                        navigator.clipboard.writeText(
+                                          formatGlossaryForClipboard(msg.glossary!, t('diagram.element'), t('diagram.description'))
+                                        )
+                                      }
+                                    />
+                                  </div>
                                   <table className="w-full">
                                     <thead>
                                       <tr className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>

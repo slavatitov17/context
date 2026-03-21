@@ -8,6 +8,53 @@ import { auth, projects as projectsStorage, type Project } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import { FeedbackCopyButton } from '@/app/components/FeedbackCopyButton';
+
+function ProjectAssistantFooter({
+  generationTime,
+  plainText,
+  isDark,
+  t,
+  onReportError,
+}: {
+  generationTime: number;
+  plainText: string;
+  isDark: boolean;
+  t: (key: string) => string;
+  onReportError: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 mt-3">
+      <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+        <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+          {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
+        </span>
+      </div>
+      <FeedbackCopyButton
+        defaultLabel={t('project.copyAnswerText')}
+        copiedLabel={t('project.answerTextCopied')}
+        isDark={isDark}
+        variant="projectPrimary"
+        disabled={!plainText}
+        onCopy={() => navigator.clipboard.writeText(plainText)}
+      />
+      <button
+        type="button"
+        onClick={onReportError}
+        className={
+          isDark
+            ? 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-400 text-blue-400 bg-transparent hover:bg-blue-500/10 transition-colors'
+            : 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-600 text-blue-600 bg-transparent hover:bg-blue-50 transition-colors'
+        }
+      >
+        {t('diagram.reportError')}
+      </button>
+    </div>
+  );
+}
 
 interface UploadedFile {
   id: string;
@@ -956,23 +1003,13 @@ export default function ProjectDetailPage() {
                                 </ReactMarkdown>
                               </div>
                             </div>
-                            {/* Таймер и кнопка "Сообщить об ошибке" — под сообщением */}
-                            <div className="flex items-center gap-3 mt-3">
-                              <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                                <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                                  {Math.floor(msg.generationTime / 60)}:{(msg.generationTime % 60).toString().padStart(2, '0')}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => setShowSupportModal(true)}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                              >
-                                {t('diagram.reportError')}
-                              </button>
-                            </div>
+                            <ProjectAssistantFooter
+                              generationTime={msg.generationTime!}
+                              plainText={msg.text}
+                              isDark={isDark}
+                              t={t}
+                              onReportError={() => setShowSupportModal(true)}
+                            />
                           </div>
                         </div>
                       );

@@ -229,6 +229,8 @@ const translations: Record<Language, Record<string, string>> = {
     'project.edit.cancel': 'Отмена',
     'project.edit.save': 'Сохранить',
     'project.edit.saving': 'Сохранение...',
+    'project.copyAnswerText': 'Скопировать текст',
+    'project.answerTextCopied': 'Текст скопирован',
     
     // Diagram Detail Page
     'diagram.type': 'Тип диаграммы',
@@ -279,7 +281,9 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.code': 'Код',
     'diagram.downloadPNG': 'Скачать PNG',
     'diagram.copyCode': 'Скопировать код',
-    'diagram.codeCopied': 'Код скопирован в буфер обмена',
+    'diagram.codeCopied': 'Код скопирован',
+    'diagram.copyGlossary': 'Скопировать глоссарий',
+    'diagram.glossaryCopied': 'Глоссарий скопирован',
     'diagram.glossaryTitle': 'Глоссарий элементов диаграммы',
     'diagram.element': 'Элемент',
     'diagram.description': 'Описание',
@@ -523,6 +527,8 @@ const translations: Record<Language, Record<string, string>> = {
     'project.edit.cancel': 'Cancel',
     'project.edit.save': 'Save',
     'project.edit.saving': 'Saving...',
+    'project.copyAnswerText': 'Copy text',
+    'project.answerTextCopied': 'Text copied',
     
     // Diagram Detail Page
     'diagram.type': 'Diagram Type',
@@ -573,7 +579,7 @@ const translations: Record<Language, Record<string, string>> = {
     'diagram.code': 'Code',
     'diagram.downloadPNG': 'Download PNG',
     'diagram.copyCode': 'Copy Code',
-    'diagram.codeCopied': 'Code copied to clipboard',
+    'diagram.codeCopied': 'Code copied',
     'diagram.glossaryTitle': 'Diagram Elements Glossary',
     'diagram.element': 'Element',
     'diagram.description': 'Description',
