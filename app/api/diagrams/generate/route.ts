@@ -29,62 +29,52 @@ function getContextFromDocuments(documents: any[]): string {
   return allChunks.join('\n\n---\n\n');
 }
 
+/** Удаляет `<style>...</style>`: часть движков PlantUML даёт syntax error сразу после @startmindmap. */
+function stripMindMapStyleBlocks(plantUmlCode: string): string {
+  return plantUmlCode
+    .replace(/<style>[\s\S]*?<\/style>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 /**
- * PlantUML MindMap (арифметическая нотация + / -): нельзя «прыгать» по уровням
- * слева (например `----` сразу после только правых `+++`) — иначе error42L.
- * Первая левая ветка от корня всегда `--` (2 минуса); каждый следующий уровень
- * слева максимум на один минус глубже предыдущей левой строки.
+ * OrgMode-строки `*` / `**` превращаем в `+` / `++` (для сервиса — одна нотация).
+ * Пропускаем многострочные подписи вида `**:Заголовок`.
  */
-function sanitizeMindMapArithmeticNotation(plantUmlCode: string): string {
-  let inStyle = false;
-  let lastLeftMinusCount = 0;
+function convertMindMapStarPrefixLinesToPlus(plantUmlCode: string): string {
+  return plantUmlCode
+    .split('\n')
+    .map((line) => {
+      if (/^\s*\*+:/.test(line)) return line;
+      const m = line.match(/^(\s*)(\*{1,})(\s+.+)$/);
+      if (!m) return line;
+      return `${m[1]}${'+'.repeat(m[2].length)}${m[3]}`;
+    })
+    .join('\n');
+}
 
+/**
+ * Префиксы `--`/`---` (ветки «влево») заменяются на `++`/`+++` той же длины.
+ * Смешение + и − часто даёт error42L; только `+` стабильно рендерится.
+ */
+function convertMindMapMinusPrefixLinesToPlus(plantUmlCode: string): string {
   const lines = plantUmlCode.split('\n');
-  const out = lines.map((line) => {
-    const trimmed = line.trimStart();
-    if (trimmed.startsWith('<style>')) {
-      inStyle = true;
-    }
-    if (inStyle) {
-      if (trimmed.includes('</style>')) {
-        inStyle = false;
-      }
-      return line;
-    }
+  return lines
+    .map((line) => {
+      const m = line.match(/^(\s*)(-{2,})(\s+.+)$/);
+      if (!m) return line;
+      const depth = m[2].length;
+      return `${m[1]}${'+'.repeat(depth)}${m[3]}`;
+    })
+    .join('\n');
+}
 
-    // Любая правая ветка (+, ++, +++ …) — следующая левая снова «от корня»
-    const plusLine = line.match(/^(\s*)(\++)\s+\S/);
-    if (plusLine) {
-      lastLeftMinusCount = 0;
-      return line;
-    }
-    const rootPlus = line.match(/^(\s*)(\+)\s+\S/);
-    if (rootPlus) {
-      lastLeftMinusCount = 0;
-      return line;
-    }
-
-    const minusLine = line.match(/^(\s*)(-{2,})(\s+.+)$/);
-    if (!minusLine) {
-      return line;
-    }
-    const indent = minusLine[1];
-    let depth = minusLine[2].length;
-    const rest = minusLine[3];
-
-    if (lastLeftMinusCount === 0) {
-      if (depth > 2) {
-        depth = 2;
-      }
-    } else if (depth > lastLeftMinusCount + 1) {
-      depth = lastLeftMinusCount + 1;
-    }
-    lastLeftMinusCount = depth;
-
-    return `${indent}${'-'.repeat(depth)}${rest}`;
-  });
-
-  return out.join('\n');
+/** Постобработка MindMap: без custom style; иерархия только через `+` (не `*`, не `-`). */
+function normalizeMindMapPlantUmlOutput(plantUmlCode: string): string {
+  let code = stripMindMapStyleBlocks(plantUmlCode);
+  code = convertMindMapStarPrefixLinesToPlus(code);
+  code = convertMindMapMinusPrefixLinesToPlus(code);
+  return code;
 }
 
 export async function POST(request: NextRequest) {
@@ -624,7 +614,11 @@ mindmap
 4. ВСЕ НАЗВАНИЯ ОБЪЕКТОВ, КЛАССОВ, МЕТОДОВ, АТРИБУТОВ И ДРУГИХ ЭЛЕМЕНТОВ ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ
 5. Используй русские названия для всех сущностей в диаграмме (например: "Институт" вместо "Institute", "Студент" вместо "Student")
 6. Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском
-7. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"`;
+7. После кода диаграммы, добавь глоссарий в формате JSON массива объектов с полями "element" и "description"${
+        diagramType === 'MindMap' || diagramType === 'MindMapPlantUML'
+          ? '\n\nДОПОЛНИТЕЛЬНО ДЛЯ MINDMAP: не вставляй блок <style>; иерархию задавай только префиксами + в начале строк (+, ++, +++, ++++ …); не используй префиксы - (--, ---).'
+          : ''
+      }`;
 
     const diagramTypeDescriptions: Record<string, string> = {
       'UseCase': 'UML диаграмма прецедентов (Use Case Diagram)',
@@ -793,7 +787,7 @@ mindmap
           plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
         } catch (error) {
           console.error('Ошибка при чтении инструкций для MindMapPlantUML:', error);
-          plantUmlInstructions = 'ДЛЯ MINDMAP PLANTUML: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый)!';
+          plantUmlInstructions = 'ДЛЯ MINDMAP PLANTUML: @startmindmap ... @endmindmap. Иерархию задавай ТОЛЬКО символами + (+ корень, ++ дети, +++ внуки и т.д.). НЕ используй блок <style>. НЕ используй префиксы - (--, ---).';
         }
       } else if (diagramType === 'SequencePlantUML') {
         try {
@@ -900,7 +894,7 @@ ${objectDescription}
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
 ${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'GanttPlantUML' || diagramType === 'ERPlantUML' || diagramType === 'WBSPlantUML' || diagramType === 'JSONPlantUML' ? plantUmlInstructions : ''}
-${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: Используй правильный синтаксис @startmindmap ... @endmindmap. Структура: * Центральная тема ** Подтема 1 *** Подподтема 1.1 ** Подтема 2. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
+${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: @startmindmap ... @endmindmap. Иерархию задавай ТОЛЬКО символами + (+, ++, +++, …). НЕ добавляй <style>. НЕ используй префиксы - для веток. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}
 ${diagramType === 'Class' ? 'ДЛЯ CLASS: Для длинных русских названий классов используй пробелы или разбивай на несколько слов. Например: "Федеральное Государственное Образовательное Учреждение" вместо "ФедеральноеГосударственноеОбразовательноеУчреждение". Используй кавычки для названий с пробелами: class "Название с пробелами" as Алиас' : ''}`;
 
@@ -1243,41 +1237,8 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : diagramType === 'GanttPlan
           plantUmlCode = plantUmlCode.replace(/split\s*/gi, 'fork'); // Заменяем split на fork для Activity
           plantUmlCode = plantUmlCode.replace(/join\s*/gi, 'end fork'); // Заменяем join на end fork для Activity
           
-          // Для MindMapPlantUML: добавляем стили для строгих цветов, если их нет
-          if (diagramType === 'MindMapPlantUML') {
-            // Проверяем, есть ли уже стили
-            if (!plantUmlCode.includes('<style>')) {
-              const styleBlock = `<style>
-mindmapDiagram {
-  node {
-    BackgroundColor white
-    FontColor black
-    LineColor #000000
-    BorderColor #000000
-  }
-  rootNode {
-    BackgroundColor white
-    FontColor black
-    LineColor #000000
-    BorderColor #000000
-  }
-  leafNode {
-    BackgroundColor white
-    FontColor black
-    LineColor #666666
-    BorderColor #666666
-  }
-  arrow {
-    LineColor #000000
-  }
-}
-</style>
-`;
-              // Вставляем стили в начало кода (перед содержимым)
-              plantUmlCode = styleBlock + plantUmlCode;
-            }
-          }
-          
+          // MindMapPlantUML: не вставляем <style> — совместимость с рендерером; стиль по умолчанию PlantUML
+
           // Для SequencePlantUML: добавляем стили для строгих цветов, если их нет
           if (diagramType === 'SequencePlantUML') {
             // Проверяем, есть ли уже стили
@@ -1756,9 +1717,9 @@ jsonDiagram {
             if (diagramType === 'MindMap' || diagramType === 'MindMapPlantUML') {
               const root = objectDescription.split(',')[0]?.trim() || objectDescription.split(' ')[0] || 'Корневая тема';
               plantUmlCode = `@startmindmap
-* ${root}
-** Подтема 1
-** Подтема 2
++ ${root}
+++ Подтема 1
+++ Подтема 2
 @endmindmap`;
             } else if (diagramType === 'GanttPlantUML') {
               plantUmlCode = `@startgantt
@@ -1796,10 +1757,10 @@ class "${objectDescription.split(' ')[0] || 'Объект'}" {
             // Fallback: создаем базовую диаграмму в зависимости от типа
             if (isMindMap) {
               plantUmlCode = `${startTag}
-* ${objectDescription.split(' ')[0]}
-** Подтема 1
-*** Деталь 1.1
-** Подтема 2
++ ${objectDescription.split(' ')[0]}
+++ Подтема 1
++++ Деталь 1.1
+++ Подтема 2
 ${endTag}`;
             } else if (isSequencePlantUML) {
               plantUmlCode = `${startTag}
@@ -2135,7 +2096,7 @@ ${endTag}`;
         }
 
         if (diagramType === 'MindMap' || diagramType === 'MindMapPlantUML') {
-          plantUmlCode = sanitizeMindMapArithmeticNotation(plantUmlCode);
+          plantUmlCode = normalizeMindMapPlantUmlOutput(plantUmlCode);
         }
 
         return NextResponse.json({
