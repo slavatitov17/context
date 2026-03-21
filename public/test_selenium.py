@@ -2,11 +2,11 @@
 from selenium import webdriver
 # Подключаем настройки запуска Chrome
 from selenium.webdriver.chrome.options import Options
-# Подключаем способ поиска элементов на странице (By)
+# Подключаем способ поиска элементов на странице
 from selenium.webdriver.common.by import By
 # Подключаем явное ожидание появления элементов
 from selenium.webdriver.support.ui import WebDriverWait
-# Подключаем готовые условия ожидания (EC)
+# Подключаем готовые условия ожидания
 from selenium.webdriver.support import expected_conditions as EC
 
 
@@ -22,7 +22,7 @@ TEST_EMAIL = "test_selenium003@mail.ru"
 # Задаём тестовый пароль
 TEST_PASSWORD = "123456"
 
-# Указываем путь к файлу, который загрузим в проект через UI (формат .txt поддерживается)
+# Указываем путь к файлу, который загрузим в проект через UI
 DOCUMENT_PATH = r"C:\Users\Admin\context\public\test_document.txt"
 
 
@@ -58,7 +58,7 @@ def main():
     wait = WebDriverWait(driver, 30)
 
     try:
-        # ---------- 1) Регистрация или вход ----------
+        # 1. Регистрация
         # Открываем страницу регистрации в браузере
         driver.get(URL_REGISTER)
 
@@ -140,7 +140,7 @@ def main():
         # Выводим текущий URL после успешной авторизации
         print("Current URL after auth:", driver.current_url)
 
-        # ---------- 2) Создание проекта ----------
+        # 2. Создание проекта
         # Ждём кликабельной кнопки «Создать проект» внутри ссылки на /projects/new
         create_project_btn = wait.until(
             EC.element_to_be_clickable(
@@ -158,7 +158,7 @@ def main():
         # Выводим URL открытой страницы проекта
         print("Project page opened:", driver.current_url)
 
-        # ---------- 3) Добавление документа в проект ----------
+        # 3 Добавление документа в проект
         # Ждём кнопку «Добавить документы»
         add_docs_btn = wait.until(
             EC.element_to_be_clickable(
@@ -182,7 +182,7 @@ def main():
             )
         )
 
-        # ---------- 4) Вопрос в чате по загруженному документу ----------
+        # 4. Вопрос в чате по загруженному документу
         # Задаём текст вопроса к RAG-чату
         question = "Что указано в документе?"
 
@@ -219,7 +219,7 @@ def main():
         # Сообщаем в консоль о сохранении скриншота ответа
         print("Screenshot saved: selenium_answer.png")
 
-        # ---------- 5) Переход к созданию диаграммы ----------
+        # 5. Переход к созданию диаграммы
         # Ждём ссылку «Создать диаграмму» с переходом из проекта
         create_diagram_link = wait.until(
             EC.element_to_be_clickable(
@@ -237,7 +237,7 @@ def main():
         # Выводим URL страницы диаграммы
         print("Diagram page opened:", driver.current_url)
 
-        # ---------- 6) Выбор типа диаграммы MindMap ----------
+        # 6. Выбор типа диаграммы MindMap
         # Ждём карточку выбора типа MindMap (кнопка с заголовком h3)
         mindmap_btn = wait.until(
             EC.element_to_be_clickable(
@@ -250,7 +250,7 @@ def main():
         # Пробуем нажать «Ввести данные», если такой шаг показан интерфейсом
         click_if_exists(driver, wait, "//button[contains(., 'Ввести данные')]", timeout_seconds=5)
 
-        # ---------- 7) Ввод текста и генерация диаграммы ----------
+        # 7. Ввод текста и генерация диаграммы
         # Задаём описание объекта для генерации диаграммы
         prompt = "СМК МП, эксплуатирующего ОПО"
 
@@ -275,7 +275,7 @@ def main():
         # Запускаем генерацию диаграммы
         generate_send.click()
 
-        # ---------- 8) Скачивание PNG и скриншот диаграммы ----------
+        # 8) Скачивание PNG и скриншот диаграммы
         # Ждём ссылку «Скачать PNG»
         download_png = wait.until(
             EC.element_to_be_clickable(
