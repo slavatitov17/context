@@ -29,6 +29,64 @@ function getContextFromDocuments(documents: any[]): string {
   return allChunks.join('\n\n---\n\n');
 }
 
+/**
+ * PlantUML MindMap (арифметическая нотация + / -): нельзя «прыгать» по уровням
+ * слева (например `----` сразу после только правых `+++`) — иначе error42L.
+ * Первая левая ветка от корня всегда `--` (2 минуса); каждый следующий уровень
+ * слева максимум на один минус глубже предыдущей левой строки.
+ */
+function sanitizeMindMapArithmeticNotation(plantUmlCode: string): string {
+  let inStyle = false;
+  let lastLeftMinusCount = 0;
+
+  const lines = plantUmlCode.split('\n');
+  const out = lines.map((line) => {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith('<style>')) {
+      inStyle = true;
+    }
+    if (inStyle) {
+      if (trimmed.includes('</style>')) {
+        inStyle = false;
+      }
+      return line;
+    }
+
+    // Любая правая ветка (+, ++, +++ …) — следующая левая снова «от корня»
+    const plusLine = line.match(/^(\s*)(\++)\s+\S/);
+    if (plusLine) {
+      lastLeftMinusCount = 0;
+      return line;
+    }
+    const rootPlus = line.match(/^(\s*)(\+)\s+\S/);
+    if (rootPlus) {
+      lastLeftMinusCount = 0;
+      return line;
+    }
+
+    const minusLine = line.match(/^(\s*)(-{2,})(\s+.+)$/);
+    if (!minusLine) {
+      return line;
+    }
+    const indent = minusLine[1];
+    let depth = minusLine[2].length;
+    const rest = minusLine[3];
+
+    if (lastLeftMinusCount === 0) {
+      if (depth > 2) {
+        depth = 2;
+      }
+    } else if (depth > lastLeftMinusCount + 1) {
+      depth = lastLeftMinusCount + 1;
+    }
+    lastLeftMinusCount = depth;
+
+    return `${indent}${'-'.repeat(depth)}${rest}`;
+  });
+
+  return out.join('\n');
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -1154,9 +1212,15 @@ ${diagramType === 'MindMapPlantUML' ? '@endmindmap' : diagramType === 'GanttPlan
         const startTag = isMindMap ? '@startmindmap' : (isGanttPlantUML ? '@startgantt' : (isWBSPlantUML ? '@startwbs' : (isJSONPlantUML ? '@startjson' : (isJSON ? '@startjson' : '@startuml'))));
         const endTag = isMindMap ? '@endmindmap' : (isGanttPlantUML ? '@endgantt' : (isWBSPlantUML ? '@endwbs' : (isJSONPlantUML ? '@endjson' : (isJSON ? '@endjson' : '@enduml'))));
         
-        const plantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i) || 
-                             responseText.match(new RegExp(`${startTag}\\s*\\n([\\s\\S]*?)${endTag}`, 'i')) ||
-                             responseText.match(/@startuml\s*\n([\s\S]*?)@enduml/i);
+        // Для не-UML типов (mindmap/gantt/wbs/json) нельзя принимать общий @startuml fallback,
+        // иначе модель может "подменить" тип диаграммы (например, MindMap -> Activity).
+        const fencedPlantUmlMatch = responseText.match(/```plantuml\s*\n([\s\S]*?)\n```/i);
+        const strictByRequestedTagMatch = responseText.match(new RegExp(`${startTag}\\s*\\n([\\s\\S]*?)${endTag}`, 'i'));
+        const genericUmlFallbackMatch = startTag === '@startuml'
+          ? responseText.match(/@startuml\s*\n([\s\S]*?)@enduml/i)
+          : null;
+        
+        const plantUmlMatch = fencedPlantUmlMatch || strictByRequestedTagMatch || genericUmlFallbackMatch;
         
         let plantUmlCode = '';
         if (plantUmlMatch) {
@@ -1669,6 +1733,59 @@ jsonDiagram {
           if (!plantUmlCode.includes(endTag)) {
             plantUmlCode = plantUmlCode + `\n${endTag}`;
           }
+
+          // Валидация соответствия кода выбранному типу диаграммы
+          const codeLower = plantUmlCode.toLowerCase();
+          let isTypeConsistent = true;
+          
+          if (diagramType === 'MindMap' || diagramType === 'MindMapPlantUML') {
+            isTypeConsistent = codeLower.includes('@startmindmap') && codeLower.includes('@endmindmap');
+          } else if (diagramType === 'GanttPlantUML') {
+            isTypeConsistent = codeLower.includes('@startgantt') && codeLower.includes('@endgantt');
+          } else if (diagramType === 'WBSPlantUML') {
+            isTypeConsistent = codeLower.includes('@startwbs') && codeLower.includes('@endwbs');
+          } else if (diagramType === 'JSONPlantUML' || diagramType === 'JSON') {
+            isTypeConsistent = codeLower.includes('@startjson') && codeLower.includes('@endjson');
+          } else {
+            // UML-типы
+            isTypeConsistent = codeLower.includes('@startuml') && codeLower.includes('@enduml');
+          }
+
+          if (!isTypeConsistent) {
+            console.warn(`Сгенерированный код не соответствует типу ${diagramType}. Применяется fallback.`);
+            if (diagramType === 'MindMap' || diagramType === 'MindMapPlantUML') {
+              const root = objectDescription.split(',')[0]?.trim() || objectDescription.split(' ')[0] || 'Корневая тема';
+              plantUmlCode = `@startmindmap
+* ${root}
+** Подтема 1
+** Подтема 2
+@endmindmap`;
+            } else if (diagramType === 'GanttPlantUML') {
+              plantUmlCode = `@startgantt
+Project starts 2026-01-01
+[${objectDescription.split(' ')[0] || 'Задача'}] requires 5 days
+@endgantt`;
+            } else if (diagramType === 'WBSPlantUML') {
+              plantUmlCode = `@startwbs
+* ${objectDescription.split(' ')[0] || 'Проект'}
+** Этап 1
+** Этап 2
+@endwbs`;
+            } else if (diagramType === 'JSONPlantUML' || diagramType === 'JSON') {
+              plantUmlCode = `@startjson
+{
+  "объект": "${objectDescription}",
+  "статус": "черновик"
+}
+@endjson`;
+            } else {
+              plantUmlCode = `@startuml
+class "${objectDescription.split(' ')[0] || 'Объект'}" {
+  + описание
+}
+@enduml`;
+            }
+          }
         } else {
           // Если не нашли в markdown, ищем напрямую
           const startIndex = responseText.indexOf(startTag);
@@ -2015,6 +2132,10 @@ ${endTag}`;
         // Валидация глоссария
         if (!Array.isArray(glossary)) {
           glossary = [{ element: objectDescription, description: 'Основной объект диаграммы' }];
+        }
+
+        if (diagramType === 'MindMap' || diagramType === 'MindMapPlantUML') {
+          plantUmlCode = sanitizeMindMapArithmeticNotation(plantUmlCode);
         }
 
         return NextResponse.json({
