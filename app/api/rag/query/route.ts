@@ -11,30 +11,36 @@ function getMistralClient(): Mistral | null {
   return new Mistral({ apiKey });
 }
 
-// Простая функция поиска релевантных чанков
-function findRelevantChunks(query: string, chunks: string[], maxChunks: number = 5): string[] {
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+type ScoredChunk = { chunk: string; keywordScore: number; index: number };
+
+// Поиск чанков по пересечению слов запроса (без «фиктивного» балла — иначе в контекст попадал случайный текст)
+function scoreChunksByQuery(query: string, chunks: string[]): ScoredChunk[] {
   const queryLower = query.toLowerCase();
-  const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+  const queryWords = queryLower.split(/\s+/).filter((w) => w.length > 2);
 
-  // Подсчитываем релевантность каждого чанка
-  const scoredChunks = chunks.map((chunk, index) => {
+  return chunks.map((chunk, index) => {
     const chunkLower = chunk.toLowerCase();
-    let score = 0;
-    
-    queryWords.forEach(word => {
-      const matches = (chunkLower.match(new RegExp(word, 'g')) || []).length;
-      score += matches;
+    let keywordScore = 0;
+    queryWords.forEach((word) => {
+      const matches = (chunkLower.match(new RegExp(escapeRegExp(word), 'g')) || []).length;
+      keywordScore += matches;
     });
-
-    // Бонус за начало чанка (первые чанки часто более важны)
-    score += (chunks.length - index) * 0.1;
-
-    return { chunk, score, index };
+    return { chunk, keywordScore, index };
   });
+}
 
-  // Сортируем по релевантности и берем топ чанки
-  scoredChunks.sort((a, b) => b.score - a.score);
-  return scoredChunks.slice(0, maxChunks).map(item => item.chunk);
+function findRelevantChunks(scored: ScoredChunk[], maxChunks: number = 5): string[] {
+  const sorted = [...scored].sort((a, b) => {
+    if (b.keywordScore !== a.keywordScore) return b.keywordScore - a.keywordScore;
+    return a.index - b.index;
+  });
+  const withHits = sorted.filter((c) => c.keywordScore > 0);
+  const pick = (withHits.length > 0 ? withHits : sorted).slice(0, maxChunks);
+  return pick.map((item) => item.chunk);
 }
 
 export async function POST(request: NextRequest) {
@@ -77,22 +83,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Находим релевантные чанки
-    const relevantChunks = findRelevantChunks(query, allChunks, 5);
+    const queryWords = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+    const scored = scoreChunksByQuery(query, allChunks);
+
+    let relevantChunks: string[];
+    if (queryWords.length === 0) {
+      // Очень короткий запрос — берём начало документа, жёсткие правила в промпте ограничивают «фантазии» модели
+      relevantChunks = allChunks.slice(0, 5);
+    } else {
+      const bestKeyword = scored.reduce((m, c) => Math.max(m, c.keywordScore), 0);
+      // Нет пересечения значимых слов запроса с текстом — не вызываем модель
+      if (bestKeyword === 0) {
+        return NextResponse.json({
+          answer:
+            'В загруженных документах нет информации, по которой можно ответить на этот вопрос. Задайте вопрос по содержанию документов или уточните формулировку.',
+          thinking: null,
+        });
+      }
+      relevantChunks = findRelevantChunks(scored, 5);
+    }
+
     const context = relevantChunks.join('\n\n---\n\n');
 
-    // Формируем промпт для модели
-    const systemPrompt = `Ты помощник, который отвечает на вопросы пользователя на основе предоставленных документов. 
-Если ответа нет в документах, честно скажи об этом. Отвечай на русском языке, если вопрос задан на русском.`;
+    const systemPrompt = `Ты отвечаешь в режиме RAG: используешь ТОЛЬКО факты из переданного ниже контекста (фрагменты загруженных документов).
+ПРАВИЛА:
+- Если в контексте нет данных для прямого ответа на вопрос — напиши кратко, что в документах нет такой информации. ЗАПРЕЩЕНО дополнять ответ сведениями из общих знаний, энциклопедии, «на самом деле», шутками или пояснениями «если интересно».
+- Не пересказывай нерелевантные части документов, если они не отвечают на вопрос.
+- Язык ответа — как у вопроса пользователя (для русского вопроса отвечай по-русски).`;
 
-    const userPrompt = `Используй следующую информацию из документов для ответа на вопрос пользователя.
-
-Документы:
+    const userPrompt = `Контекст из документов (единственный допустимый источник фактов):
 ${context}
 
 Вопрос: ${query}
 
-Ответ:`;
+Сформулируй ответ. Если контекст не содержит ответа — только сообщение об отсутствии информации в документах, без любых фактов вне контекста.`;
 
     // Получаем клиент Mistral AI
     const client = getMistralClient();
@@ -121,7 +148,7 @@ ${context}
           },
         ],
         maxTokens: 2048,
-        temperature: 0.7,
+        temperature: 0.2,
       });
 
       // Извлекаем ответ из ответа API

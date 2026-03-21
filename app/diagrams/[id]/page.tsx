@@ -548,7 +548,11 @@ function DualFormatMessage({
               )}
               <button
                 onClick={onOpenSupport}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className={
+                  isDark
+                    ? 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-400 text-blue-400 bg-transparent hover:bg-blue-500/10 transition-colors'
+                    : 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-600 text-blue-600 bg-transparent hover:bg-blue-50 transition-colors'
+                }
               >
                 {t('diagram.reportError')}
               </button>
@@ -878,7 +882,11 @@ function MermaidMessage({
               )}
               <button
                 onClick={onOpenSupport}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className={
+                  isDark
+                    ? 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-400 text-blue-400 bg-transparent hover:bg-blue-500/10 transition-colors'
+                    : 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-600 text-blue-600 bg-transparent hover:bg-blue-50 transition-colors'
+                }
               >
                 {t('diagram.reportError')}
               </button>
@@ -2636,7 +2644,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                   )}
                                   <button
                                     onClick={() => setShowSupportModal(true)}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                    className={
+                                      isDark
+                                        ? 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-400 text-blue-400 bg-transparent hover:bg-blue-500/10 transition-colors'
+                                        : 'px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-600 text-blue-600 bg-transparent hover:bg-blue-50 transition-colors'
+                                    }
                                   >
                                     {t('diagram.reportError')}
                                   </button>

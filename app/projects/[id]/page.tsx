@@ -420,6 +420,7 @@ export default function ProjectDetailPage() {
           text: msg.text,
           isUser: msg.isUser,
           timestamp: msg.timestamp || new Date(),
+          ...(msg.generationTime !== undefined ? { generationTime: msg.generationTime } : {}),
         }));
         saveProject({ messages: messagesData as any });
       }, 1000); // Debounce на 1 секунду
