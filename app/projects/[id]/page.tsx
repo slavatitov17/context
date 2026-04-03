@@ -313,9 +313,6 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingStage, setLoadingStage] = useState<'processing' | 'generating' | 'creating'>('processing');
-  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showSupportSentModal, setShowSupportSentModal] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -428,64 +425,15 @@ export default function ProjectDetailPage() {
     }
   }, [messages, loading, projectData, saveProject]);
 
-  // Управление этапами загрузки и таймером (только для чата, не для загрузки файлов)
+  // Управление этапами загрузки (только для чата, без таймера)
   useEffect(() => {
-    // Проверяем, что это обработка запроса в чате, а не загрузка файлов
-    // isProcessing может быть true и при загрузке файлов, поэтому проверяем наличие сообщений в процессе
     if (!isProcessing) {
       setLoadingStage('processing');
-      setLoadingStartTime(null);
-      setElapsedSeconds(0);
-      setLoadingMessages([]);
       return;
     }
 
-    // Запускаем таймер только если это обработка запроса в чате
-    // (не загрузка файлов - там isProcessing используется для другого)
-    const startTime = Date.now();
-    setLoadingStartTime(startTime);
-    setElapsedSeconds(0);
-    
-    // Список статусов загрузки (каждый отображается 3 секунды, последний до конца)
-    const statusMessages = [
-      'Обработка запроса...',
-      'Поиск информации...',
-      'Формирование ответа...',
-      'Проверка ответа...',
-    ];
-    setLoadingMessages(statusMessages);
-    setLoadingStage('processing');
-
-    // Обновляем таймер каждую секунду
-    const timerInterval = setInterval(() => {
-      if (isProcessing) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setElapsedSeconds(elapsed);
-      }
-    }, 1000);
-
-    // Меняем статус каждые 3 секунды (последний остается до конца)
-    let statusIndex = 0;
-    const statusInterval = setInterval(() => {
-      if (isProcessing && statusMessages.length > 0) {
-        if (statusIndex < statusMessages.length - 1) {
-          statusIndex++;
-          // Обновляем loadingStage для совместимости
-          if (statusIndex < 2) {
-            setLoadingStage('processing');
-          } else if (statusIndex < 3) {
-            setLoadingStage('generating');
-          } else {
-            setLoadingStage('creating');
-          }
-        }
-      }
-    }, 3000);
-
-    return () => {
-      clearInterval(timerInterval);
-      clearInterval(statusInterval);
-    };
+    // Показываем только один статус "Формирование ответа..."
+    setLoadingStage('generating');
   }, [isProcessing]);
 
   // Функция для анимации прогресс-бара
@@ -1058,27 +1006,14 @@ export default function ProjectDetailPage() {
                       </div>
                     );
                   })}
-                  {/* Индикатор загрузки ответа с таймером */}
+                  {/* Индикатор загрузки ответа без таймера */}
                   {isProcessing && (
                     <div className="flex flex-col items-start">
                       <div className={`max-w-[75%] rounded-2xl p-4 rounded-bl-none shadow-sm border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-center gap-3">
-                          {/* Таймер */}
-                          <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
-                            <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                              {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
-                            </span>
-                          </div>
                           {/* Текущее сообщение */}
                           <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {loadingMessages.length > 0 
-                              ? loadingMessages[Math.min(Math.floor(elapsedSeconds / 3), loadingMessages.length - 1)]
-                              : (loadingStage === 'processing' ? 'Обработка запроса...' : 
-                                 loadingStage === 'generating' ? 'Формирование ответа...' : 
-                                 'Проверка ответа...')}
+                            Формирование ответа...
                           </span>
                         </div>
                       </div>

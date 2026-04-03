@@ -7,11 +7,10 @@ import Link from 'next/link';
 import { auth } from '@/lib/storage';
 
 export default function RegisterPage() {
+  const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,12 +20,17 @@ export default function RegisterPage() {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isValidEmail = emailRegex.test(email.trim());
   const isValidPassword = password.length >= 6;
-  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
-  const isFormValid = isValidEmail && isValidPassword && passwordsMatch && privacyAgreed;
+  const isFormValid = isValidEmail && isValidPassword && privacyAgreed && firstName.trim().length > 0;
 
   const handleRegister = async () => {
+    const trimmedFirstName = firstName.trim();
     // Очищаем email от пробелов
     const trimmedEmail = email.trim();
+
+    if (!trimmedFirstName) {
+      setError('Введите имя пользователя');
+      return;
+    }
 
     if (!trimmedEmail) {
       setError('Введите email адрес');
@@ -38,13 +42,13 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!passwordsMatch) {
-      setError('Пароли не совпадают. Проверьте введенные данные');
+    if (password.length < 6) {
+      setError('Пароль должен содержать минимум 6 символов');
       return;
     }
 
-    if (password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов');
+    if (!privacyAgreed) {
+      setError('Необходимо согласиться с Политикой конфиденциальности');
       return;
     }
 
@@ -61,6 +65,18 @@ export default function RegisterPage() {
       }
 
       if (user) {
+        try {
+          const existingProfileStr = localStorage.getItem(`userProfile_${user.id}`);
+          const existingProfile = existingProfileStr ? JSON.parse(existingProfileStr) : {};
+          const updatedProfile = {
+            ...existingProfile,
+            firstName: trimmedFirstName,
+          };
+          localStorage.setItem(`userProfile_${user.id}`, JSON.stringify(updatedProfile));
+        } catch {
+          // игнорируем ошибки работы с профилем, чтобы не мешать регистрации
+        }
+
         router.push('/projects');
         router.refresh();
       } else {
@@ -89,6 +105,23 @@ export default function RegisterPage() {
 
         {/* Форма */}
         <div className="space-y-6">
+          {/* Поле Имя пользователя */}
+          <div>
+            <label className="block text-lg font-medium text-gray-900 mb-3">
+              Имя пользователя
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => {
+                setFirstName(e.target.value);
+                setError('');
+              }}
+              placeholder="Иван"
+              className="w-full border border-gray-300 rounded-lg p-4 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
+            />
+          </div>
+
           {/* Поле Email */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
@@ -109,7 +142,7 @@ export default function RegisterPage() {
           {/* Поле Пароль */}
           <div>
             <label className="block text-lg font-medium text-gray-900 mb-3">
-              Пароль (минимум 6 символов)
+              Пароль
             </label>
             <div className="relative">
               <input
@@ -129,38 +162,7 @@ export default function RegisterPage() {
                 <i className={`fas ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
               </button>
             </div>
-          </div>
-
-          {/* Поле Подтверждение пароля */}
-          <div>
-            <label className="block text-lg font-medium text-gray-900 mb-3">
-              Подтверждение пароля
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setError('');
-                }}
-                className={`w-full border rounded-lg p-4 pr-12 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  confirmPassword.length > 0 && password !== confirmPassword
-                    ? 'border-red-300'
-                    : 'border-gray-300'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <i className={`fas ${showConfirmPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
-              </button>
-            </div>
-            {confirmPassword.length > 0 && password !== confirmPassword && (
-              <p className="mt-2 text-sm text-red-600">Пароли не совпадают</p>
-            )}
+            <p className="mt-2 text-sm text-gray-500">Минимум 6 символов</p>
           </div>
 
           {/* Сообщение об ошибке */}
@@ -190,10 +192,10 @@ export default function RegisterPage() {
           {/* Кнопка Зарегистрироваться */}
           <button
             onClick={handleRegister}
-            disabled={!isFormValid || loading}
+            disabled={loading}
             className="w-full bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
-            {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+            {loading ? 'Регистрация...' : 'Создать аккаунт'}
           </button>
 
           {/* Ссылка на вход */}

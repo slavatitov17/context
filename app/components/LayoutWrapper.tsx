@@ -28,6 +28,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profileFirstName, setProfileFirstName] = useState<string>('');
 
   useEffect(() => {
     // Управляем overflow на html для страниц авторизации
@@ -54,23 +55,27 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         setUserEmail(currentUser.email || '');
         setIsAuthenticated(true);
         
-        // Загружаем фото профиля
+        // Загружаем данные профиля
         const savedProfile = localStorage.getItem(`userProfile_${currentUser.id}`);
         if (savedProfile) {
           try {
             const profile = JSON.parse(savedProfile);
             setProfilePhoto(profile.photo || null);
+            setProfileFirstName(profile.firstName || '');
           } catch {
             setProfilePhoto(null);
+            setProfileFirstName('');
           }
         } else {
           setProfilePhoto(null);
+          setProfileFirstName('');
         }
       } else {
         setUser(null);
         setUserEmail('');
         setIsAuthenticated(false);
         setProfilePhoto(null);
+        setProfileFirstName('');
         if (!isAuthPage && !isPrivacyPage) {
           router.push('/register');
         }
@@ -84,14 +89,16 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       if (e.key === 'context_user' || e.key === 'context_session') {
         checkUser();
       } else if (e.key && e.key.startsWith('userProfile_')) {
-        // Обновляем фото профиля при изменении
+        // Обновляем данные профиля при изменении
         const currentUser = auth.getCurrentUser();
         if (currentUser && e.key === `userProfile_${currentUser.id}`) {
           try {
             const profile = JSON.parse(e.newValue || '{}');
             setProfilePhoto(profile.photo || null);
+            setProfileFirstName(profile.firstName || '');
           } catch {
             setProfilePhoto(null);
+            setProfileFirstName('');
           }
         }
       }
@@ -116,7 +123,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     }
   };
 
-  const getDisplayName = (email: string) => {
+  const getDisplayName = (email: string, firstName: string) => {
+    const trimmedName = firstName?.trim();
+    if (trimmedName) return trimmedName;
     if (!email) return '';
     const atIndex = email.indexOf('@');
     if (atIndex === -1) return email;
@@ -189,7 +198,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           ) : (
             <i className={`fas fa-user-circle mr-3 group-hover:text-white transition-colors text-xl flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}></i>
           )}
-          <span className="flex-1 font-medium min-w-0 truncate text-left">{getDisplayName(userEmail)}</span>
+          <span className="flex-1 font-medium min-w-0 truncate text-left">
+            {getDisplayName(userEmail, profileFirstName)}
+          </span>
         </button>
       </div>
     </>
@@ -277,11 +288,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
                 try {
                   const profile = JSON.parse(savedProfile);
                   setProfilePhoto(profile.photo || null);
+                  setProfileFirstName(profile.firstName || '');
                 } catch {
                   setProfilePhoto(null);
+                  setProfileFirstName('');
                 }
               } else {
                 setProfilePhoto(null);
+                setProfileFirstName('');
               }
             }
           }} 

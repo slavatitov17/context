@@ -1041,9 +1041,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingStage, setLoadingStage] = useState<'processing' | 'generating' | 'creating'>('processing');
-  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [viewModes, setViewModes] = useState<Map<number, 'diagram' | 'code'>>(new Map());
   const [formatSelectors, setFormatSelectors] = useState<Map<number, 'plantuml' | 'mermaid'>>(new Map());
@@ -1622,61 +1619,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  // Управление этапами загрузки и таймером
+  // Управление этапами загрузки (без таймера)
   useEffect(() => {
     if (!isProcessing) {
       setLoadingStage('processing');
-      setLoadingStartTime(null);
-      setElapsedSeconds(0);
-      setLoadingMessages([]);
       return;
     }
 
-    // Запускаем таймер
-    const startTime = Date.now();
-    setLoadingStartTime(startTime);
-    setElapsedSeconds(0);
-    
-    // Список статусов загрузки (каждый отображается 3 секунды)
-    const statusMessages = [
-      t('diagram.processingRequest'),
-      t('diagram.definingRequirements'),
-      t('diagram.generatingCode'),
-      'Проверка кода',
-      'Рендеринг диаграммы',
-      'Проверка качества',
-    ];
-    setLoadingMessages(statusMessages);
-    setLoadingStage('processing');
-
-    // Обновляем таймер каждую секунду
-    const timerInterval = setInterval(() => {
-      if (isProcessing) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setElapsedSeconds(elapsed);
-      }
-    }, 1000);
-
-    // Меняем статус каждые 3 секунды
-    let statusIndex = 0;
-    const statusInterval = setInterval(() => {
-      if (isProcessing && statusMessages.length > 0) {
-        statusIndex = (statusIndex + 1) % statusMessages.length;
-        // Обновляем loadingStage для совместимости
-        if (statusIndex < 2) {
-          setLoadingStage('processing');
-        } else if (statusIndex < 4) {
-          setLoadingStage('generating');
-        } else {
-          setLoadingStage('creating');
-        }
-      }
-    }, 3000);
-
-    return () => {
-      clearInterval(timerInterval);
-      clearInterval(statusInterval);
-    };
+    // Показываем только один статус "Формирование диаграммы..."
+    setLoadingStage('generating');
   }, [isProcessing]);
 
   const handleSendMessage = async () => {
@@ -2795,27 +2746,14 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                       </div>
                     );
                   })}
-                  {/* Индикатор загрузки ответа с таймером */}
+                  {/* Индикатор загрузки ответа без таймера */}
                   {isProcessing && (
                     <div className="flex flex-col items-start">
                       <div className={`max-w-[75%] rounded-2xl p-4 border rounded-bl-none shadow-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-center gap-3">
-                          {/* Таймер */}
-                          <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                            <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                              {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
-                            </span>
-                          </div>
                           {/* Текущее сообщение */}
                           <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {loadingMessages.length > 0 
-                              ? loadingMessages[Math.floor(elapsedSeconds / 3) % loadingMessages.length]
-                              : (loadingStage === 'processing' ? t('diagram.processingRequest') : 
-                                 loadingStage === 'generating' ? t('diagram.generatingCode') : 
-                                 t('diagram.creatingDiagram'))}
+                            Формирование диаграммы...
                           </span>
                         </div>
                       </div>

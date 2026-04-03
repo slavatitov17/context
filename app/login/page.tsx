@@ -21,11 +21,21 @@ export default function LoginPage() {
   const isFormValid = isValidEmail && isValidPassword;
 
   const handleLogin = async () => {
-    setError('');
-    setLoading(true);
-
     // Очищаем email от пробелов
     const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password) {
+      setError('Заполните все поля');
+      return;
+    }
+
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Введите корректный email адрес (например: user@example.com)');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
 
     try {
       const { user, error: authError } = await auth.signIn(trimmedEmail, password);
@@ -117,7 +127,7 @@ export default function LoginPage() {
           {/* Кнопка Войти */}
           <button
             onClick={handleLogin}
-            disabled={!isFormValid || loading}
+            disabled={loading}
             className="w-full bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-base font-medium"
           >
             {loading ? 'Вход...' : 'Войти'}
