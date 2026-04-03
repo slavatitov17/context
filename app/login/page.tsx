@@ -71,7 +71,7 @@ export default function LoginPage() {
         <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
           <div className="w-full max-w-md">
             <div className="relative bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-md transition ease-in duration-150">
-              <p className="text-sm break-words pr-6">{error}</p>
+              <p className="text-base break-words pr-6">{error}</p>
               <button
                 type="button"
                 onClick={() => setError('')}
