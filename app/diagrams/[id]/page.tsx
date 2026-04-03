@@ -443,6 +443,7 @@ function DualFormatMessage({
   t: (key: string) => string;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
+  const [pngDownloaded, setPngDownloaded] = useState<boolean>(false);
   const currentViewMode = viewModes.get(index) || 'diagram';
   const currentFormat = formatSelectors.get(index) || 'mermaid';
   
