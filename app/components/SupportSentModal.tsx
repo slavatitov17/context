@@ -29,7 +29,7 @@ export default function SupportSentModal({ isOpen, onClose }: SupportSentModalPr
         <h2 className={`text-xl font-medium mb-3 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           {t('supportSent.title')}
         </h2>
-        <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        <p className={`text-base mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           {t('supportSent.message')}
         </p>
         <div className="flex justify-end">

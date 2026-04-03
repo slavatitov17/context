@@ -22,7 +22,6 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [hasChanges, setHasChanges] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,31 +84,28 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     loadUser();
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
+  // Сохранение профиля в localStorage
+  const saveProfile = () => {
     const user = auth.getCurrentUser();
-    if (!user) return;
-    
-    const savedProfile = localStorage.getItem(`userProfile_${user.id}`);
-    if (savedProfile) {
-      try {
-        const profile = JSON.parse(savedProfile);
-        setHasChanges(
-          firstName !== (profile.firstName || '') ||
-          middleName !== (profile.middleName || '') ||
-          lastName !== (profile.lastName || '') ||
-          phone !== (profile.phone || '') ||
-          birthDate !== (profile.birthDate || '') ||
-          profilePhoto !== (profile.photo || null)
-        );
-      } catch {
-        setHasChanges(true);
-      }
-    } else {
-      setHasChanges(firstName !== '' || middleName !== '' || lastName !== '' || phone !== '' || birthDate !== '' || profilePhoto !== null);
+    if (!user) {
+      return;
     }
-  }, [firstName, middleName, lastName, phone, birthDate, profilePhoto, isOpen]);
+    
+    const profile = {
+      firstName,
+      middleName,
+      lastName,
+      phone,
+      birthDate,
+      photo: profilePhoto,
+    };
+    localStorage.setItem(`userProfile_${user.id}`, JSON.stringify(profile));
+    // Триггерим событие для обновления профиля в LayoutWrapper
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: `userProfile_${user.id}`,
+      newValue: JSON.stringify(profile),
+    }));
+  };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,34 +136,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
   };
 
-  const handleSave = () => {
-    const user = auth.getCurrentUser();
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    
-    const profile = {
-      firstName,
-      middleName,
-      lastName,
-      phone,
-      birthDate,
-      photo: profilePhoto,
-    };
-    localStorage.setItem(`userProfile_${user.id}`, JSON.stringify(profile));
-    // Триггерим событие для обновления фото в LayoutWrapper
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: `userProfile_${user.id}`,
-      newValue: JSON.stringify(profile),
-    }));
-    setHasChanges(false);
-    alert(language === 'ru' ? 'Профиль успешно сохранен' : 'Profile saved successfully');
+  const handleClose = () => {
+    saveProfile();
     onClose();
   };
 
   const handleLogout = async () => {
     try {
+      saveProfile();
       await auth.signOut();
       onClose();
       router.push('/login');
@@ -183,7 +159,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       {/* Блюр фон */}
       <div 
         className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       {/* Модальное окно */}
@@ -191,7 +167,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         <div className="flex justify-between items-center mb-6">
           <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('profile.title')}</h2>
           <button
-            onClick={onClose}
+          onClick={handleClose}
             className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,15 +314,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
           </div>
 
-          {/* Кнопки сохранения и выхода: на мобильных — в столбец с отступом */}
-          <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges}
-              className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              {t('profile.save')}
-            </button>
+          {/* Кнопка выхода: на мобильных — во всю ширину */}
+          <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={handleLogout}
               className="w-full sm:w-auto flex items-center justify-center gap-2 text-red-500 hover:text-red-700 transition-colors font-medium py-3"
