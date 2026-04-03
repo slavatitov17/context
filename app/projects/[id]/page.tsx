@@ -11,13 +11,11 @@ import SupportSentModal from '@/app/components/SupportSentModal';
 import { FeedbackCopyButton } from '@/app/components/FeedbackCopyButton';
 
 function ProjectAssistantFooter({
-  generationTime,
   plainText,
   isDark,
   t,
   onReportError,
 }: {
-  generationTime: number;
   plainText: string;
   isDark: boolean;
   t: (key: string) => string;
@@ -25,14 +23,6 @@ function ProjectAssistantFooter({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 mt-3">
-      <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-        <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-          {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
-        </span>
-      </div>
       <FeedbackCopyButton
         defaultLabel={t('project.copyAnswerText')}
         copiedLabel={t('project.answerTextCopied')}
@@ -920,7 +910,7 @@ export default function ProjectDetailPage() {
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                     
-                    // Если это ответ системы с generationTime: дата/время сверху, сообщение, затем таймер и кнопка снизу
+                    // Если это ответ системы с дополнительными действиями (копирование текста, сообщение об ошибке)
                     if (!msg.isUser && msg.generationTime !== undefined) {
                       return (
                         <div key={index} className="flex flex-col items-start w-full">
@@ -953,7 +943,6 @@ export default function ProjectDetailPage() {
                               </div>
                             </div>
                             <ProjectAssistantFooter
-                              generationTime={msg.generationTime!}
                               plainText={msg.text}
                               isDark={isDark}
                               t={t}

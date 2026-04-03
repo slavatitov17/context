@@ -33,7 +33,7 @@ export default function RegisterPage() {
     }
 
     if (!trimmedEmail) {
-      setError('Введите email адрес');
+      setError('Введите эл. почту');
       return;
     }
 
@@ -90,7 +90,26 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-full">
+    <div className="flex items-center justify-center h-full relative">
+      {/* Тост с ошибкой */}
+      {error && (
+        <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
+          <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-md transition ease-in duration-150">
+            <span className="mt-0.5">
+              <i className="fas fa-exclamation-circle"></i>
+            </span>
+            <span className="text-sm">{error}</span>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              className="ml-2 text-red-500 hover:text-red-700 transition-colors"
+              aria-label="Закрыть уведомление"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-md">
         {/* Логотип и иконка Context */}
         <div className="flex items-center gap-3 mb-6 justify-center">
@@ -164,13 +183,6 @@ export default function RegisterPage() {
             </div>
             <p className="mt-2 text-sm text-gray-500">Минимум 6 символов</p>
           </div>
-
-          {/* Сообщение об ошибке */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-600 text-base">{error}</p>
-            </div>
-          )}
 
           {/* Чекбокс согласия */}
           <div className="flex items-start">

@@ -534,18 +534,8 @@ function DualFormatMessage({
         <div className={`rounded-lg p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           {/* Верхняя панель: таймер и кнопка слева, свитчер по центру, кнопки справа */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
+            {/* Левая часть: кнопка "Сообщить об ошибке" (без таймера) */}
             <div className="flex items-center gap-3">
-              {generationTime !== undefined && (
-                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                  <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-              )}
               <button
                 onClick={onOpenSupport}
                 className={
@@ -868,18 +858,8 @@ function MermaidMessage({
       <div className="max-w-full w-full">
         <div className={`border rounded-lg p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            {/* Левая часть: таймер и кнопка "Сообщить об ошибке" */}
+            {/* Левая часть: кнопка "Сообщить об ошибке" (без таймера) */}
             <div className="flex items-center gap-3">
-              {generationTime !== undefined && (
-                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                  <svg className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className={`text-sm font-mono font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {Math.floor(generationTime / 60)}:{(generationTime % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-              )}
               <button
                 onClick={onOpenSupport}
                 className={
