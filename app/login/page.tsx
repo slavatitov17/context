@@ -69,19 +69,18 @@ export default function LoginPage() {
       {/* Тост с ошибкой */}
       {error && (
         <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-md transition ease-in duration-150">
-            <span className="mt-0.5">
-              <i className="fas fa-exclamation-circle"></i>
-            </span>
-            <span className="text-sm">{error}</span>
-            <button
-              type="button"
-              onClick={() => setError('')}
-              className="ml-2 text-red-500 hover:text-red-700 transition-colors"
-              aria-label="Закрыть уведомление"
-            >
-              <i className="fas fa-times"></i>
-            </button>
+          <div className="w-full max-w-md">
+            <div className="relative bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-md transition ease-in duration-150">
+              <p className="text-sm break-words pr-6">{error}</p>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"
+                aria-label="Закрыть уведомление"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -136,7 +135,7 @@ export default function LoginPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors"
               >
-                <i className={`fas ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
           </div>

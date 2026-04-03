@@ -308,6 +308,7 @@ export default function ProjectDetailPage() {
   const [user, setUser] = useState<any>(null);
   const [documentsCollapsed, setDocumentsCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   // Загрузка проекта
@@ -414,6 +415,13 @@ export default function ProjectDetailPage() {
       return () => clearTimeout(timer);
     }
   }, [messages, loading, projectData, saveProject]);
+
+  // Автоскролл до последнего сообщения
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [messages, isProcessing]);
 
   // Управление этапами загрузки (только для чата, без таймера)
   useEffect(() => {
@@ -903,7 +911,7 @@ export default function ProjectDetailPage() {
             /* Чат с сообщениями */
             <div className="flex-1 flex flex-col min-h-0">
               {/* История сообщений */}
-              <div className={`flex-1 rounded-lg border p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+              <div className={`flex-1 rounded-lg border p-6 mb-2 overflow-y-auto overflow-x-hidden min-h-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`} ref={messagesContainerRef}>
                 <div className="space-y-4">
                   {messages.map((msg, index) => {
                     const timestamp = msg.timestamp || new Date();

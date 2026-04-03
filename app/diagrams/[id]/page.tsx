@@ -88,6 +88,7 @@ mermaid.initialize({
 function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: number; onSvgReady?: (svg: string) => void }) {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
+  const [pngDownloaded, setPngDownloaded] = useState(false);
   const [mermaidError, setMermaidError] = useState<string>('');
   
   useEffect(() => {
@@ -491,6 +492,8 @@ function DualFormatMessage({
                   a.click();
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
+                  setPngDownloaded(true);
+                  setTimeout(() => setPngDownloaded(false), 2000);
                   resolve();
                 } else {
                   reject(new Error('Не удалось создать PNG blob'));
@@ -519,6 +522,8 @@ function DualFormatMessage({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setPngDownloaded(true);
+      setTimeout(() => setPngDownloaded(false), 2000);
     }
   };
 
@@ -618,25 +623,43 @@ function DualFormatMessage({
                 {currentFormat === 'mermaid' && mermaidSvg && (
                   <button
                     onClick={downloadMermaidPNG}
-                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                      isDark
-                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 ${
+                      pngDownloaded
+                        ? 'bg-green-600 text-white'
+                        : isDark
+                          ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {t('diagram.downloadPNG')}
+                    {pngDownloaded ? (
+                      <>
+                        <i className="fas fa-check"></i>
+                        {t('diagram.fileDownloaded')}
+                      </>
+                    ) : (
+                      t('diagram.downloadPNG')
+                    )}
                   </button>
                 )}
                 {currentFormat === 'plantuml' && msg.diagramImageUrl && (
                   <button
                     onClick={downloadPlantUmlPNG}
-                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                      isDark
-                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 ${
+                      pngDownloaded
+                        ? 'bg-green-600 text-white'
+                        : isDark
+                          ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {t('diagram.downloadPNG')}
+                    {pngDownloaded ? (
+                      <>
+                        <i className="fas fa-check"></i>
+                        {t('diagram.fileDownloaded')}
+                      </>
+                    ) : (
+                      t('diagram.downloadPNG')
+                    )}
                   </button>
                 )}
                 <FeedbackCopyButton
