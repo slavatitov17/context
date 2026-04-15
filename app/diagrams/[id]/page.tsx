@@ -2100,15 +2100,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       purpose: 'Управление проектами',
       tags: ['Иерархия', 'Проект', 'Планирование'],
       popularity: 10
-    },
-    {
-      type: 'JSONPlantUML',
-      name: 'JSON',
-      description: 'Диаграмма JSON визуализирует структуру данных в формате JSON, показывая объекты, массивы, их вложенность с указанием типов данных и значений',
-      standard: 'Данные',
-      purpose: 'Данные',
-      tags: ['Структура', 'Данные', 'Формат'],
-      popularity: 10
     }
   ];
 
@@ -2128,7 +2119,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
       'MindMapPlantUML': 'diagram.type.MindMap.description',
       'ERPlantUML': 'diagram.type.ER.description',
       'WBSPlantUML': 'diagram.type.WBS.description',
-      'JSONPlantUML': 'diagram.type.JSON.description',
       'BPMN': 'diagram.type.BPMN.description',
     };
     const key = typeMap[type] || `diagram.type.${type.split('PlantUML')[0]}.description`;

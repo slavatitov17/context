@@ -468,7 +468,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   <li>{t('version.diagrams.item3')}</li>
                   <li>{t('version.diagrams.item4')}</li>
                   <li>{t('version.diagrams.item5')}</li>
-                  <li>{t('version.diagrams.item6')}</li>
                 </ul>
               </div>
             </div>
