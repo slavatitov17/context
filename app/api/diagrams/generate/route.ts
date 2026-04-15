@@ -859,7 +859,7 @@ mindmap
           plantUmlInstructions = readFileSync(instructionsPath, 'utf-8');
         } catch (error) {
           console.error('Ошибка при чтении инструкций для GanttPlantUML:', error);
-          plantUmlInstructions = 'ДЛЯ GANTT PLANTUML: Используй правильный синтаксис @startgantt ... @endgantt. Задачи: [Название задачи] requires X days. Даты начала: [Название задачи] starts YYYY-MM-DD. Зависимости: [Задача 1] -> [Задача 2]. Вехи: [Веха] happens YYYY-MM-DD. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam task, skinparam timeline, skinparam arrow!';
+          plantUmlInstructions = 'ДЛЯ GANTT PLANTUML: Используй правильный синтаксис @startgantt ... @endgantt. Задачи: [Название задачи] requires X days. Даты начала: [Название задачи] starts YYYY-MM-DD. Зависимости: [Задача 1] -> [Задача 2]. Вехи: [Веха] happens YYYY-MM-DD. ОБЯЗАТЕЛЬНО добавляй стили для строгих цветов (белый, черный, серый) через skinparam task, skinparam timeline, skinparam arrow! НИКОГДА НЕ используй Mermaid-конструкции section/dateFormat/axisFormat.';
         }
       } else if (diagramType === 'ERPlantUML') {
         try {
@@ -1576,6 +1576,15 @@ skinparam title {
               // Вставляем стили в начало кода (перед содержимым)
               plantUmlCode = styleBlock + plantUmlCode;
             }
+
+            // Убираем Mermaid-строки, которые иногда ошибочно попадают в PlantUML Gantt
+            plantUmlCode = plantUmlCode
+              .replace(/^\s*section\b.*$/gim, '')
+              .replace(/^\s*dateFormat\b.*$/gim, '')
+              .replace(/^\s*axisFormat\b.*$/gim, '')
+              .replace(/^\s*gantt\s*$/gim, '')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim();
           }
           
           // Для ERPlantUML: добавляем стили для строгих цветов, если их нет

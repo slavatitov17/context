@@ -6,6 +6,7 @@
 
 **ВСЕГДА начинай код с `@startgantt` и заканчивай `@endgantt`!**
 **ВТОРАЯ строка кода ОБЯЗАТЕЛЬНО должна быть ровно: `skinparam defaultFontName Arial`**
+**НИКОГДА НЕ используй Mermaid-ключевые слова в PlantUML Gantt: `section`, `dateFormat`, `axisFormat`, `gantt` (как заголовок без `@startgantt`).**
 
 ```plantuml
 @startgantt
@@ -22,6 +23,15 @@ Project starts 2020-07-01
 ```
 gantt
 [Задача 1] requires 5 days
+```
+
+**НЕПРАВИЛЬНО (Mermaid-синтаксис в PlantUML Gantt):**
+```
+@startgantt
+section Подготовительный этап
+dateFormat YYYY-MM-DD
+axisFormat %m/%d
+@endgantt
 ```
 
 **ПРАВИЛЬНО:**
