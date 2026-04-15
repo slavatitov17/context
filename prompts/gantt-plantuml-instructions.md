@@ -5,9 +5,11 @@
 ### 1. ОБЯЗАТЕЛЬНЫЙ СИНТАКСИС
 
 **ВСЕГДА начинай код с `@startgantt` и заканчивай `@endgantt`!**
+**ВТОРАЯ строка кода ОБЯЗАТЕЛЬНО должна быть ровно: `skinparam defaultFontName Arial`**
 
 ```plantuml
 @startgantt
+skinparam defaultFontName Arial
 [Проектирование прототипа] requires 15 days
 [Тестирование прототипа] requires 10 days
 Project starts 2020-07-01

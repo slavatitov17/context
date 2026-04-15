@@ -893,6 +893,8 @@ ${objectDescription}
 
 ВАЖНО: Все названия объектов, классов, методов, атрибутов и других элементов должны быть на русском языке. Используй русские названия для всех сущностей (например: "Институт", "Студент", "Преподаватель", "Курс" и т.д.). Синтаксис PlantUML остается на английском (class, interface, ->, etc.), но содержимое - на русском.
 
+КРИТИЧЕСКОЕ ТРЕБОВАНИЕ ДЛЯ ЛЮБОЙ PLANTUML-ДИАГРАММЫ: вторая строка сразу после стартового тега (@startuml / @startmindmap / @startgantt / @startwbs / @startjson) должна быть РОВНО: skinparam defaultFontName Arial
+
 ${diagramType === 'MindMapPlantUML' || diagramType === 'SequencePlantUML' || diagramType === 'UseCasePlantUML' || diagramType === 'ActivityPlantUML' || diagramType === 'ClassPlantUML' || diagramType === 'ObjectPlantUML' || diagramType === 'ComponentPlantUML' || diagramType === 'DeploymentPlantUML' || diagramType === 'StatechartPlantUML' || diagramType === 'GanttPlantUML' || diagramType === 'ERPlantUML' || diagramType === 'WBSPlantUML' || diagramType === 'JSONPlantUML' ? plantUmlInstructions : ''}
 ${diagramType === 'MindMap' ? 'ДЛЯ MINDMAP: @startmindmap ... @endmindmap. Иерархию задавай ТОЛЬКО символами + (+, ++, +++, …). НЕ добавляй <style>. НЕ используй префиксы - для веток. НЕ используй просто "mindmap" без @startmindmap/@endmindmap!' : ''}
 ${diagramType === 'Activity' ? 'ДЛЯ ACTIVITY: Используй правильный синтаксис activity диаграммы: start, :действие;, if (условие) then, else, endif, fork, fork again, end fork, stop. НЕ используй split/join, используй fork/fork again/end fork!' : ''}

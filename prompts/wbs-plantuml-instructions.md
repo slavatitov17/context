@@ -5,9 +5,11 @@
 ### 1. ОБЯЗАТЕЛЬНЫЙ СИНТАКСИС
 
 **ВСЕГДА начинай код с `@startwbs` и заканчивай `@endwbs`!**
+**ВТОРАЯ строка кода ОБЯЗАТЕЛЬНО должна быть ровно: `skinparam defaultFontName Arial`**
 
 ```plantuml
 @startwbs
+skinparam defaultFontName Arial
 * Проект
 ** Этап 1
 *** Задача 1.1

@@ -5,9 +5,11 @@
 ### 1. ОБЯЗАТЕЛЬНЫЙ СИНТАКСИС
 
 **ВСЕГДА начинай код с `@startuml` и заканчивай `@enduml`!**
+**ВТОРАЯ строка кода ОБЯЗАТЕЛЬНО должна быть ровно: `skinparam defaultFontName Arial`**
 
 ```plantuml
 @startuml
+skinparam defaultFontName Arial
 start
 :Начало процесса;
 :Выполнение действия;

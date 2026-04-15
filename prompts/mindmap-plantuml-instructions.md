@@ -14,9 +14,11 @@
 ### 1. ОБЯЗАТЕЛЬНЫЙ СИНТАКСИС
 
 **ВСЕГДА начинай код с `@startmindmap` и заканчивай `@endmindmap`!**
+**ВТОРАЯ строка кода ОБЯЗАТЕЛЬНО должна быть ровно: `skinparam defaultFontName Arial`**
 
 ```plantuml
 @startmindmap
+skinparam defaultFontName Arial
 * Корневой узел
 ** Подтема 1
 *** Деталь 1.1
