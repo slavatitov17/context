@@ -9,7 +9,12 @@ import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import SupportSentModal from '@/app/components/SupportSentModal';
 import { FeedbackCopyButton } from '@/app/components/FeedbackCopyButton';
-import { formatGlossaryForClipboard } from '@/lib/format-glossary-clipboard';
+import {
+  copyGlossaryToClipboard,
+  exportGlossaryAsExcel,
+  exportGlossaryAsPdf,
+  exportGlossaryAsWord,
+} from '@/lib/glossary-export';
 import mermaid from 'mermaid';
 
 // Инициализация Mermaid с кастомной темой для строгих цветов
@@ -83,6 +88,92 @@ mermaid.initialize({
   },
   securityLevel: 'loose',
 });
+
+function GlossaryActions({
+  glossary,
+  t,
+  isDark,
+}: {
+  glossary: Array<{ element: string; description: string }>;
+  t: (key: string) => string;
+  isDark: boolean;
+}) {
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const exportActions = [
+    {
+      key: 'word',
+      label: t('diagram.exportWord'),
+      action: () => exportGlossaryAsWord(glossary, t('diagram.element'), t('diagram.description')),
+    },
+    {
+      key: 'excel',
+      label: t('diagram.exportExcel'),
+      action: () => exportGlossaryAsExcel(glossary, t('diagram.element'), t('diagram.description')),
+    },
+    {
+      key: 'pdf',
+      label: t('diagram.exportPdf'),
+      action: () => exportGlossaryAsPdf(glossary, t('diagram.element'), t('diagram.description')),
+    },
+  ];
+
+  return (
+    <div className="flex items-center gap-2">
+      <FeedbackCopyButton
+        defaultLabel={t('diagram.copyGlossary')}
+        copiedLabel={t('diagram.glossaryCopied')}
+        isDark={isDark}
+        variant="toolbar"
+        onCopy={() => copyGlossaryToClipboard(glossary, t('diagram.element'), t('diagram.description'))}
+      />
+      <div className="relative" ref={menuRef}>
+        <button
+          type="button"
+          onClick={() => setIsExportOpen((prev) => !prev)}
+          className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+            isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          {t('diagram.export')}
+        </button>
+        {isExportOpen && (
+          <div className={`absolute right-0 top-full mt-2 z-10 min-w-[140px] rounded-lg border shadow-md overflow-hidden ${
+            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            {exportActions.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={async () => {
+                  await Promise.resolve(item.action());
+                  setIsExportOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  isDark ? 'text-gray-100 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // Компонент для рендеринга Mermaid диаграммы
 function MermaidDiagram({ code, index, onSvgReady }: { code: string; index: number; onSvgReady?: (svg: string) => void }) {
@@ -709,17 +800,7 @@ function DualFormatMessage({
             <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
-                <FeedbackCopyButton
-                  defaultLabel={t('diagram.copyGlossary')}
-                  copiedLabel={t('diagram.glossaryCopied')}
-                  isDark={isDark}
-                  variant="toolbar"
-                  onCopy={() =>
-                    navigator.clipboard.writeText(
-                      formatGlossaryForClipboard(currentGlossary, t('diagram.element'), t('diagram.description'))
-                    )
-                  }
-                />
+                <GlossaryActions glossary={currentGlossary} t={t} isDark={isDark} />
               </div>
               <table className="w-full">
                 <thead>
@@ -981,17 +1062,7 @@ function MermaidMessage({
             <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
-                <FeedbackCopyButton
-                  defaultLabel={t('diagram.copyGlossary')}
-                  copiedLabel={t('diagram.glossaryCopied')}
-                  isDark={isDark}
-                  variant="toolbar"
-                  onCopy={() =>
-                    navigator.clipboard.writeText(
-                      formatGlossaryForClipboard(msg.glossary!, t('diagram.element'), t('diagram.description'))
-                    )
-                  }
-                />
+                <GlossaryActions glossary={msg.glossary!} t={t} isDark={isDark} />
               </div>
               <table className="w-full">
                 <thead>
@@ -2677,17 +2748,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                 <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                                     <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
-                                    <FeedbackCopyButton
-                                      defaultLabel={t('diagram.copyGlossary')}
-                                      copiedLabel={t('diagram.glossaryCopied')}
-                                      isDark={isDark}
-                                      variant="toolbar"
-                                      onCopy={() =>
-                                        navigator.clipboard.writeText(
-                                          formatGlossaryForClipboard(msg.glossary!, t('diagram.element'), t('diagram.description'))
-                                        )
-                                      }
-                                    />
+                                    <GlossaryActions glossary={msg.glossary!} t={t} isDark={isDark} />
                                   </div>
                                   <table className="w-full">
                                     <thead>
