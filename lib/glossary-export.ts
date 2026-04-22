@@ -126,9 +126,10 @@ export function exportGlossaryAsWord(
   rows: GlossaryRow[],
   elementTitle: string,
   descriptionTitle: string,
+  title = 'Глоссарий',
   fileName = 'glossary.doc'
 ): void {
-  const html = buildGlossaryStyledHtmlDocument(rows, elementTitle, descriptionTitle, 'Глоссарий');
+  const html = buildGlossaryStyledHtmlDocument(rows, elementTitle, descriptionTitle, title);
   downloadBlob(html, 'application/msword;charset=utf-8', fileName);
 }
 
@@ -136,9 +137,10 @@ export function exportGlossaryAsExcel(
   rows: GlossaryRow[],
   elementTitle: string,
   descriptionTitle: string,
+  title = 'Глоссарий',
   fileName = 'glossary.xls'
 ): void {
-  const html = buildGlossaryStyledHtmlDocument(rows, elementTitle, descriptionTitle, 'Глоссарий');
+  const html = buildGlossaryStyledHtmlDocument(rows, elementTitle, descriptionTitle, title);
   downloadBlob(html, 'application/vnd.ms-excel;charset=utf-8', fileName);
 }
 

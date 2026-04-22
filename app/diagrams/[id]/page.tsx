@@ -12,7 +12,6 @@ import { FeedbackCopyButton } from '@/app/components/FeedbackCopyButton';
 import {
   copyGlossaryToClipboard,
   exportGlossaryAsExcel,
-  exportGlossaryAsPdf,
   exportGlossaryAsWord,
 } from '@/lib/glossary-export';
 import mermaid from 'mermaid';
@@ -93,10 +92,12 @@ function GlossaryActions({
   glossary,
   t,
   isDark,
+  exportTitle,
 }: {
   glossary: Array<{ element: string; description: string }>;
   t: (key: string) => string;
   isDark: boolean;
+  exportTitle: string;
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -116,24 +117,19 @@ function GlossaryActions({
     {
       key: 'word',
       label: t('diagram.exportWord'),
-      action: () => exportGlossaryAsWord(glossary, t('diagram.element'), t('diagram.description')),
+      action: () => exportGlossaryAsWord(glossary, t('diagram.element'), t('diagram.description'), exportTitle),
     },
     {
       key: 'excel',
       label: t('diagram.exportExcel'),
-      action: () => exportGlossaryAsExcel(glossary, t('diagram.element'), t('diagram.description')),
-    },
-    {
-      key: 'pdf',
-      label: t('diagram.exportPdf'),
-      action: () => exportGlossaryAsPdf(glossary, t('diagram.element'), t('diagram.description')),
+      action: () => exportGlossaryAsExcel(glossary, t('diagram.element'), t('diagram.description'), exportTitle),
     },
   ];
 
   return (
     <div className="flex items-center gap-2">
       <FeedbackCopyButton
-        defaultLabel={t('diagram.copyGlossary')}
+        defaultLabel={t('diagram.copy')}
         copiedLabel={t('diagram.glossaryCopied')}
         isDark={isDark}
         variant="toolbar"
@@ -518,7 +514,8 @@ function DualFormatMessage({
   generationTime,
   onOpenSupport,
   isDark,
-  t
+  t,
+  exportTitle,
 }: {
   msg: { plantUmlCode?: string; mermaidCode?: string; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; diagramImageUrl?: string };
   index: number;
@@ -532,6 +529,7 @@ function DualFormatMessage({
   onOpenSupport: () => void;
   isDark: boolean;
   t: (key: string) => string;
+  exportTitle: string;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const [pngDownloaded, setPngDownloaded] = useState<boolean>(false);
@@ -800,7 +798,7 @@ function DualFormatMessage({
             <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
-                <GlossaryActions glossary={currentGlossary} t={t} isDark={isDark} />
+                <GlossaryActions glossary={currentGlossary} t={t} isDark={isDark} exportTitle={exportTitle} />
               </div>
               <table className="w-full">
                 <thead>
@@ -837,7 +835,8 @@ function MermaidMessage({
   generationTime,
   onOpenSupport,
   isDark = false,
-  t
+  t,
+  exportTitle,
 }: { 
   msg: { mermaidCode?: string; glossary?: Array<{ element: string; description: string }> }; 
   index: number; 
@@ -849,6 +848,7 @@ function MermaidMessage({
   onOpenSupport: () => void;
   isDark?: boolean;
   t: (key: string) => string;
+  exportTitle: string;
 }) {
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const currentViewMode = viewModes.get(index) || 'diagram';
@@ -1062,7 +1062,7 @@ function MermaidMessage({
             <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
-                <GlossaryActions glossary={msg.glossary!} t={t} isDark={isDark} />
+                <GlossaryActions glossary={msg.glossary!} t={t} isDark={isDark} exportTitle={exportTitle} />
               </div>
               <table className="w-full">
                 <thead>
@@ -1110,7 +1110,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [diagramType, setDiagramType] = useState<DiagramType | null>(null);
   const [showDiagram, setShowDiagram] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; timestamp?: Date; generationTime?: number }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; type?: 'diagram' | 'table' | 'code' | 'mermaid' | 'mindmap2' | 'dualformat'; plantUmlCode?: string; mermaidCode?: string; diagramImageUrl?: string; glossary?: Array<{ element: string; description: string }>; plantUmlGlossary?: Array<{ element: string; description: string }>; mermaidGlossary?: Array<{ element: string; description: string }>; requestObject?: string; requestDiagramType?: DiagramType; timestamp?: Date; generationTime?: number }>>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -1875,6 +1875,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               plantUmlGlossary,
               mermaidGlossary,
               diagramImageUrl: imageUrl,
+              requestObject: objectDescription,
+              requestDiagramType: diagramType,
               generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
@@ -1903,6 +1905,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               type: 'mermaid',
               mermaidCode,
               glossary,
+              requestObject: objectDescription,
+              requestDiagramType: diagramType,
               generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
@@ -1931,6 +1935,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               type: 'mermaid',
               mermaidCode,
               glossary,
+              requestObject: objectDescription,
+              requestDiagramType: diagramType,
               generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
@@ -1977,6 +1983,8 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
               plantUmlCode,
               diagramImageUrl: imageUrl,
               glossary,
+              requestObject: objectDescription,
+              requestDiagramType: diagramType,
               generationTime: finalElapsedSeconds,
               timestamp: new Date()
             }
@@ -2050,6 +2058,15 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'UserJourney': 'User Journey',
     'XY': 'XY',
     'BPMN': 'BPMN',
+  };
+
+  const getDiagramTypeLabel = (type?: DiagramType | null): string => {
+    if (!type) return '';
+    return diagramTypeNames[type] || type;
+  };
+
+  const buildGlossaryExportTitle = (typeLabel: string, objectText: string): string => {
+    return `Глоссарий диаграммы ${typeLabel} для объекта ${objectText}`;
   };
 
   // Расширенная информация о типах диаграмм
@@ -2597,6 +2614,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                     const timestamp = msg.timestamp || new Date();
                     const dateStr = timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    const lastUserMessageText = [...messages.slice(0, index)].reverse().find((item) => item.isUser)?.text || '';
+                    const currentObjectText = (msg.requestObject || lastUserMessageText).trim();
+                    const currentDiagramTypeLabel = getDiagramTypeLabel(msg.requestDiagramType || diagramType);
+                    const glossaryExportTitle = buildGlossaryExportTitle(currentDiagramTypeLabel, currentObjectText);
                     
                     if (msg.type === 'dualformat' || msg.type === 'mindmap2') {
                       return (
@@ -2614,6 +2635,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           onOpenSupport={() => setShowSupportModal(true)}
                           isDark={isDark}
                           t={t}
+                          exportTitle={glossaryExportTitle}
                         />
                       );
                     }
@@ -2632,6 +2654,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                           onOpenSupport={() => setShowSupportModal(true)}
                           isDark={isDark}
                           t={t}
+                          exportTitle={glossaryExportTitle}
                         />
                       );
                     }
@@ -2748,7 +2771,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
                                 <div className={`mt-6 pt-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                                     <h4 className={`font-medium text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('diagram.glossaryTitle')}</h4>
-                                    <GlossaryActions glossary={msg.glossary!} t={t} isDark={isDark} />
+                                    <GlossaryActions glossary={msg.glossary!} t={t} isDark={isDark} exportTitle={glossaryExportTitle} />
                                   </div>
                                   <table className="w-full">
                                     <thead>
