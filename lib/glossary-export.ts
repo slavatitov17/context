@@ -241,5 +241,9 @@ export async function exportGlossaryAsPdf(
   rows.forEach((row) => drawRow(row.element, row.description, false));
 
   const pdfBytes = await pdfDoc.save();
-  downloadBlob(pdfBytes, 'application/pdf', fileName);
+  const pdfBuffer = pdfBytes.buffer.slice(
+    pdfBytes.byteOffset,
+    pdfBytes.byteOffset + pdfBytes.byteLength
+  ) as ArrayBuffer;
+  downloadBlob(pdfBuffer, 'application/pdf', fileName);
 }
