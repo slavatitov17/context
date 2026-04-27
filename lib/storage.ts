@@ -48,6 +48,7 @@ export type DiagramType =
   | 'MindMap2'
   | 'MindMapMax'
   | 'MindMapPlantUML'
+  | 'MindMapCanva'
   | 'Sequence2'
   | 'SequencePlantUML'
   | 'Class2'

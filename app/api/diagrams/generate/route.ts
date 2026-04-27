@@ -96,6 +96,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (diagramType === 'MindMapCanva') {
+      return NextResponse.json(
+        { error: 'Тип диаграммы в разработке' },
+        { status: 400 }
+      );
+    }
+
     // Получаем клиент Mistral AI
     const client = getMistralClient();
 
