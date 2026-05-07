@@ -20,6 +20,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPrivacyPage = pathname === '/privacy';
   const isEditorPage = pathname?.startsWith('/editor/') && pathname?.includes('/edit') && !pathname?.includes('/new');
+  const isMindMapEditorPage = /^\/diagrams\/[^/]+\/editor\/?$/.test(pathname ?? '');
+  const isFullBleedWorkspace = isEditorPage || isMindMapEditorPage;
   const isDiagramTypeCatalog = pathname?.startsWith('/diagrams/') && !pathname?.includes('/edit') && !pathname?.includes('/new');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
@@ -209,7 +211,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   return (
     <body className={`flex h-screen font-sans tracking-tight ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`} style={{ backgroundColor: isDark ? '#111827' : '#ffffff' }}>
       {/* Боковое меню: только на десктопе (md+) */}
-      {!isAuthPage && !isEditorPage && isAuthenticated && (
+      {!isAuthPage && !isFullBleedWorkspace && isAuthenticated && (
         <aside
           className={`hidden md:flex fixed left-4 top-4 z-40 w-64 h-[calc(100vh-2rem)] p-6 rounded-lg border flex-col ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-gray-50 text-gray-800 border-gray-200'}`}
         >
@@ -219,11 +221,11 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
       {/* Основное пространство: на мобильных — отступ снизу под нижнее меню */}
       <main
-        className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isEditorPage ? 'ml-0 md:ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''} ${!isEditorPage ? 'px-4 pt-4 pb-24 md:px-8 md:pt-10 md:pb-4' : ''}`}
-        style={{ height: '100vh', overflowY: isEditorPage ? 'hidden' : 'auto' }}
+        className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${!isAuthPage && !isFullBleedWorkspace ? 'ml-0 md:ml-[calc(16rem+1rem)]' : ''} ${isDiagramTypeCatalog ? 'hide-scrollbar' : ''} ${!isFullBleedWorkspace ? 'px-4 pt-4 pb-24 md:px-8 md:pt-10 md:pb-4' : ''} ${isFullBleedWorkspace ? 'flex min-h-0 flex-col' : ''}`}
+        style={{ height: '100vh', overflowY: isFullBleedWorkspace ? 'hidden' : 'auto' }}
       >
         {/* Мобильная шапка: логотип (ссылка на Проекты) слева, аватар (профиль) справа */}
-        {!isAuthPage && !isEditorPage && isAuthenticated && (
+        {!isAuthPage && !isFullBleedWorkspace && isAuthenticated && (
           <div className="flex items-center justify-between gap-3 mb-4 md:hidden">
             <Link href="/projects" className="flex items-center gap-3 min-w-0">
               <i className={`fas fa-diagram-project text-xl flex-shrink-0 ${isDark ? 'text-gray-100' : 'text-gray-900'}`} />
@@ -245,12 +247,12 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             </button>
           </div>
         )}
-        {!isAuthPage && !isEditorPage && !isPrivacyPage && isAuthenticated && <BackButton />}
+        {!isAuthPage && !isFullBleedWorkspace && !isPrivacyPage && isAuthenticated && <BackButton />}
         {children}
       </main>
 
       {/* Нижнее фиксированное меню — только на мобильных */}
-      {!isAuthPage && !isEditorPage && isAuthenticated && (
+      {!isAuthPage && !isFullBleedWorkspace && isAuthenticated && (
         <nav
           className={`fixed bottom-0 left-0 right-0 z-40 border-t md:hidden flex items-stretch justify-around py-2 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}
           aria-label="Основное меню"

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { auth, projects as projectsStorage, diagrams as diagramsStorage, type Project, type Diagram, type DiagramType } from '@/lib/storage';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
@@ -1132,6 +1132,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const { isDark } = useTheme();
   const { t } = useLanguage();
   const routeParams = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const diagramId = routeParams?.id as string;
   const fromProject = searchParams.get('fromProject');
@@ -1161,8 +1162,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   const [selectedPurpose, setSelectedPurpose] = useState<string>('Все');
   const [selectedTag, setSelectedTag] = useState<string>('Все');
   const [sortBy, setSortBy] = useState<'alphabet' | 'popularity'>('alphabet');
-  const [catalogTypeDevelopmentToastOpen, setCatalogTypeDevelopmentToastOpen] = useState(false);
-
   // Загрузка диаграммы
   useEffect(() => {
     const loadDiagram = () => {
@@ -1182,6 +1181,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
         
         if (!diagram) {
           setLoading(false);
+          return;
+        }
+
+        if (diagram.diagramType === 'MindMapCanva') {
+          const q = fromProject ? `?fromProject=${encodeURIComponent(fromProject)}` : '';
+          router.replace(`/diagrams/${diagramId}/editor${q}`);
           return;
         }
 
@@ -1300,7 +1305,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     };
 
     loadDiagram();
-  }, [diagramId]);
+  }, [diagramId, fromProject, router]);
 
   useEffect(() => {
     const checkUser = () => {
@@ -1399,7 +1404,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
 
   const handleDiagramTypeSelect = (type: DiagramType) => {
     if (type === 'MindMapCanva') {
-      setCatalogTypeDevelopmentToastOpen(true);
+      setDiagramType(type);
+      const currentUser = auth.getCurrentUser();
+      if (currentUser && diagramId) {
+        saveDiagram({ diagramType: type });
+      }
+      const q = fromProject ? `?fromProject=${encodeURIComponent(fromProject)}` : '';
+      router.push(`/diagrams/${diagramId}/editor${q}`);
       return;
     }
 
@@ -2353,30 +2364,6 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   
   return (
     <div className={`flex flex-col ${isChatVisible ? 'h-full' : 'h-full'}`} style={isChatVisible ? { height: 'calc(100vh - 1rem - 2.5rem - 4rem)', overflow: 'hidden', maxHeight: 'calc(100vh - 1rem - 2.5rem - 4rem)' } : {}}>
-      {catalogTypeDevelopmentToastOpen && (
-        <div
-          className="fixed top-4 left-4 right-4 z-[100] flex justify-center px-2"
-          role="status"
-        >
-          <div
-            className={`pointer-events-auto flex w-full max-w-lg items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-lg ${
-              isDark ? 'border-gray-600 bg-gray-800 text-gray-100' : 'border-gray-200 bg-white text-gray-900'
-            }`}
-          >
-            <span className="text-sm font-medium sm:text-base">{t('diagram.mindMapCanva.inDevelopment')}</span>
-            <button
-              type="button"
-              onClick={() => setCatalogTypeDevelopmentToastOpen(false)}
-              className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-lg leading-none transition-colors ${
-                isDark ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-200' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-              }`}
-              aria-label={t('supportSent.close')}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
       {!diagramType ? (
         /* Выбор типа диаграммы */
         <div>
