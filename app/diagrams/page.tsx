@@ -348,7 +348,7 @@ export default function DiagramsPage() {
       'MindMap2': 'MindMap',
       'MindMapMax': 'MindMap',
       'MindMapPlantUML': 'MindMap',
-      'MindMapCanva': 'MindMap (Canva)',
+      'MindMapCanva': 'MindMap (Editor)',
       'Sequence2': 'Sequence',
       'SequencePlantUML': 'Sequence',
       'Class2': 'Class',

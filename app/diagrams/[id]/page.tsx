@@ -2069,7 +2069,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     'MindMap2': 'MindMap',
     'MindMapMax': 'MindMap',
     'MindMapPlantUML': 'MindMap',
-    'MindMapCanva': 'MindMap (Canva)',
+    'MindMapCanva': 'MindMap (Editor)',
     'Sequence2': 'Sequence',
     'SequencePlantUML': 'Sequence',
     'Class2': 'Class',
@@ -2228,7 +2228,7 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     },
     {
       type: 'MindMapCanva',
-      name: 'MindMap (Canva)',
+      name: 'MindMap (Editor)',
       description: 'Интеллект-карта представляет идеи и концепции в иерархической структуре, показывая связи между понятиями, их взаимное расположение и группировку',
       standard: 'Идеи',
       purpose: 'Идеи',
