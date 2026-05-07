@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mistralai/mistralai": "^1.11.0",
+    "docx": "^9.6.1",
     "mammoth": "^1.11.0",
     "mermaid": "^11.12.2",
     "next": "^16.0.7",
