@@ -50,6 +50,8 @@ export function handleCenter(item: SheetItem, hi: 0 | 1 | 2 | 3): { x: number; y
   }
 }
 
+const HOVER_PAD = 10;
+
 export default function SheetEditorCanvas({
   gridMode,
   items,
@@ -64,6 +66,8 @@ export default function SheetEditorCanvas({
   newElementLabel,
   elementTextareaPlaceholder,
   textPlaceholder,
+  onSheetInteractionCommit,
+  onTextEditCommit,
 }: {
   gridMode: 'none' | 'cells' | 'dots';
   items: SheetItem[];
@@ -75,12 +79,11 @@ export default function SheetEditorCanvas({
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   isDark: boolean;
-  /** Centered label on empty element (e.g. «Новый элемент»). */
   newElementLabel: string;
-  /** Textarea `placeholder` while editing element (e.g. «Новый текст»). */
   elementTextareaPlaceholder: string;
-  /** Placeholder for empty text item + textarea. */
   textPlaceholder: string;
+  onSheetInteractionCommit?: (nextItems: SheetItem[], nextConnections: SheetConnection[]) => void;
+  onTextEditCommit?: () => void;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; grabX: number; grabY: number } | null>(null);
@@ -114,6 +117,9 @@ export default function SheetEditorCanvas({
     [editingId, items, setSelectedId, sheetCoords]
   );
 
+  const latestConnections = useRef(connections);
+  latestConnections.current = connections;
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (dragRef.current) {
@@ -137,16 +143,16 @@ export default function SheetEditorCanvas({
       }
     };
     const onUp = (e: MouseEvent) => {
-      if (dragRef.current) {
-        dragRef.current = null;
-      }
-      if (connectRef.current) {
+      const wasDrag = dragRef.current !== null;
+      const wasConnect = connectRef.current !== null;
+
+      if (wasConnect) {
         const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
         const targetHandle = el?.closest?.('[data-handle]') as HTMLElement | null;
         if (targetHandle) {
           const toId = targetHandle.dataset.itemId;
           const th = Number(targetHandle.dataset.handle) as 0 | 1 | 2 | 3;
-          const { fromId, fromHandle } = connectRef.current;
+          const { fromId, fromHandle } = connectRef.current!;
           if (toId && fromId !== toId) {
             setConnections((prev) => {
               const dup = prev.some(
@@ -155,12 +161,27 @@ export default function SheetEditorCanvas({
                   (c.fromId === toId && c.toId === fromId && c.fromHandle === th && c.toHandle === fromHandle)
               );
               if (dup) return prev;
-              return [...prev, { id: `c-${Date.now()}`, fromId, fromHandle, toId, toHandle: th }];
+              const next = [...prev, { id: `c-${Date.now()}`, fromId, fromHandle, toId, toHandle: th }];
+              latestConnections.current = next;
+              return next;
             });
           }
         }
         connectRef.current = null;
         setPointerLine(null);
+      }
+
+      if (wasDrag) {
+        dragRef.current = null;
+      }
+
+      if (wasDrag || wasConnect) {
+        setItems((prev) => {
+          queueMicrotask(() => {
+            onSheetInteractionCommit?.(structuredClone(prev), structuredClone(latestConnections.current));
+          });
+          return prev;
+        });
       }
     };
     window.addEventListener('mousemove', onMove);
@@ -169,7 +190,7 @@ export default function SheetEditorCanvas({
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [setConnections, setItems, sheetCoords]);
+  }, [onSheetInteractionCommit, setConnections, setItems, sheetCoords]);
 
   const handleMouseDown = (e: React.MouseEvent, itemId: string, handle: 0 | 1 | 2 | 3) => {
     e.stopPropagation();
@@ -265,10 +286,9 @@ export default function SheetEditorCanvas({
       {items.map((it) => {
         const selected = it.id === selectedId;
         const isEl = it.kind === 'element';
-        const isText = it.kind === 'text';
         const trimmed = it.text.trim();
         const showElementCenter = isEl && !trimmed;
-        const showTextPlaceholder = isText && !trimmed;
+        const showTextPlaceholder = it.kind === 'text' && !trimmed;
         const border = selected
           ? '2px solid #3b82f6'
           : isEl
@@ -278,42 +298,20 @@ export default function SheetEditorCanvas({
             : isDark
               ? '1px dashed rgba(148,163,184,0.35)'
               : '1px dashed rgba(203,213,225,0.9)';
-        return (
-          <div
-            key={it.id}
-            className="absolute z-[2] cursor-move select-none"
-            style={{
-              left: it.x,
-              top: it.y,
-              width: it.width,
-              height: it.height,
-              zIndex: selected ? 5 : 2,
-              border,
-              borderRadius: isEl ? 10 : 4,
-              backgroundColor: isEl ? it.backgroundColor : 'transparent',
-              fontFamily: fontStack(it.fontId),
-              fontSize: it.fontSize,
-              color: it.color,
-              padding: isEl ? 10 : 4,
-              boxSizing: 'border-box',
-            }}
-            onMouseDown={(e) => onItemMouseDown(e, it.id)}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setEditingId(it.id);
-              setSelectedId(it.id);
-            }}
-          >
+
+        const innerBox = (
+          <>
             {editingId === it.id ? (
               <textarea
-                className={`h-full w-full resize-none border-0 bg-transparent p-0 outline-none ${
-                  isEl ? 'placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70' : 'placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70'
-                }`}
+                className="h-full w-full resize-none border-0 bg-transparent p-0 outline-none placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70"
                 value={it.text}
                 placeholder={isEl ? elementTextareaPlaceholder : textPlaceholder}
                 autoFocus
                 onChange={(e) => updateItem(it.id, { text: e.target.value })}
-                onBlur={() => setEditingId(null)}
+                onBlur={() => {
+                  setEditingId(null);
+                  onTextEditCommit?.();
+                }}
                 onMouseDown={(e) => e.stopPropagation()}
               />
             ) : (
@@ -333,19 +331,87 @@ export default function SheetEditorCanvas({
             )}
 
             {isEl && (
-              <>
+              <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 group-hover/pad:opacity-100 group-hover/pad:pointer-events-auto">
                 {([0, 1, 2, 3] as const).map((hi) => (
                   <div
                     key={hi}
                     data-item-id={it.id}
                     data-handle={hi}
-                    className="absolute z-20 h-3.5 w-3.5 cursor-crosshair rounded-full border-2 border-white bg-slate-500 shadow"
+                    className="pointer-events-auto absolute z-20 h-3.5 w-3.5 cursor-crosshair rounded-full border-2 border-white bg-slate-500 shadow"
                     style={handlePos[hi]}
                     onMouseDown={(e) => handleMouseDown(e, it.id, hi)}
                   />
                 ))}
-              </>
+              </div>
             )}
+          </>
+        );
+
+        if (isEl) {
+          return (
+            <div
+              key={it.id}
+              className="group/pad absolute z-[2] cursor-move select-none box-border"
+              style={{
+                left: it.x - HOVER_PAD,
+                top: it.y - HOVER_PAD,
+                width: it.width + HOVER_PAD * 2,
+                height: it.height + HOVER_PAD * 2,
+                padding: HOVER_PAD,
+                zIndex: selected ? 5 : 2,
+              }}
+              onMouseDown={(e) => onItemMouseDown(e, it.id)}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setEditingId(it.id);
+                setSelectedId(it.id);
+              }}
+            >
+              <div
+                className="relative h-full w-full box-border"
+                style={{
+                  border,
+                  borderRadius: 10,
+                  backgroundColor: it.backgroundColor,
+                  fontFamily: fontStack(it.fontId),
+                  fontSize: it.fontSize,
+                  color: it.color,
+                  padding: 10,
+                }}
+              >
+                {innerBox}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div
+            key={it.id}
+            className="absolute z-[2] cursor-move select-none"
+            style={{
+              left: it.x,
+              top: it.y,
+              width: it.width,
+              height: it.height,
+              zIndex: selected ? 5 : 2,
+              border,
+              borderRadius: 4,
+              backgroundColor: 'transparent',
+              fontFamily: fontStack(it.fontId),
+              fontSize: it.fontSize,
+              color: it.color,
+              padding: 4,
+              boxSizing: 'border-box',
+            }}
+            onMouseDown={(e) => onItemMouseDown(e, it.id)}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setEditingId(it.id);
+              setSelectedId(it.id);
+            }}
+          >
+            {innerBox}
           </div>
         );
       })}

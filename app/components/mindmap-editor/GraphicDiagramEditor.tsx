@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
@@ -22,6 +23,7 @@ import {
   exportSheetPngBlob,
   type GridMode,
 } from '@/lib/graphic-editor-export';
+import { clampItemToSheet, clampItemsToSheet } from '@/lib/sheet-editor-geometry';
 
 type RibbonTab = 'file' | 'layout' | 'insert' | 'format';
 
@@ -221,6 +223,18 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bgColorInputRef = useRef<HTMLInputElement>(null);
   const textColorInputRef = useRef<HTMLInputElement>(null);
+  const sheetContainerRef = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef(items);
+  const connectionsRef = useRef(connections);
+  itemsRef.current = items;
+  connectionsRef.current = connections;
+
+  type SheetSnap = { items: SheetItem[]; connections: SheetConnection[] };
+  const historyRef = useRef<SheetSnap[]>([{ items: [], connections: [] }]);
+  const historyIndexRef = useRef(0);
+  const skipHistoryCommitRef = useRef(false);
+  const [, histTick] = useState(0);
+  const bumpHist = () => histTick((n) => n + 1);
 
   const editorRootRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -233,35 +247,92 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
   const selectedItem = selectedId ? items.find((i) => i.id === selectedId) ?? null : null;
 
+  const getSheetPx = useCallback(() => {
+    const el = sheetContainerRef.current;
+    return { w: el?.offsetWidth ?? 1200, h: el?.offsetHeight ?? 1600 };
+  }, []);
+
+  const appendHistory = useCallback((itemsSnap: SheetItem[], consSnap: SheetConnection[]) => {
+    if (skipHistoryCommitRef.current) return;
+    const base = historyRef.current.slice(0, historyIndexRef.current + 1);
+    historyRef.current = [...base, { items: structuredClone(itemsSnap), connections: structuredClone(consSnap) }].slice(-100);
+    historyIndexRef.current = historyRef.current.length - 1;
+    bumpHist();
+  }, []);
+
+  const pushSnapshotWithData = useCallback(
+    (nextItems: SheetItem[], nextCons: SheetConnection[]) => {
+      if (skipHistoryCommitRef.current) return;
+      const { w, h } = getSheetPx();
+      const clamped = clampItemsToSheet(nextItems, w, h);
+      flushSync(() => {
+        setItems(clamped);
+        setConnections(nextCons);
+      });
+      const base = historyRef.current.slice(0, historyIndexRef.current + 1);
+      historyRef.current = [...base, { items: structuredClone(clamped), connections: structuredClone(nextCons) }].slice(-100);
+      historyIndexRef.current = historyRef.current.length - 1;
+      bumpHist();
+    },
+    [getSheetPx]
+  );
+
+  const undo = useCallback(() => {
+    if (historyIndexRef.current <= 0) return;
+    skipHistoryCommitRef.current = true;
+    historyIndexRef.current -= 1;
+    const snap = historyRef.current[historyIndexRef.current];
+    flushSync(() => {
+      setItems(structuredClone(snap.items));
+      setConnections(structuredClone(snap.connections));
+    });
+    skipHistoryCommitRef.current = false;
+    setSelectedId((sid) => (sid && snap.items.some((i) => i.id === sid) ? sid : null));
+    setEditingId(null);
+    bumpHist();
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return;
+    skipHistoryCommitRef.current = true;
+    historyIndexRef.current += 1;
+    const snap = historyRef.current[historyIndexRef.current];
+    flushSync(() => {
+      setItems(structuredClone(snap.items));
+      setConnections(structuredClone(snap.connections));
+    });
+    skipHistoryCommitRef.current = false;
+    setSelectedId((sid) => (sid && snap.items.some((i) => i.id === sid) ? sid : null));
+    setEditingId(null);
+    bumpHist();
+  }, []);
+
   const patchSelected = useCallback(
     (patch: Partial<SheetItem>) => {
       if (!selectedId) return;
-      setItems((prev) => prev.map((it) => (it.id === selectedId ? { ...it, ...patch } : it)));
+      let out: SheetItem[] = [];
+      flushSync(() => {
+        setItems((prev) => {
+          const { w, h } = getSheetPx();
+          out = prev.map((it) => (it.id === selectedId ? clampItemToSheet({ ...it, ...patch }, w, h) : it));
+          return out;
+        });
+      });
+      appendHistory(out, connectionsRef.current);
     },
-    [selectedId]
+    [appendHistory, getSheetPx, selectedId]
   );
 
-  const scaleSelected = useCallback(
-    (dir: 'in' | 'out') => {
-      if (!selectedId) return;
-      const f = dir === 'in' ? 1.08 : 1 / 1.08;
-      setItems((prev) =>
-        prev.map((it) => {
-          if (it.id !== selectedId) return it;
-          const w = Math.round(it.width * f);
-          const h = Math.round(it.height * f);
-          const fs = Math.round(it.fontSize * f * 10) / 10;
-          return {
-            ...it,
-            width: Math.min(900, Math.max(60, w)),
-            height: Math.min(700, Math.max(24, h)),
-            fontSize: Math.min(96, Math.max(8, fs)),
-          };
-        })
-      );
+  const onCanvasCommit = useCallback(
+    (nextItems: SheetItem[], nextCons: SheetConnection[]) => {
+      pushSnapshotWithData(nextItems, nextCons);
     },
-    [selectedId]
+    [pushSnapshotWithData]
   );
+
+  const onTextEditCommit = useCallback(() => {
+    appendHistory(itemsRef.current, connectionsRef.current);
+  }, [appendHistory]);
 
   const addSheetItem = useCallback(
     (kind: SheetItemKind) => {
@@ -271,45 +342,48 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
       const baseY = 64 + (scatter % 160);
       const fontId: SheetFontId = 'sans';
       const textColor = isDark ? '#f8fafc' : '#0f172a';
+      let newItem: SheetItem;
       if (kind === 'element') {
-        setItems((prev) => [
-          ...prev,
-          {
-            id,
-            kind: 'element',
-            x: baseX,
-            y: baseY,
-            width: 200,
-            height: 90,
-            text: '',
-            fontId,
-            color: textColor,
-            backgroundColor: '#e2e8f0',
-            fontSize: 14,
-          },
-        ]);
+        newItem = {
+          id,
+          kind: 'element',
+          x: baseX,
+          y: baseY,
+          width: 200,
+          height: 90,
+          text: '',
+          fontId,
+          color: textColor,
+          backgroundColor: '#e2e8f0',
+          fontSize: 14,
+        };
       } else {
-        setItems((prev) => [
-          ...prev,
-          {
-            id,
-            kind: 'text',
-            x: baseX,
-            y: baseY,
-            width: 220,
-            height: 44,
-            text: '',
-            fontId,
-            color: textColor,
-            backgroundColor: 'transparent',
-            fontSize: 16,
-          },
-        ]);
+        newItem = {
+          id,
+          kind: 'text',
+          x: baseX,
+          y: baseY,
+          width: 220,
+          height: 44,
+          text: '',
+          fontId,
+          color: textColor,
+          backgroundColor: 'transparent',
+          fontSize: 12,
+        };
       }
+      let out: SheetItem[] = [];
+      flushSync(() => {
+        setItems((prev) => {
+          out = [...prev, newItem];
+          return out;
+        });
+      });
+      pushSnapshotWithData(out, connections);
       setSelectedId(id);
       setEditingId(null);
     },
-    [isDark, items.length]
+    [connections, isDark, items.length, pushSnapshotWithData]
   );
 
   useEffect(() => {
@@ -453,10 +527,20 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const fileToolIdle = toolBtnIdle;
   const fileToolActive = toolBtnActive;
 
+  const formatDimInput = isDark
+    ? 'min-w-[3.5rem] w-14 rounded border border-gray-600 bg-gray-900 px-1 py-0.5 text-center text-[11px] text-gray-100 tabular-nums'
+    : 'min-w-[3.5rem] w-14 rounded border border-gray-300 bg-white px-1 py-0.5 text-center text-[11px] text-gray-900 tabular-nums';
+
+  const commitDimOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    (e.target as HTMLInputElement).blur();
+  };
+
   const displayName = diagramName.trim() || (lang === 'ru' ? 'Без названия' : 'Untitled');
   const titleText = `${displayName} - ${typeLabel}`;
-  const canUndo = false;
-  const canRedo = false;
+  void histTick;
+  const canUndo = historyIndexRef.current > 0;
+  const canRedo = historyIndexRef.current < historyRef.current.length - 1;
   const headerIconBtn =
     'rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100';
 
@@ -574,11 +658,11 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                     disabled={selectedItem.kind !== 'element'}
                     className={`${fileToolBtn} ${
                       selectedItem.kind === 'element' ? fileToolIdle : `${fileToolIdle} cursor-not-allowed opacity-45`
-                    }`}
+                    } flex min-h-[5.75rem] flex-col justify-between`}
                     onClick={() => selectedItem.kind === 'element' && bgColorInputRef.current?.click()}
                   >
                     <span
-                      className="mb-0.5 h-7 w-10 rounded border border-gray-400 dark:border-gray-500"
+                      className="mb-0.5 h-7 w-10 flex-shrink-0 rounded border border-gray-400 dark:border-gray-500"
                       style={{
                         backgroundColor:
                           selectedItem.kind === 'element' ? selectedItem.backgroundColor : 'rgb(241 245 249)',
@@ -589,12 +673,14 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                   </button>
                   <button
                     type="button"
-                    className={`${fileToolBtn} ${fileToolIdle}`}
+                    className={`${fileToolBtn} ${fileToolIdle} flex min-h-[5.75rem] flex-col justify-between`}
                     onClick={() => textColorInputRef.current?.click()}
                   >
-                    <span className="text-xl font-semibold leading-none" style={{ color: selectedItem.color }} aria-hidden>
-                      A
-                    </span>
+                    <span
+                      className="mb-0.5 h-7 w-10 flex-shrink-0 rounded border border-gray-400 dark:border-gray-500"
+                      style={{ backgroundColor: selectedItem.color }}
+                      aria-hidden
+                    />
                     <span>{t('graphicEditor.format.textColorBtn')}</span>
                   </button>
                 </div>
@@ -603,29 +689,124 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
               <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
 
-              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[160px]">
-                <div className="flex flex-1 items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    aria-label={t('graphicEditor.zoom.out')}
-                    className={`${iconBtn} ${iconBtnIdle}`}
-                    onClick={() => scaleSelected('out')}
-                  >
-                    −
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t('graphicEditor.zoom.in')}
-                    className={`${iconBtn} ${iconBtnIdle}`}
-                    onClick={() => scaleSelected('in')}
-                  >
-                    +
-                  </button>
-                </div>
-                <RibbonGroupLabel>{t('graphicEditor.format.scale')}</RibbonGroupLabel>
-              </div>
+              {selectedItem.kind === 'element' && (
+                <>
+                  <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[140px]">
+                    <div className="flex flex-1 items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={t('graphicEditor.zoom.out')}
+                        className={`${iconBtn} ${iconBtnIdle}`}
+                        onClick={() => patchSelected({ width: Math.max(20, selectedItem.width - 5) })}
+                      >
+                        −
+                      </button>
+                      <input
+                        key={`fw-${selectedItem.id}-${selectedItem.width}`}
+                        type="number"
+                        min={20}
+                        defaultValue={Math.round(selectedItem.width)}
+                        className={formatDimInput}
+                        onKeyDown={commitDimOnEnter}
+                        onBlur={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          if (!Number.isFinite(n)) return;
+                          patchSelected({ width: n });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={t('graphicEditor.zoom.in')}
+                        className={`${iconBtn} ${iconBtnIdle}`}
+                        onClick={() => patchSelected({ width: selectedItem.width + 5 })}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <RibbonGroupLabel>{t('graphicEditor.format.width')}</RibbonGroupLabel>
+                  </div>
 
-              <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+                  <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+
+                  <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[140px]">
+                    <div className="flex flex-1 items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={t('graphicEditor.zoom.out')}
+                        className={`${iconBtn} ${iconBtnIdle}`}
+                        onClick={() => patchSelected({ height: Math.max(16, selectedItem.height - 5) })}
+                      >
+                        −
+                      </button>
+                      <input
+                        key={`fh-${selectedItem.id}-${selectedItem.height}`}
+                        type="number"
+                        min={16}
+                        defaultValue={Math.round(selectedItem.height)}
+                        className={formatDimInput}
+                        onKeyDown={commitDimOnEnter}
+                        onBlur={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          if (!Number.isFinite(n)) return;
+                          patchSelected({ height: n });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={t('graphicEditor.zoom.in')}
+                        className={`${iconBtn} ${iconBtnIdle}`}
+                        onClick={() => patchSelected({ height: selectedItem.height + 5 })}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <RibbonGroupLabel>{t('graphicEditor.format.height')}</RibbonGroupLabel>
+                  </div>
+
+                  <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+                </>
+              )}
+
+              {selectedItem.kind === 'text' && (
+                <>
+                  <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[160px]">
+                    <div className="flex flex-1 items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={t('graphicEditor.zoom.out')}
+                        className={`${iconBtn} ${iconBtnIdle}`}
+                        onClick={() => patchSelected({ fontSize: Math.max(8, selectedItem.fontSize - 1) })}
+                      >
+                        −
+                      </button>
+                      <input
+                        key={`fs-${selectedItem.id}-${selectedItem.fontSize}`}
+                        type="number"
+                        min={8}
+                        defaultValue={Math.round(selectedItem.fontSize)}
+                        className={formatDimInput}
+                        onKeyDown={commitDimOnEnter}
+                        onBlur={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          if (!Number.isFinite(n)) return;
+                          patchSelected({ fontSize: n });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={t('graphicEditor.zoom.in')}
+                        className={`${iconBtn} ${iconBtnIdle}`}
+                        onClick={() => patchSelected({ fontSize: selectedItem.fontSize + 1 })}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <RibbonGroupLabel>{t('graphicEditor.format.sizeLabel')}</RibbonGroupLabel>
+                  </div>
+
+                  <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+                </>
+              )}
 
               <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[280px]">
                 <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
@@ -661,7 +842,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                     disabled={!canUndo}
                     aria-label={t('graphicEditor.changes.undo')}
                     className={`${fileToolBtn} ${canUndo ? fileToolIdle : `${fileToolIdle} cursor-not-allowed opacity-40`}`}
-                    onClick={() => {}}
+                    onClick={() => undo()}
                   >
                     <IconUndo className="opacity-90" />
                     <span>{t('graphicEditor.changes.undo')}</span>
@@ -671,7 +852,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                     disabled={!canRedo}
                     aria-label={t('graphicEditor.changes.redo')}
                     className={`${fileToolBtn} ${canRedo ? fileToolIdle : `${fileToolIdle} cursor-not-allowed opacity-40`}`}
-                    onClick={() => {}}
+                    onClick={() => redo()}
                   >
                     <IconRedo className="opacity-90" />
                     <span>{t('graphicEditor.changes.redo')}</span>
@@ -831,6 +1012,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
             }}
           >
             <div
+              ref={sheetContainerRef}
               className="relative bg-white"
               style={{
                 width: sheetW,
@@ -854,6 +1036,8 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                 newElementLabel={t('graphicEditor.insert.newElement')}
                 elementTextareaPlaceholder={t('graphicEditor.insert.elementTextareaPlaceholder')}
                 textPlaceholder={t('graphicEditor.insert.textPlaceholder')}
+                onSheetInteractionCommit={onCanvasCommit}
+                onTextEditCommit={onTextEditCommit}
               />
             </div>
           </div>
