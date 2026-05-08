@@ -8,6 +8,7 @@ import { useLanguage } from '@/app/contexts/LanguageContext';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 import SupportContactModal from '@/app/components/SupportContactModal';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import GraphicSheetAiAssistant from '@/app/components/mindmap-editor/GraphicSheetAiAssistant';
 import SheetEditorCanvas, {
   fontStack,
   type SheetConnection,
@@ -597,18 +598,31 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
   const baseName = buildExportBasename(diagramName, typeLabel, lang);
 
+  const getSheetExportElement = () =>
+    typeof document !== 'undefined' ? (document.getElementById('mindmap-sheet-print') as HTMLElement | null) : null;
+
+  const handleAiApplyMindmap = useCallback(
+    (nextItems: SheetItem[], nextConnections: SheetConnection[]) => {
+      pushSnapshotWithData(nextItems, nextConnections);
+      setSelectedId(null);
+      setEditingId(null);
+    },
+    [pushSnapshotWithData]
+  );
+
   const runExport = async (kind: 'png' | 'pdf' | 'docx') => {
     try {
+      const sheetEl = getSheetExportElement();
       let blob: Blob;
       let ext: string;
       if (kind === 'png') {
-        blob = await exportSheetPngBlob(orientation, gridMode);
+        blob = await exportSheetPngBlob(sheetEl, orientation, gridMode);
         ext = '.png';
       } else if (kind === 'pdf') {
-        blob = await exportSheetPdfBlob(orientation, gridMode);
+        blob = await exportSheetPdfBlob(sheetEl, orientation, gridMode);
         ext = '.pdf';
       } else {
-        blob = await exportSheetDocxBlob(orientation, gridMode);
+        blob = await exportSheetDocxBlob(sheetEl, orientation, gridMode);
         ext = '.docx';
       }
       downloadBlob(blob, `${baseName}${ext}`);
@@ -1254,6 +1268,8 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
           </div>
         </div>
       )}
+
+      <GraphicSheetAiAssistant isDark={isDark} lang={lang} t={t} onApplyMindmap={handleAiApplyMindmap} />
     </div>
   );
 }

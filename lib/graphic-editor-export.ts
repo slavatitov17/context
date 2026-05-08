@@ -9,7 +9,7 @@ function sheetMm(orientation: SheetOrientation) {
   return { wMm, hMm };
 }
 
-/** Рендер листа A4 на canvas (для экспорта, фиксированный DPI). */
+/** Рендер пустого листа A4 на canvas (fallback, фиксированный DPI). */
 export function renderSheetToCanvas(
   orientation: SheetOrientation,
   gridMode: GridMode,
@@ -59,6 +59,54 @@ export function renderSheetToCanvas(
   return canvas;
 }
 
+/**
+ * Растеризует реальный DOM листа (#mindmap-sheet-print) в canvas.
+ * Клонирует узел вне родителя с transform: scale, чтобы html2canvas не получал пустой снимок.
+ */
+export async function renderSheetDomToCanvas(sheetEl: HTMLElement | null): Promise<HTMLCanvasElement> {
+  if (!sheetEl || typeof document === 'undefined') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas;
+  }
+
+  const html2canvas = (await import('html2canvas')).default;
+  const w = Math.max(1, sheetEl.offsetWidth);
+  const h = Math.max(1, sheetEl.offsetHeight);
+
+  const clone = sheetEl.cloneNode(true) as HTMLElement;
+  clone.removeAttribute('id');
+  clone.style.position = 'fixed';
+  clone.style.left = '-12000px';
+  clone.style.top = '0';
+  clone.style.zIndex = '-1';
+  clone.style.transform = 'none';
+  clone.style.width = `${w}px`;
+  clone.style.height = `${h}px`;
+  clone.style.margin = '0';
+  clone.style.boxSizing = 'border-box';
+  clone.style.backgroundColor = '#ffffff';
+  document.body.appendChild(clone);
+
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      width: w,
+      height: h,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+    });
+    return canvas;
+  } finally {
+    clone.remove();
+  }
+}
+
 export function sanitizeFilenameSegment(s: string) {
   return s
     .replace(/[/\\:*?"<>|]/g, '_')
@@ -82,20 +130,32 @@ async function canvasToPngUint8Array(canvas: HTMLCanvasElement): Promise<Uint8Ar
 }
 
 export async function exportSheetPngBlob(
+  sheetEl: HTMLElement | null,
   orientation: SheetOrientation,
   gridMode: GridMode
 ): Promise<Blob> {
-  const canvas = renderSheetToCanvas(orientation, gridMode, 150);
+  let canvas: HTMLCanvasElement;
+  if (sheetEl && sheetEl.offsetWidth > 0 && sheetEl.offsetHeight > 0) {
+    canvas = await renderSheetDomToCanvas(sheetEl);
+  } else {
+    canvas = renderSheetToCanvas(orientation, gridMode, 150);
+  }
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG failed'))), 'image/png');
   });
 }
 
 export async function exportSheetPdfBlob(
+  sheetEl: HTMLElement | null,
   orientation: SheetOrientation,
   gridMode: GridMode
 ): Promise<Blob> {
-  const canvas = renderSheetToCanvas(orientation, gridMode, 150);
+  let canvas: HTMLCanvasElement;
+  if (sheetEl && sheetEl.offsetWidth > 0 && sheetEl.offsetHeight > 0) {
+    canvas = await renderSheetDomToCanvas(sheetEl);
+  } else {
+    canvas = renderSheetToCanvas(orientation, gridMode, 150);
+  }
   const pngBytes = await canvasToPngUint8Array(canvas);
   const pdfDoc = await PDFDocument.create();
   const img = await pdfDoc.embedPng(pngBytes);
@@ -115,11 +175,17 @@ export async function exportSheetPdfBlob(
 }
 
 export async function exportSheetDocxBlob(
+  sheetEl: HTMLElement | null,
   orientation: SheetOrientation,
   gridMode: GridMode
 ): Promise<Blob> {
   const { Document, Packer, Paragraph, ImageRun } = await import('docx');
-  const canvas = renderSheetToCanvas(orientation, gridMode, 150);
+  let canvas: HTMLCanvasElement;
+  if (sheetEl && sheetEl.offsetWidth > 0 && sheetEl.offsetHeight > 0) {
+    canvas = await renderSheetDomToCanvas(sheetEl);
+  } else {
+    canvas = renderSheetToCanvas(orientation, gridMode, 150);
+  }
   const pngData = await canvasToPngUint8Array(canvas);
   const maxW = 600;
   const maxH = 850;
