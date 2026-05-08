@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
+import SupportContactModal from '@/app/components/SupportContactModal';
+import SupportSentModal from '@/app/components/SupportSentModal';
 import {
   buildExportBasename,
   downloadBlob,
@@ -42,7 +44,7 @@ function IconPdf({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
       <path
         fill="currentColor"
-        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2 5 5h-5V4zM8 18v-2h8v2H8zm0-4v-2h8v2H8zm2-4V8h2v2h2v2h-4z"
+        d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 18H8V4h5v5h5v11z"
       />
     </svg>
   );
@@ -87,6 +89,46 @@ function IconSave({ className }: { className?: string }) {
       <path
         fill="currentColor"
         d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
+      />
+    </svg>
+  );
+}
+
+function IconUndo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L3 8v8h8l-2.86-2.86C8.28 15.74 9.86 15 12.5 15c3.04 0 5.79 1.44 7.52 3.65L22 17c-1.89-4.34-6.14-7-9.5-7z"
+      />
+    </svg>
+  );
+}
+
+function IconRedo({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden
+      style={{ transform: 'scaleX(-1)' }}
+    >
+      <path
+        fill="currentColor"
+        d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L3 8v8h8l-2.86-2.86C8.28 15.74 9.86 15 12.5 15c3.04 0 5.79 1.44 7.52 3.65L22 17c-1.89-4.34-6.14-7-9.5-7z"
+      />
+    </svg>
+  );
+}
+
+function IconHelp({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
       />
     </svg>
   );
@@ -163,11 +205,9 @@ function PrintModal({ open, isDark, t, onClose, onPrint }: PrintModalProps) {
 
   if (!open) return null;
 
-  const panel = isDark ? 'border-gray-600 bg-gray-800 text-gray-100' : 'border-gray-200 bg-white text-gray-900';
-  const label = isDark ? 'text-gray-300' : 'text-gray-700';
   const inputCls = isDark
-    ? 'rounded border border-gray-600 bg-gray-900 px-2 py-1.5 text-sm text-gray-100'
-    : 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900';
+    ? 'border border-gray-600 bg-gray-900 text-gray-100'
+    : 'border border-gray-300 bg-white text-gray-900';
 
   const validateAndPrint = () => {
     if (mode === 'range') {
@@ -185,14 +225,36 @@ function PrintModal({ open, isDark, t, onClose, onPrint }: PrintModalProps) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
-      <div className={`relative z-10 w-full max-w-md rounded-xl border p-5 shadow-xl ${panel}`}>
-        <h2 className={`mb-4 text-left text-lg font-semibold ${label}`}>{t('graphicEditor.print.title')}</h2>
+      <div
+        className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
+        onClick={onClose}
+        role="presentation"
+      />
+
+      <div
+        className={`relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border p-6 shadow-xl hide-scrollbar ${
+          isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
+        }`}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('graphicEditor.print.title')}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         <div className="mb-4">
-          <label className={`mb-1 block text-sm font-medium ${label}`}>{t('graphicEditor.print.printer')}</label>
+          <label className={`mb-2 block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            {t('graphicEditor.print.printer')}
+          </label>
           <select
-            className={`w-full ${inputCls}`}
+            className={`w-full rounded-lg border p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500 ${inputCls}`}
             value={printer}
             onChange={(e) => setPrinter(e.target.value)}
           >
@@ -206,7 +268,7 @@ function PrintModal({ open, isDark, t, onClose, onPrint }: PrintModalProps) {
         </div>
 
         <div className="mb-4 space-y-2">
-          <label className={`flex cursor-pointer items-center gap-2 text-sm ${label}`}>
+          <label className={`flex cursor-pointer items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             <input
               type="radio"
               name="printMode"
@@ -218,14 +280,9 @@ function PrintModal({ open, isDark, t, onClose, onPrint }: PrintModalProps) {
             />
             {t('graphicEditor.print.printAll')}
           </label>
-          <div className={`flex flex-wrap items-center gap-2 text-sm ${label}`}>
+          <div className={`flex flex-wrap items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="radio"
-                name="printMode"
-                checked={mode === 'range'}
-                onChange={() => setMode('range')}
-              />
+              <input type="radio" name="printMode" checked={mode === 'range'} onChange={() => setMode('range')} />
               {t('graphicEditor.print.printSheets')}
             </label>
             <input
@@ -234,7 +291,11 @@ function PrintModal({ open, isDark, t, onClose, onPrint }: PrintModalProps) {
               pattern="[0-9]*"
               disabled={mode === 'all'}
               aria-label={t('graphicEditor.print.sheetsInputAria')}
-              className={`w-16 ${inputCls} ${mode === 'all' ? 'cursor-not-allowed opacity-50' : ''}`}
+              className={`w-16 rounded-lg border p-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 ${
+                isDark
+                  ? 'border-gray-600 bg-gray-900 text-gray-100'
+                  : 'border-gray-300 bg-white text-gray-900'
+              } ${mode === 'all' ? 'cursor-not-allowed opacity-50' : ''}`}
               value={sheetInput}
               onChange={(e) => {
                 const v = e.target.value.replace(/\D/g, '');
@@ -282,6 +343,8 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const [gridMode, setGridMode] = useState<GridMode>('none');
   const [printOpen, setPrintOpen] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportSentOpen, setSupportSentOpen] = useState(false);
   const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const editorRootRef = useRef<HTMLDivElement>(null);
@@ -364,7 +427,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
     setGridMode((g) => (g === 'dots' ? 'none' : 'dots'));
   };
 
-  const baseName = buildExportBasename(diagramName || (lang === 'ru' ? 'Без названия' : 'Untitled'), typeLabel, lang);
+  const baseName = buildExportBasename(diagramName, typeLabel, lang);
 
   const runExport = async (kind: 'png' | 'pdf' | 'docx') => {
     try {
@@ -428,7 +491,12 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
   const placeholderToolbarH = 'min-h-[5.5rem]';
 
-  const titleText = `${lang === 'ru' ? 'Диаграмма' : 'Diagram'} ${diagramName || (lang === 'ru' ? 'Без названия' : 'Untitled')} (${typeLabel})`;
+  const displayName = diagramName.trim() || (lang === 'ru' ? 'Без названия' : 'Untitled');
+  const titleText = `${displayName} - ${typeLabel}`;
+  const canUndo = false;
+  const canRedo = false;
+  const headerIconBtn =
+    'rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100';
 
   return (
     <div
@@ -437,25 +505,42 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
       data-diagram-id={diagramId}
     >
       <header className={`z-50 flex w-full flex-shrink-0 flex-col border-b ${ribbonTopBar}`}>
-        {/* Ряд заголовка */}
-        <div
-          className={`mindmap-no-print flex min-h-[2.75rem] items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4 ${titleBar}`}
-        >
-          <h1 className={`min-w-0 flex-1 truncate text-left text-base font-bold sm:text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-            {titleText}
-          </h1>
-          <button
-            type="button"
-            onClick={() => router.push('/diagrams')}
-            className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-sm font-normal transition-colors ${
-              isDark ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            {t('graphicEditor.closeDiagram')}
-          </button>
+        {/* Ряд заголовка: слева действия, по центру название, справа Закрыть */}
+        <div className={`mindmap-no-print relative flex min-h-[2.75rem] items-center border-b px-2 py-2.5 sm:px-4 ${titleBar}`}>
+          <div className="z-10 flex shrink-0 items-center gap-0.5 sm:gap-1">
+            <button type="button" className={headerIconBtn} onClick={handleSave} aria-label={t('graphicEditor.other.save')}>
+              <IconSave className="h-5 w-5" />
+            </button>
+            <button type="button" className={headerIconBtn} onClick={() => setSupportOpen(true)} aria-label={t('diagram.contactSupport')}>
+              <IconHelp className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-20 sm:px-32">
+            <span
+              className={`max-w-full truncate text-center text-sm font-normal sm:text-base ${
+                isDark ? 'text-gray-200' : 'text-gray-900'
+              }`}
+            >
+              {titleText}
+            </span>
+          </div>
+          <div className="z-10 ml-auto flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={() => router.push('/diagrams')}
+              className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-normal transition-colors sm:px-3 ${
+                isDark ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <span>{t('graphicEditor.close')}</span>
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div className="mindmap-no-print flex h-12 items-center justify-between gap-3 px-3 sm:px-4">
+        <div className="mindmap-no-print flex h-12 items-center px-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-1">
             {(['file', 'layout', 'insert'] as const).map((key) => (
               <button
@@ -470,17 +555,6 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => router.push('/diagrams')}
-            className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              isDark
-                ? 'text-blue-400 hover:bg-gray-700 hover:text-blue-300'
-                : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
-            }`}
-          >
-            {t('graphicEditor.exitEditor')}
-          </button>
         </div>
 
         <div
@@ -492,6 +566,34 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
           {tab === 'file' && (
             <div className="flex min-h-[5.5rem] w-full flex-wrap items-stretch gap-0 sm:min-h-[6rem]">
+              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[140px]">
+                <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!canUndo}
+                    aria-label={t('graphicEditor.changes.undo')}
+                    className={`${fileToolBtn} ${canUndo ? fileToolIdle : `${fileToolIdle} cursor-not-allowed opacity-40`}`}
+                    onClick={() => {}}
+                  >
+                    <IconUndo className="opacity-90" />
+                    <span>{t('graphicEditor.changes.undo')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canRedo}
+                    aria-label={t('graphicEditor.changes.redo')}
+                    className={`${fileToolBtn} ${canRedo ? fileToolIdle : `${fileToolIdle} cursor-not-allowed opacity-40`}`}
+                    onClick={() => {}}
+                  >
+                    <IconRedo className="opacity-90" />
+                    <span>{t('graphicEditor.changes.redo')}</span>
+                  </button>
+                </div>
+                <RibbonGroupLabel>{t('graphicEditor.file.changes')}</RibbonGroupLabel>
+              </div>
+
+              <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+
               <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[220px]">
                 <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
                   <button
@@ -524,7 +626,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
               <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
 
-              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[180px]">
+              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[120px]">
                 <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
                   <button
                     type="button"
@@ -533,10 +635,6 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                   >
                     <IconPrint className="opacity-90" />
                     <span>{t('graphicEditor.other.print')}</span>
-                  </button>
-                  <button type="button" className={`${fileToolBtn} ${fileToolIdle}`} onClick={handleSave}>
-                    <IconSave className="opacity-90" />
-                    <span>{t('graphicEditor.other.save')}</span>
                   </button>
                 </div>
                 <RibbonGroupLabel>{t('graphicEditor.file.other')}</RibbonGroupLabel>
@@ -689,6 +787,13 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
         onClose={() => setPrintOpen(false)}
         onPrint={handlePrintDialog}
       />
+
+      <SupportContactModal
+        isOpen={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        onSubmitSuccess={() => setSupportSentOpen(true)}
+      />
+      <SupportSentModal isOpen={supportSentOpen} onClose={() => setSupportSentOpen(false)} />
 
       {saveToast && (
         <div className="pointer-events-none fixed bottom-6 left-1/2 z-[220] -translate-x-1/2 px-4">

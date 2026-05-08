@@ -68,10 +68,9 @@ export function sanitizeFilenameSegment(s: string) {
 }
 
 export function buildExportBasename(diagramName: string, typeLabel: string, lang: 'ru' | 'en') {
-  const prefix = lang === 'ru' ? 'Диаграмма' : 'Diagram';
   const name = sanitizeFilenameSegment(diagramName) || (lang === 'ru' ? 'Без названия' : 'Untitled');
-  const type = sanitizeFilenameSegment(typeLabel) || 'MindMap';
-  return `${prefix} ${name} (${type})`;
+  const type = sanitizeFilenameSegment(typeLabel) || (lang === 'ru' ? 'MindMap' : 'MindMap');
+  return `${name} - ${type}`;
 }
 
 async function canvasToPngUint8Array(canvas: HTMLCanvasElement): Promise<Uint8Array> {
