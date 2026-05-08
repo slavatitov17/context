@@ -295,14 +295,17 @@ export default function SheetEditorCanvas({
             ? isDark
               ? '1px solid #94a3b8'
               : '1px solid #cbd5e1'
-            : isDark
-              ? '1px dashed rgba(148,163,184,0.35)'
-              : '1px dashed rgba(203,213,225,0.9)';
+            : trimmed
+              ? 'none'
+              : isDark
+                ? '1px dashed rgba(148,163,184,0.35)'
+                : '1px dashed rgba(203,213,225,0.9)';
 
         const innerBox = (
           <>
             {editingId === it.id ? (
               <textarea
+                data-sheet-item-edit
                 className="h-full w-full resize-none border-0 bg-transparent p-0 outline-none placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70"
                 value={it.text}
                 placeholder={isEl ? elementTextareaPlaceholder : textPlaceholder}

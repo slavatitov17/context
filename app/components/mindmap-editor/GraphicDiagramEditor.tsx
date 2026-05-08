@@ -131,6 +131,28 @@ function IconRedo({ className }: { className?: string }) {
   );
 }
 
+function IconTrash({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M9 3v1H5v2h1v13c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6h1V4h-4V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z"
+      />
+    </svg>
+  );
+}
+
+function IconDuplicate({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M16 1H8C6.9 1 6 1.9 6 3v1H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-1h2c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zM8 17H4V6h4v11zm10-3h-2V6c0-1.1-.9-2-2-2h-2V3h8v11z"
+      />
+    </svg>
+  );
+}
+
 function IconHelp({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
@@ -224,6 +246,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const bgColorInputRef = useRef<HTMLInputElement>(null);
   const textColorInputRef = useRef<HTMLInputElement>(null);
   const sheetContainerRef = useRef<HTMLDivElement>(null);
+  const sheetClipboardRef = useRef<SheetItem | null>(null);
   const itemsRef = useRef(items);
   const connectionsRef = useRef(connections);
   itemsRef.current = items;
@@ -333,6 +356,97 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const onTextEditCommit = useCallback(() => {
     appendHistory(itemsRef.current, connectionsRef.current);
   }, [appendHistory]);
+
+  const deleteSelectedSheetItem = useCallback(() => {
+    const sid = selectedId;
+    if (!sid) return;
+    const nextItems = items.filter((i) => i.id !== sid);
+    const nextCons = connections.filter((c) => c.fromId !== sid && c.toId !== sid);
+    pushSnapshotWithData(nextItems, nextCons);
+    setSelectedId(null);
+    setEditingId(null);
+  }, [connections, items, pushSnapshotWithData, selectedId]);
+
+  const duplicateSelectedSheetItem = useCallback(() => {
+    if (!selectedItem) return;
+    const id = `sh-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const { w, h } = getSheetPx();
+    const copy: SheetItem = { ...structuredClone(selectedItem), id };
+    copy.x += 20;
+    copy.y += 20;
+    const clamped = clampItemToSheet(copy, w, h);
+    const nextItems = [...items, clamped];
+    pushSnapshotWithData(nextItems, connections);
+    setSelectedId(id);
+    setEditingId(null);
+  }, [connections, getSheetPx, items, pushSnapshotWithData, selectedItem]);
+
+  const copySelectedToInternalClipboard = useCallback(() => {
+    if (!selectedItem || editingId) return;
+    sheetClipboardRef.current = structuredClone(selectedItem);
+  }, [editingId, selectedItem]);
+
+  const pasteFromInternalClipboard = useCallback(() => {
+    const clip = sheetClipboardRef.current;
+    if (!clip) return;
+    const id = `sh-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const { w, h } = getSheetPx();
+    const next: SheetItem = { ...structuredClone(clip), id };
+    next.x += 20;
+    next.y += 20;
+    const clamped = clampItemToSheet(next, w, h);
+    pushSnapshotWithData([...items, clamped], connections);
+    setSelectedId(id);
+    setEditingId(null);
+  }, [connections, getSheetPx, items, pushSnapshotWithData]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const root = editorRootRef.current;
+      if (!root) return;
+      const target = e.target as Node | null;
+      if (target && !root.contains(target)) return;
+
+      const el = e.target as HTMLElement;
+      const inFormField = el.closest?.('input, textarea, select');
+
+      if (e.key === 'Delete' && selectedId && !editingId) {
+        if (inFormField) return;
+        e.preventDefault();
+        deleteSelectedSheetItem();
+        return;
+      }
+
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'c') {
+        if (editingId) return;
+        if (!selectedId || !selectedItem) return;
+        if (inFormField) return;
+        e.preventDefault();
+        copySelectedToInternalClipboard();
+        return;
+      }
+      if (key === 'v') {
+        if (editingId) return;
+        if (inFormField) return;
+        if (!sheetClipboardRef.current) return;
+        e.preventDefault();
+        pasteFromInternalClipboard();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    copySelectedToInternalClipboard,
+    deleteSelectedSheetItem,
+    editingId,
+    pasteFromInternalClipboard,
+    selectedId,
+    selectedItem,
+  ]);
 
   const addSheetItem = useCallback(
     (kind: SheetItemKind) => {
@@ -528,8 +642,8 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const fileToolActive = toolBtnActive;
 
   const formatDimInput = isDark
-    ? 'min-w-[3.5rem] w-14 rounded border border-gray-600 bg-gray-900 px-1 py-0.5 text-center text-[11px] text-gray-100 tabular-nums'
-    : 'min-w-[3.5rem] w-14 rounded border border-gray-300 bg-white px-1 py-0.5 text-center text-[11px] text-gray-900 tabular-nums';
+    ? 'box-border flex h-9 min-h-9 min-w-[3.5rem] w-14 shrink-0 items-center justify-center rounded-lg border border-gray-600 bg-gray-900 px-1 text-center text-sm font-normal tabular-nums text-gray-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+    : 'box-border flex h-9 min-h-9 min-w-[3.5rem] w-14 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white px-1 text-center text-sm font-normal tabular-nums text-gray-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
   const commitDimOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -829,6 +943,32 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                   ))}
                 </div>
                 <RibbonGroupLabel>{t('graphicEditor.format.font')}</RibbonGroupLabel>
+              </div>
+
+              <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+
+              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[200px]">
+                <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    className={`${fileToolBtn} ${fileToolIdle}`}
+                    onClick={deleteSelectedSheetItem}
+                    aria-label={t('graphicEditor.format.deleteItem')}
+                  >
+                    <IconTrash className="opacity-90" />
+                    <span>{t('graphicEditor.format.deleteItem')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${fileToolBtn} ${fileToolIdle}`}
+                    onClick={duplicateSelectedSheetItem}
+                    aria-label={t('graphicEditor.format.duplicateItem')}
+                  >
+                    <IconDuplicate className="opacity-90" />
+                    <span>{t('graphicEditor.format.duplicateItem')}</span>
+                  </button>
+                </div>
+                <RibbonGroupLabel>{t('graphicEditor.format.otherBlock')}</RibbonGroupLabel>
               </div>
             </div>
           )}
