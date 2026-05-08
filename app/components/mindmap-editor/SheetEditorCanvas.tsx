@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type SheetItemKind = 'element' | 'text' | 'link';
+export type SheetItemKind = 'element' | 'text';
 export type SheetFontId = 'sans' | 'serif' | 'mono';
 
 export type SheetItem = {
@@ -27,23 +27,24 @@ export type SheetConnection = {
   toHandle: 0 | 1 | 2 | 3;
 };
 
-function fontStack(id: SheetFontId): string {
+export function fontStack(id: SheetFontId): string {
   if (id === 'serif') return 'Georgia, "Times New Roman", serif';
   if (id === 'mono') return 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
   return 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
 }
 
+/** Handles: 0 top center, 1 right center, 2 bottom center, 3 left center. */
 export function handleCenter(item: SheetItem, hi: 0 | 1 | 2 | 3): { x: number; y: number } {
   const { x, y, width: w, height: h } = item;
   switch (hi) {
     case 0:
-      return { x, y };
+      return { x: x + w / 2, y };
     case 1:
-      return { x: x + w, y };
+      return { x: x + w, y: y + h / 2 };
     case 2:
-      return { x: x + w, y: y + h };
+      return { x: x + w / 2, y: y + h };
     case 3:
-      return { x, y: y + h };
+      return { x, y: y + h / 2 };
     default:
       return { x, y };
   }
@@ -61,6 +62,8 @@ export default function SheetEditorCanvas({
   setEditingId,
   isDark,
   newElementLabel,
+  elementTextareaPlaceholder,
+  textPlaceholder,
 }: {
   gridMode: 'none' | 'cells' | 'dots';
   items: SheetItem[];
@@ -72,7 +75,12 @@ export default function SheetEditorCanvas({
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   isDark: boolean;
+  /** Centered label on empty element (e.g. «Новый элемент»). */
   newElementLabel: string;
+  /** Textarea `placeholder` while editing element (e.g. «Новый текст»). */
+  elementTextareaPlaceholder: string;
+  /** Placeholder for empty text item + textarea. */
+  textPlaceholder: string;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; grabX: number; grabY: number } | null>(null);
@@ -111,9 +119,16 @@ export default function SheetEditorCanvas({
       if (dragRef.current) {
         const { id, grabX, grabY } = dragRef.current;
         const { x: sx, y: sy } = sheetCoords(e.clientX, e.clientY);
-        const nx = Math.max(0, sx - grabX);
-        const ny = Math.max(0, sy - grabY);
-        setItems((prev) => prev.map((it) => (it.id === id ? { ...it, x: nx, y: ny } : it)));
+        const sheet = sheetRef.current;
+        setItems((prev) => {
+          const it = prev.find((i) => i.id === id);
+          if (!it || !sheet) return prev;
+          const maxX = Math.max(0, sheet.offsetWidth - it.width);
+          const maxY = Math.max(0, sheet.offsetHeight - it.height);
+          const nx = Math.min(maxX, Math.max(0, sx - grabX));
+          const ny = Math.min(maxY, Math.max(0, sy - grabY));
+          return prev.map((i) => (i.id === id ? { ...i, x: nx, y: ny } : i));
+        });
       }
       if (connectRef.current) {
         const { x: sx, y: sy } = sheetCoords(e.clientX, e.clientY);
@@ -178,10 +193,10 @@ export default function SheetEditorCanvas({
   };
 
   const handlePos: Record<0 | 1 | 2 | 3, React.CSSProperties> = {
-    0: { left: 0, top: 0, transform: 'translate(-50%, -50%)' },
-    1: { right: 0, top: 0, transform: 'translate(50%, -50%)' },
-    2: { right: 0, bottom: 0, transform: 'translate(50%, 50%)' },
-    3: { left: 0, bottom: 0, transform: 'translate(-50%, 50%)' },
+    0: { left: '50%', top: 0, transform: 'translate(-50%, -50%)' },
+    1: { right: 0, top: '50%', transform: 'translate(50%, -50%)' },
+    2: { left: '50%', bottom: 0, transform: 'translate(-50%, 50%)' },
+    3: { left: 0, top: '50%', transform: 'translate(-50%, -50%)' },
   };
 
   return (
@@ -250,6 +265,10 @@ export default function SheetEditorCanvas({
       {items.map((it) => {
         const selected = it.id === selectedId;
         const isEl = it.kind === 'element';
+        const isText = it.kind === 'text';
+        const trimmed = it.text.trim();
+        const showElementCenter = isEl && !trimmed;
+        const showTextPlaceholder = isText && !trimmed;
         const border = selected
           ? '2px solid #3b82f6'
           : isEl
@@ -287,19 +306,28 @@ export default function SheetEditorCanvas({
           >
             {editingId === it.id ? (
               <textarea
-                className="h-full w-full resize-none border-0 bg-transparent p-0 outline-none"
+                className={`h-full w-full resize-none border-0 bg-transparent p-0 outline-none ${
+                  isEl ? 'placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70' : 'placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70'
+                }`}
                 value={it.text}
+                placeholder={isEl ? elementTextareaPlaceholder : textPlaceholder}
                 autoFocus
                 onChange={(e) => updateItem(it.id, { text: e.target.value })}
                 onBlur={() => setEditingId(null)}
                 onMouseDown={(e) => e.stopPropagation()}
               />
             ) : (
-              <div className="h-full w-full overflow-hidden whitespace-pre-wrap break-words">
-                {it.kind === 'link' ? (
-                  <span className="underline decoration-2 underline-offset-2">{it.text || 'https://'}</span>
+              <div
+                className={`relative h-full w-full overflow-hidden whitespace-pre-wrap break-words ${
+                  showElementCenter ? 'flex items-center justify-center text-center' : ''
+                }`}
+              >
+                {showElementCenter ? (
+                  <span className="pointer-events-none text-gray-400/75 dark:text-gray-500/75">{newElementLabel}</span>
+                ) : showTextPlaceholder ? (
+                  <span className="pointer-events-none text-gray-400/75 dark:text-gray-500/75">{textPlaceholder}</span>
                 ) : (
-                  it.text || (it.kind === 'element' ? newElementLabel : '')
+                  it.text
                 )}
               </div>
             )}
