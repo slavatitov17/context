@@ -7,6 +7,12 @@ import { useLanguage } from '@/app/contexts/LanguageContext';
 import { auth, diagrams as diagramsStorage } from '@/lib/storage';
 import SupportContactModal from '@/app/components/SupportContactModal';
 import SupportSentModal from '@/app/components/SupportSentModal';
+import SheetEditorCanvas, {
+  type SheetConnection,
+  type SheetFontId,
+  type SheetItem,
+  type SheetItemKind,
+} from '@/app/components/mindmap-editor/SheetEditorCanvas';
 import {
   buildExportBasename,
   downloadBlob,
@@ -16,13 +22,12 @@ import {
   type GridMode,
 } from '@/lib/graphic-editor-export';
 
-type RibbonTab = 'file' | 'layout' | 'insert';
+type RibbonTab = 'file' | 'layout' | 'insert' | 'format';
 
 type Orientation = 'portrait' | 'landscape';
 
 const ZOOM_LEVELS = [40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200] as const;
 const DEFAULT_ZOOM_INDEX = ZOOM_LEVELS.indexOf(100);
-const TOTAL_SHEETS = 1;
 
 function OrientationIcon({ mode, className }: { mode: Orientation; className?: string }) {
   if (mode === 'portrait') {
@@ -94,12 +99,15 @@ function IconSave({ className }: { className?: string }) {
   );
 }
 
+/** Solid U-turn arrow (Heroicons-style) for undo. */
 function IconUndo({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
       <path
         fill="currentColor"
-        d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L3 8v8h8l-2.86-2.86C8.28 15.74 9.86 15 12.5 15c3.04 0 5.79 1.44 7.52 3.65L22 17c-1.89-4.34-6.14-7-9.5-7z"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
       />
     </svg>
   );
@@ -107,18 +115,15 @@ function IconUndo({ className }: { className?: string }) {
 
 function IconRedo({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      width="22"
-      height="22"
-      aria-hidden
-      style={{ transform: 'scaleX(-1)' }}
-    >
-      <path
-        fill="currentColor"
-        d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L3 8v8h8l-2.86-2.86C8.28 15.74 9.86 15 12.5 15c3.04 0 5.79 1.44 7.52 3.65L22 17c-1.89-4.34-6.14-7-9.5-7z"
-      />
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <g transform="translate(24 0) scale(-1 1)">
+        <path
+          fill="currentColor"
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+        />
+      </g>
     </svg>
   );
 }
@@ -166,167 +171,42 @@ function IconGridDots({ className }: { className?: string }) {
   );
 }
 
+function IconInsertElement({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="7" cy="9" r="1.35" fill="currentColor" />
+      <circle cx="17" cy="9" r="1.35" fill="currentColor" />
+      <circle cx="7" cy="15" r="1.35" fill="currentColor" />
+      <circle cx="17" cy="15" r="1.35" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconInsertText({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path fill="currentColor" d="M5 5h14v3h-5.25v11h-3.5V8H5V5z" />
+    </svg>
+  );
+}
+
+function IconInsertLink({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+      />
+    </svg>
+  );
+}
+
 function RibbonGroupLabel({ children }: { children: React.ReactNode }) {
   return (
     <span className="mt-1 block w-full text-center text-[11px] font-medium leading-tight text-gray-500 dark:text-gray-400">
       {children}
     </span>
-  );
-}
-
-type PrintModalProps = {
-  open: boolean;
-  isDark: boolean;
-  t: (k: string) => string;
-  onClose: () => void;
-  onPrint: () => void;
-};
-
-function PrintModal({ open, isDark, t, onClose, onPrint }: PrintModalProps) {
-  const [printer, setPrinter] = useState('default');
-  const [mode, setMode] = useState<'all' | 'range'>('all');
-  const [sheetInput, setSheetInput] = useState('1');
-  const [sheetError, setSheetError] = useState<string | null>(null);
-
-  const printers = [
-    { id: 'default', label: t('graphicEditor.print.printerDefault') },
-    { id: 'pdf', label: 'Microsoft Print to PDF' },
-    { id: 'onenote', label: 'OneNote' },
-  ];
-
-  useEffect(() => {
-    if (open) {
-      setPrinter('default');
-      setMode('all');
-      setSheetInput('1');
-      setSheetError(null);
-    }
-  }, [open]);
-
-  if (!open) return null;
-
-  const inputCls = isDark
-    ? 'border border-gray-600 bg-gray-900 text-gray-100'
-    : 'border border-gray-300 bg-white text-gray-900';
-
-  const validateAndPrint = () => {
-    if (mode === 'range') {
-      const n = parseInt(sheetInput.trim(), 10);
-      if (Number.isNaN(n) || n < 1 || n > TOTAL_SHEETS) {
-        setSheetError(t('graphicEditor.print.sheetsError').replace('{max}', String(TOTAL_SHEETS)));
-        return;
-      }
-    }
-    setSheetError(null);
-    void printer;
-    onPrint();
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div
-        className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-gray-900/80' : 'bg-white/80'}`}
-        onClick={onClose}
-        role="presentation"
-      />
-
-      <div
-        className={`relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border p-6 shadow-xl hide-scrollbar ${
-          isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
-        }`}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className={`text-xl font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('graphicEditor.print.title')}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="mb-4">
-          <label className={`mb-2 block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t('graphicEditor.print.printer')}
-          </label>
-          <select
-            className={`w-full rounded-lg border p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500 ${inputCls}`}
-            value={printer}
-            onChange={(e) => setPrinter(e.target.value)}
-          >
-            {printers.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-          <p className={`mt-1 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{t('graphicEditor.print.printerHint')}</p>
-        </div>
-
-        <div className="mb-4 space-y-2">
-          <label className={`flex cursor-pointer items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            <input
-              type="radio"
-              name="printMode"
-              checked={mode === 'all'}
-              onChange={() => {
-                setMode('all');
-                setSheetError(null);
-              }}
-            />
-            {t('graphicEditor.print.printAll')}
-          </label>
-          <div className={`flex flex-wrap items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input type="radio" name="printMode" checked={mode === 'range'} onChange={() => setMode('range')} />
-              {t('graphicEditor.print.printSheets')}
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              disabled={mode === 'all'}
-              aria-label={t('graphicEditor.print.sheetsInputAria')}
-              className={`w-16 rounded-lg border p-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? 'border-gray-600 bg-gray-900 text-gray-100'
-                  : 'border-gray-300 bg-white text-gray-900'
-              } ${mode === 'all' ? 'cursor-not-allowed opacity-50' : ''}`}
-              value={sheetInput}
-              onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, '');
-                setSheetInput(v === '' ? '' : v);
-                setSheetError(null);
-              }}
-            />
-          </div>
-          {sheetError && <p className="text-sm text-red-500">{sheetError}</p>}
-        </div>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`rounded-lg border px-4 py-2 text-sm font-medium ${
-              isDark ? 'border-gray-600 text-gray-200 hover:bg-gray-700' : 'border-gray-300 text-gray-800 hover:bg-gray-50'
-            }`}
-          >
-            {t('graphicEditor.print.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={validateAndPrint}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            {t('graphicEditor.print.submit')}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -341,7 +221,10 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const [orientation, setOrientation] = useState<Orientation>('portrait');
   const [zoomIndex, setZoomIndex] = useState(DEFAULT_ZOOM_INDEX);
   const [gridMode, setGridMode] = useState<GridMode>('none');
-  const [printOpen, setPrintOpen] = useState(false);
+  const [items, setItems] = useState<SheetItem[]>([]);
+  const [connections, setConnections] = useState<SheetConnection[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportSentOpen, setSupportSentOpen] = useState(false);
@@ -356,12 +239,95 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const sheetH = orientation === 'portrait' ? '29.7cm' : '21cm';
   const typeLabel = t('graphicEditor.diagramTypeName');
 
+  const selectedItem = selectedId ? items.find((i) => i.id === selectedId) ?? null : null;
+
+  const patchSelected = useCallback(
+    (patch: Partial<SheetItem>) => {
+      if (!selectedId) return;
+      setItems((prev) => prev.map((it) => (it.id === selectedId ? { ...it, ...patch } : it)));
+    },
+    [selectedId]
+  );
+
+  const addSheetItem = useCallback(
+    (kind: SheetItemKind) => {
+      const id = `sh-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const scatter = items.length * 14;
+      const baseX = 88 + (scatter % 200);
+      const baseY = 64 + (scatter % 160);
+      const fontId: SheetFontId = 'sans';
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      if (kind === 'element') {
+        setItems((prev) => [
+          ...prev,
+          {
+            id,
+            kind: 'element',
+            x: baseX,
+            y: baseY,
+            width: 200,
+            height: 90,
+            text: t('graphicEditor.insert.newElement'),
+            fontId,
+            color: textColor,
+            backgroundColor: '#e2e8f0',
+            fontSize: 14,
+          },
+        ]);
+      } else if (kind === 'text') {
+        setItems((prev) => [
+          ...prev,
+          {
+            id,
+            kind: 'text',
+            x: baseX,
+            y: baseY,
+            width: 220,
+            height: 44,
+            text: lang === 'ru' ? 'Текст' : 'Text',
+            fontId,
+            color: textColor,
+            backgroundColor: 'transparent',
+            fontSize: 16,
+          },
+        ]);
+      } else {
+        setItems((prev) => [
+          ...prev,
+          {
+            id,
+            kind: 'link',
+            x: baseX,
+            y: baseY,
+            width: 260,
+            height: 44,
+            text: 'https://',
+            fontId,
+            color: '#2563eb',
+            backgroundColor: 'transparent',
+            fontSize: 16,
+          },
+        ]);
+      }
+      setSelectedId(id);
+      setEditingId(null);
+      setTab('insert');
+    },
+    [isDark, items.length, lang, t]
+  );
+
   useEffect(() => {
     const u = auth.getCurrentUser();
     if (!u) return;
     const d = diagramsStorage.getById(diagramId, u.id);
     if (d?.name) setDiagramName(d.name);
   }, [diagramId]);
+
+  useEffect(() => {
+    if (!selectedId && tab === 'format') {
+      setTab('insert');
+    }
+  }, [selectedId, tab]);
 
   useEffect(() => {
     const id = 'mindmap-editor-print-styles';
@@ -489,7 +455,13 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const fileToolIdle = toolBtnIdle;
   const fileToolActive = toolBtnActive;
 
-  const placeholderToolbarH = 'min-h-[5.5rem]';
+  const formatSelectCls = isDark
+    ? 'max-w-[9rem] rounded border border-gray-600 bg-gray-900 px-1.5 py-1 text-[11px] text-gray-100'
+    : 'max-w-[9rem] rounded border border-gray-300 bg-white px-1.5 py-1 text-[11px] text-gray-900';
+  const formatMiniInput = isDark
+    ? 'w-14 rounded border border-gray-600 bg-gray-900 px-1 py-0.5 text-[11px] text-gray-100'
+    : 'w-14 rounded border border-gray-300 bg-white px-1 py-0.5 text-[11px] text-gray-900';
+  const formatLabelCls = isDark ? 'text-[10px] font-medium text-gray-400' : 'text-[10px] font-medium text-gray-500';
 
   const displayName = diagramName.trim() || (lang === 'ru' ? 'Без названия' : 'Untitled');
   const titleText = `${displayName} - ${typeLabel}`;
@@ -498,6 +470,8 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const headerIconBtn =
     'rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100';
 
+  const ribbonTabs: RibbonTab[] = ['file', 'layout', 'insert', ...(selectedId ? (['format'] as const) : [])];
+
   return (
     <div
       ref={editorRootRef}
@@ -505,7 +479,6 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
       data-diagram-id={diagramId}
     >
       <header className={`z-50 flex w-full flex-shrink-0 flex-col border-b ${ribbonTopBar}`}>
-        {/* Ряд заголовка: слева действия, по центру название, справа Закрыть */}
         <div className={`mindmap-no-print relative flex min-h-[2.75rem] items-center border-b px-2 py-2.5 sm:px-4 ${titleBar}`}>
           <div className="z-10 flex shrink-0 items-center gap-0.5 sm:gap-1">
             <button type="button" className={headerIconBtn} onClick={handleSave} aria-label={t('graphicEditor.other.save')}>
@@ -516,11 +489,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
             </button>
           </div>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-20 sm:px-32">
-            <span
-              className={`max-w-full truncate text-center text-sm font-normal sm:text-base ${
-                isDark ? 'text-gray-200' : 'text-gray-900'
-              }`}
-            >
+            <span className={`max-w-full truncate text-center text-sm font-normal ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>
               {titleText}
             </span>
           </div>
@@ -532,17 +501,17 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                 isDark ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <span>{t('graphicEditor.close')}</span>
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
+              <span>{t('graphicEditor.close')}</span>
             </button>
           </div>
         </div>
 
         <div className="mindmap-no-print flex h-12 items-center px-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-1">
-            {(['file', 'layout', 'insert'] as const).map((key) => (
+            {ribbonTabs.map((key) => (
               <button
                 key={key}
                 type="button"
@@ -552,6 +521,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                 {key === 'file' && t('graphicEditor.ribbon.file')}
                 {key === 'layout' && t('graphicEditor.ribbon.layout')}
                 {key === 'insert' && t('graphicEditor.ribbon.insert')}
+                {key === 'format' && t('graphicEditor.ribbon.format')}
               </button>
             ))}
           </div>
@@ -562,7 +532,159 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
           role="toolbar"
           aria-label={t('graphicEditor.ribbon.toolbar')}
         >
-          {tab === 'insert' && <div className={`w-full ${placeholderToolbarH}`} aria-hidden />}
+          {tab === 'insert' && (
+            <div className="flex min-h-[5.5rem] w-full flex-wrap items-stretch gap-0 sm:min-h-[6rem]">
+              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[220px]">
+                <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    className={`${fileToolBtn} ${fileToolIdle}`}
+                    onClick={() => addSheetItem('element')}
+                  >
+                    <IconInsertElement className="opacity-90" />
+                    <span>{t('graphicEditor.insert.element')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${fileToolBtn} ${fileToolIdle}`}
+                    onClick={() => addSheetItem('text')}
+                  >
+                    <IconInsertText className="opacity-90" />
+                    <span>{t('graphicEditor.insert.text')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${fileToolBtn} ${fileToolIdle}`}
+                    onClick={() => addSheetItem('link')}
+                  >
+                    <IconInsertLink className="opacity-90" />
+                    <span>{t('graphicEditor.insert.link')}</span>
+                  </button>
+                </div>
+                <RibbonGroupLabel>{t('graphicEditor.ribbon.insert')}</RibbonGroupLabel>
+              </div>
+            </div>
+          )}
+
+          {tab === 'format' && selectedItem && (
+            <div className="flex min-h-[5.5rem] w-full flex-wrap items-stretch gap-0 sm:min-h-[6rem]">
+              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[280px]">
+                <div className="flex flex-1 flex-wrap items-end justify-center gap-3 px-1 py-1">
+                  {selectedItem.kind === 'element' && (
+                    <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                      <span>{t('graphicEditor.format.bgColor')}</span>
+                      <input
+                        type="color"
+                        className="h-8 w-10 cursor-pointer rounded border border-gray-400 bg-transparent p-0 dark:border-gray-500"
+                        value={selectedItem.backgroundColor}
+                        onChange={(e) => patchSelected({ backgroundColor: e.target.value })}
+                      />
+                    </label>
+                  )}
+                  {(selectedItem.kind === 'element' || selectedItem.kind === 'text' || selectedItem.kind === 'link') && (
+                    <>
+                      <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                        <span>{t('graphicEditor.format.textColor')}</span>
+                        <input
+                          type="color"
+                          className="h-8 w-10 cursor-pointer rounded border border-gray-400 bg-transparent p-0 dark:border-gray-500"
+                          value={selectedItem.color}
+                          onChange={(e) => patchSelected({ color: e.target.value })}
+                        />
+                      </label>
+                      <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                        <span>{t('graphicEditor.format.font')}</span>
+                        <select
+                          className={formatSelectCls}
+                          value={selectedItem.fontId}
+                          onChange={(e) => patchSelected({ fontId: e.target.value as SheetFontId })}
+                        >
+                          <option value="sans">{t('graphicEditor.font.sans')}</option>
+                          <option value="serif">{t('graphicEditor.font.serif')}</option>
+                          <option value="mono">{t('graphicEditor.font.mono')}</option>
+                        </select>
+                      </label>
+                    </>
+                  )}
+                </div>
+                <RibbonGroupLabel>{t('graphicEditor.format.style')}</RibbonGroupLabel>
+              </div>
+
+              <div className={`mx-2 sm:mx-3 w-px shrink-0 self-stretch ${divider}`} aria-hidden />
+
+              <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[200px]">
+                <div className="flex flex-1 flex-wrap items-end justify-center gap-3 px-1 py-1">
+                  {selectedItem.kind === 'element' && (
+                    <>
+                      <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                        <span>{t('graphicEditor.format.width')}</span>
+                        <input
+                          type="number"
+                          min={80}
+                          max={800}
+                          className={formatMiniInput}
+                          value={Math.round(selectedItem.width)}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            if (!Number.isFinite(n)) return;
+                            patchSelected({ width: Math.min(800, Math.max(80, n)) });
+                          }}
+                        />
+                      </label>
+                      <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                        <span>{t('graphicEditor.format.height')}</span>
+                        <input
+                          type="number"
+                          min={40}
+                          max={600}
+                          className={formatMiniInput}
+                          value={Math.round(selectedItem.height)}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            if (!Number.isFinite(n)) return;
+                            patchSelected({ height: Math.min(600, Math.max(40, n)) });
+                          }}
+                        />
+                      </label>
+                      <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                        <span>{t('graphicEditor.format.fontSize')}</span>
+                        <input
+                          type="number"
+                          min={10}
+                          max={72}
+                          className={formatMiniInput}
+                          value={Math.round(selectedItem.fontSize)}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            if (!Number.isFinite(n)) return;
+                            patchSelected({ fontSize: Math.min(72, Math.max(10, n)) });
+                          }}
+                        />
+                      </label>
+                    </>
+                  )}
+                  {(selectedItem.kind === 'text' || selectedItem.kind === 'link') && (
+                    <label className={`flex flex-col gap-0.5 ${formatLabelCls}`}>
+                      <span>{t('graphicEditor.format.fontSize')}</span>
+                      <input
+                        type="number"
+                        min={10}
+                        max={72}
+                        className={formatMiniInput}
+                        value={Math.round(selectedItem.fontSize)}
+                        onChange={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          if (!Number.isFinite(n)) return;
+                          patchSelected({ fontSize: Math.min(72, Math.max(10, n)) });
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+                <RibbonGroupLabel>{t('graphicEditor.format.size')}</RibbonGroupLabel>
+              </div>
+            </div>
+          )}
 
           {tab === 'file' && (
             <div className="flex min-h-[5.5rem] w-full flex-wrap items-stretch gap-0 sm:min-h-[6rem]">
@@ -628,11 +750,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
               <div className="flex flex-1 flex-col items-center justify-between py-1 sm:flex-none sm:min-w-[120px]">
                 <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    className={`${fileToolBtn} ${fileToolIdle}`}
-                    onClick={() => setPrintOpen(true)}
-                  >
+                  <button type="button" className={`${fileToolBtn} ${fileToolIdle}`} onClick={handlePrintDialog}>
                     <IconPrint className="opacity-90" />
                     <span>{t('graphicEditor.other.print')}</span>
                   </button>
@@ -747,7 +865,6 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
             }}
           >
             <div
-              id="mindmap-sheet-print"
               className="relative bg-white"
               style={{
                 width: sheetW,
@@ -757,36 +874,23 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                 boxShadow: isDark ? '0 2px 16px rgba(0,0,0,.35)' : '0 2px 12px rgba(0,0,0,.12)',
               }}
             >
-              {gridMode === 'cells' && (
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    backgroundImage: `linear-gradient(to right, rgb(230 230 230) 1px, transparent 1px), linear-gradient(to bottom, rgb(230 230 230) 1px, transparent 1px)`,
-                    backgroundSize: '8px 8px',
-                  }}
-                />
-              )}
-              {gridMode === 'dots' && (
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, rgb(200 200 200) 0.65px, transparent 1.1px)',
-                    backgroundSize: '10px 10px',
-                  }}
-                />
-              )}
+              <SheetEditorCanvas
+                gridMode={gridMode}
+                items={items}
+                setItems={setItems}
+                connections={connections}
+                setConnections={setConnections}
+                selectedId={selectedId}
+                setSelectedId={setSelectedId}
+                editingId={editingId}
+                setEditingId={setEditingId}
+                isDark={isDark}
+                newElementLabel={t('graphicEditor.insert.newElement')}
+              />
             </div>
           </div>
         </div>
       </div>
-
-      <PrintModal
-        open={printOpen}
-        isDark={isDark}
-        t={t}
-        onClose={() => setPrintOpen(false)}
-        onPrint={handlePrintDialog}
-      />
 
       <SupportContactModal
         isOpen={supportOpen}
