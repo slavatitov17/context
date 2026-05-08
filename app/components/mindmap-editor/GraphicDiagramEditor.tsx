@@ -142,13 +142,22 @@ function IconTrash({ className }: { className?: string }) {
   );
 }
 
+/** Outline overlapping rounded squares (Lucide-style Copy / duplicate). */
 function IconDuplicate({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M16 1H8C6.9 1 6 1.9 6 3v1H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-1h2c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zM8 17H4V6h4v11zm10-3h-2V6c0-1.1-.9-2-2-2h-2V3h8v11z"
-      />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      aria-hidden
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinejoin="round"
+    >
+      <rect x="3.5" y="3.5" width="13" height="13" rx="2.5" />
+      <rect x="8.5" y="8.5" width="13" height="13" rx="2.5" />
     </svg>
   );
 }
@@ -404,13 +413,24 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
     const onKeyDown = (e: KeyboardEvent) => {
       const root = editorRootRef.current;
       if (!root) return;
-      const target = e.target as Node | null;
-      if (target && !root.contains(target)) return;
 
-      const el = e.target as HTMLElement;
-      const inFormField = el.closest?.('input, textarea, select');
+      const ae = document.activeElement as Node | null;
+      if (
+        ae &&
+        ae !== document.body &&
+        ae !== document.documentElement &&
+        !root.contains(ae)
+      ) {
+        return;
+      }
 
-      if (e.key === 'Delete' && selectedId && !editingId) {
+      const el = (e.target as HTMLElement) ?? document.body;
+      const inFormField = el.closest?.('input, textarea, select') as HTMLElement | null | undefined;
+      if (inFormField && !root.contains(inFormField)) return;
+
+      const isDelete = e.key === 'Delete' || e.code === 'Delete';
+
+      if (isDelete && selectedId && !editingId) {
         if (inFormField) return;
         e.preventDefault();
         deleteSelectedSheetItem();
@@ -437,8 +457,8 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
         pasteFromInternalClipboard();
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [
     copySelectedToInternalClipboard,
     deleteSelectedSheetItem,
@@ -508,11 +528,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   }, [diagramId]);
 
   useEffect(() => {
-    if (!selectedId) {
-      setTab((c) => (c === 'format' ? 'insert' : c));
-      return;
-    }
-    setTab('format');
+    if (selectedId) setTab('format');
   }, [selectedId]);
 
   useEffect(() => {
@@ -658,7 +674,7 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
   const headerIconBtn =
     'rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100';
 
-  const ribbonTabs: RibbonTab[] = ['file', 'layout', 'insert', ...(selectedId ? (['format'] as const) : [])];
+  const ribbonTabs: RibbonTab[] = ['file', 'layout', 'insert', 'format'];
 
   return (
     <div
@@ -746,6 +762,31 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
             </div>
           )}
 
+          {tab === 'format' && items.length === 0 && (
+            <div className="flex min-h-[5.5rem] w-full flex-1 items-center justify-center px-4 py-4 sm:min-h-[6rem]">
+              <p className={`max-w-md text-center text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <span>{t('graphicEditor.format.emptySheetLead')}</span>{' '}
+                <button
+                  type="button"
+                  onClick={() => setTab('insert')}
+                  className={`font-medium underline decoration-2 underline-offset-2 transition-colors ${
+                    isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                  }`}
+                >
+                  {t('graphicEditor.format.emptySheetLink')}
+                </button>
+              </p>
+            </div>
+          )}
+
+          {tab === 'format' && items.length > 0 && !selectedItem && (
+            <div className="flex min-h-[5.5rem] w-full flex-1 items-center justify-center px-4 py-4 sm:min-h-[6rem]">
+              <p className={`text-center text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                {t('graphicEditor.format.selectItemHint')}
+              </p>
+            </div>
+          )}
+
           {tab === 'format' && selectedItem && (
             <div className="flex min-h-[5.5rem] w-full flex-wrap items-stretch gap-0 sm:min-h-[6rem]">
               <input
@@ -772,11 +813,11 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                     disabled={selectedItem.kind !== 'element'}
                     className={`${fileToolBtn} ${
                       selectedItem.kind === 'element' ? fileToolIdle : `${fileToolIdle} cursor-not-allowed opacity-45`
-                    } flex min-h-[5.75rem] flex-col justify-between`}
+                    }`}
                     onClick={() => selectedItem.kind === 'element' && bgColorInputRef.current?.click()}
                   >
                     <span
-                      className="mb-0.5 h-7 w-10 flex-shrink-0 rounded border border-gray-400 dark:border-gray-500"
+                      className="h-7 w-10 flex-shrink-0 rounded border border-gray-400 dark:border-gray-500"
                       style={{
                         backgroundColor:
                           selectedItem.kind === 'element' ? selectedItem.backgroundColor : 'rgb(241 245 249)',
@@ -787,11 +828,11 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
                   </button>
                   <button
                     type="button"
-                    className={`${fileToolBtn} ${fileToolIdle} flex min-h-[5.75rem] flex-col justify-between`}
+                    className={`${fileToolBtn} ${fileToolIdle}`}
                     onClick={() => textColorInputRef.current?.click()}
                   >
                     <span
-                      className="mb-0.5 h-7 w-10 flex-shrink-0 rounded border border-gray-400 dark:border-gray-500"
+                      className="h-7 w-10 flex-shrink-0 rounded border border-gray-400 dark:border-gray-500"
                       style={{ backgroundColor: selectedItem.color }}
                       aria-hidden
                     />
@@ -1134,7 +1175,14 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
       <div
         ref={workspaceRef}
-        className={`mindmap-workspace relative min-h-0 flex-1 overflow-auto ${isDark ? 'bg-[#4b5563]' : 'bg-[#d1d5db]'}`}
+        tabIndex={-1}
+        onMouseDownCapture={(e) => {
+          if (e.button !== 0) return;
+          workspaceRef.current?.focus({ preventScroll: true });
+        }}
+        className={`mindmap-workspace relative min-h-0 flex-1 overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+          isDark ? 'bg-[#4b5563]' : 'bg-[#d1d5db]'
+        }`}
       >
         <div
           className="flex items-center justify-center"
