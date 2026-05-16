@@ -1255,11 +1255,15 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
 
       {saveToast && (
         <div className="pointer-events-none fixed bottom-6 left-1/2 z-[220] -translate-x-1/2 px-4">
-          <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-lg">
+          <div
+            className="pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg"
+            style={{ backgroundColor: '#ebfaeb', borderColor: '#297a3a33', color: '#297a3a' }}
+          >
             <span>{t('graphicEditor.save.toast')}</span>
             <button
               type="button"
-              className="text-gray-500 hover:text-gray-800"
+              className="transition-opacity hover:opacity-70"
+              style={{ color: '#297a3a' }}
               aria-label={t('supportSent.close')}
               onClick={() => setSaveToast(false)}
             >

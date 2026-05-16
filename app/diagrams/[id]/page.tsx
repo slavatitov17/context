@@ -1184,7 +1184,10 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
           return;
         }
 
-        if (diagram.diagramType === 'MindMapCanva') {
+        if (
+          diagram.diagramType === 'MindMapCanva' &&
+          (fromProject || diagram.selectedOption)
+        ) {
           const q = fromProject ? `?fromProject=${encodeURIComponent(fromProject)}` : '';
           router.replace(`/diagrams/${diagramId}/editor${q}`);
           return;
@@ -1403,13 +1406,13 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
   }, [messages, loading, diagramData, saveDiagram]);
 
   const handleDiagramTypeSelect = (type: DiagramType) => {
-    if (type === 'MindMapCanva') {
+    if (type === 'MindMapCanva' && fromProject) {
       setDiagramType(type);
       const currentUser = auth.getCurrentUser();
       if (currentUser && diagramId) {
         saveDiagram({ diagramType: type });
       }
-      const q = fromProject ? `?fromProject=${encodeURIComponent(fromProject)}` : '';
+      const q = `?fromProject=${encodeURIComponent(fromProject)}`;
       router.push(`/diagrams/${diagramId}/editor${q}`);
       return;
     }
@@ -1470,6 +1473,11 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     if (currentUser && diagramId) {
       saveDiagram({ selectedOption: option });
     }
+
+    if (diagramType === 'MindMapCanva' && option === 'scratch') {
+      router.push(`/diagrams/${diagramId}/editor`);
+      return;
+    }
     
     if (option === 'scratch') {
       // Для создания с нуля сразу переходим в чат
@@ -1488,6 +1496,12 @@ export default function DiagramDetailPage({ params }: { params: { id: string } }
     const currentUser = auth.getCurrentUser();
     if (currentUser && diagramId) {
       saveDiagram({ selectedProject: projectId });
+    }
+
+    if (diagramType === 'MindMapCanva') {
+      const q = `?fromProject=${encodeURIComponent(projectId)}`;
+      router.push(`/diagrams/${diagramId}/editor${q}`);
+      return;
     }
     
     // Загружаем данные проекта

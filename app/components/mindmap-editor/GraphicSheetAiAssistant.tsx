@@ -52,6 +52,7 @@ export default function GraphicSheetAiAssistant({
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [showHint, setShowHint] = useState(true);
   const [messages, setMessages] = useState<AiChatMessage[]>(() => [
     {
       id: newId(),
@@ -114,11 +115,47 @@ export default function GraphicSheetAiAssistant({
   const bubbleUser = isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white';
   const bubbleAi = isDark ? 'bg-gray-800 text-gray-100 border border-gray-600' : 'bg-gray-50 text-gray-900 border border-gray-200';
 
+  const dismissHint = useCallback(() => setShowHint(false), []);
+
   return (
     <>
+      {showHint && (
+        <div className="mindmap-no-print fixed inset-0 z-[290]" role="presentation">
+          <button
+            type="button"
+            aria-label={t('graphicEditor.ai.close')}
+            onClick={dismissHint}
+            className="absolute inset-0 h-full w-full bg-black/40"
+          />
+          <div
+            className="pointer-events-auto absolute bottom-6 right-[5.75rem] z-[295] w-[15rem] rounded-2xl bg-black p-4 text-white shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={dismissHint}
+              aria-label={t('graphicEditor.ai.close')}
+              className="absolute right-2 top-2 rounded-md p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <IconClose className="h-4 w-4" />
+            </button>
+            <h3 className="pr-6 text-sm font-semibold leading-snug">{t('graphicEditor.ai.hint.title')}</h3>
+            <p className="mt-2 text-sm leading-snug text-white/85">{t('graphicEditor.ai.hint.text')}</p>
+            <span
+              aria-hidden
+              className="absolute right-[-5px] bottom-[1.75rem] h-3 w-3 -translate-y-1/2 rotate-45 bg-black"
+            />
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setShowHint(false);
+          setOpen(true);
+        }}
         className={`mindmap-no-print fixed bottom-6 right-6 z-[300] flex h-14 w-14 items-center justify-center rounded-full border-2 shadow-lg transition-transform hover:scale-105 active:scale-95 ${
           isDark
             ? 'border-blue-400/60 bg-blue-600 text-white hover:bg-blue-500'
@@ -131,98 +168,86 @@ export default function GraphicSheetAiAssistant({
 
       {open && (
         <div
-          className="mindmap-no-print fixed inset-0 z-[310] flex items-end justify-end p-4 sm:items-center sm:justify-end sm:p-8"
+          className={`mindmap-no-print fixed bottom-24 right-6 z-[310] flex max-h-[min(520px,80vh)] w-[min(22rem,calc(100vw-3rem))] flex-col overflow-hidden rounded-2xl border shadow-2xl ${panelBg}`}
           role="dialog"
-          aria-modal="true"
+          aria-modal="false"
           aria-labelledby="graphic-ai-chat-title"
         >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            aria-label={t('graphicEditor.ai.close')}
-            onClick={() => setOpen(false)}
-          />
           <div
-            className={`relative z-[320] flex max-h-[min(560px,85vh)] w-full max-w-md flex-col overflow-hidden rounded-2xl border shadow-2xl ${panelBg}`}
-            onMouseDown={(e) => e.stopPropagation()}
+            className={`flex shrink-0 items-center justify-between border-b px-4 py-3 ${
+              isDark ? 'border-gray-700' : 'border-gray-200'
+            }`}
           >
-            <div
-              className={`flex shrink-0 items-center justify-between border-b px-4 py-3 ${
-                isDark ? 'border-gray-700' : 'border-gray-200'
+            <h2 id="graphic-ai-chat-title" className="text-sm font-semibold">
+              {t('graphicEditor.ai.title')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className={`rounded-lg p-2 transition-colors ${
+                isDark ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
               }`}
+              aria-label={t('graphicEditor.ai.close')}
             >
-              <h2 id="graphic-ai-chat-title" className="text-sm font-semibold">
-                {t('graphicEditor.ai.title')}
-              </h2>
+              <IconClose className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+            <div className="flex flex-col gap-3">
+              {messages.map((m) => (
+                <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <span
+                    className={`mb-1 text-[10px] tabular-nums ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+                  >
+                    {formatTime(m.at)}
+                  </span>
+                  <div
+                    className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                      m.role === 'user' ? bubbleUser : bubbleAi
+                    }`}
+                  >
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              <div ref={listEndRef} />
+            </div>
+          </div>
+
+          <div className={`shrink-0 border-t p-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
+                rows={2}
+                disabled={sending}
+                placeholder={t('graphicEditor.ai.placeholder')}
+                className={`min-h-[3rem] flex-1 resize-none rounded-xl border px-3 py-2 text-sm outline-none ring-blue-500/30 focus:ring-2 ${
+                  isDark
+                    ? 'border-gray-600 bg-gray-950 text-gray-100 placeholder:text-gray-500'
+                    : 'border-gray-300 bg-white text-gray-900 placeholder:text-gray-400'
+                }`}
+              />
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className={`rounded-lg p-2 transition-colors ${
-                  isDark ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                aria-label={t('graphicEditor.ai.close')}
+                onClick={() => void send()}
+                disabled={sending || !input.trim()}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 shadow-sm transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={t('graphicEditor.ai.send')}
               >
-                <IconClose className="h-5 w-5" />
+                {sending ? (
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                ) : (
+                  <IconSendArrow className="h-5 w-5" />
+                )}
               </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-              <div className="flex flex-col gap-3">
-                {messages.map((m) => (
-                  <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <span
-                      className={`mb-1 text-[10px] tabular-nums ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                    >
-                      {m.role === 'user' ? t('graphicEditor.ai.you') : t('graphicEditor.ai.assistant')}{' '}
-                      · {formatTime(m.at)}
-                    </span>
-                    <div
-                      className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                        m.role === 'user' ? bubbleUser : bubbleAi
-                      }`}
-                    >
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-                <div ref={listEndRef} />
-              </div>
-            </div>
-
-            <div className={`shrink-0 border-t p-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void send();
-                    }
-                  }}
-                  rows={3}
-                  disabled={sending}
-                  placeholder={t('graphicEditor.ai.placeholder')}
-                  className={`min-h-[4.5rem] flex-1 resize-none rounded-xl border px-3 py-2 text-sm outline-none ring-blue-500/30 focus:ring-2 ${
-                    isDark
-                      ? 'border-gray-600 bg-gray-950 text-gray-100 placeholder:text-gray-500'
-                      : 'border-gray-300 bg-white text-gray-900 placeholder:text-gray-400'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => void send()}
-                  disabled={sending || !input.trim()}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label={t('graphicEditor.ai.send')}
-                >
-                  {sending ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <IconSendArrow className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
             </div>
           </div>
         </div>
