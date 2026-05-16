@@ -234,7 +234,20 @@ function RibbonGroupLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function GraphicDiagramEditor({ diagramId }: { diagramId: string }) {
+export type GraphicEditorProjectFile = {
+  name: string;
+  size: number;
+};
+
+export default function GraphicDiagramEditor({
+  diagramId,
+  projectFiles = [],
+  projectDocuments = [],
+}: {
+  diagramId: string;
+  projectFiles?: GraphicEditorProjectFile[];
+  projectDocuments?: unknown[];
+}) {
   const router = useRouter();
   const { isDark } = useTheme();
   const { t, language } = useLanguage();
@@ -1273,7 +1286,14 @@ export default function GraphicDiagramEditor({ diagramId }: { diagramId: string 
         </div>
       )}
 
-      <GraphicSheetAiAssistant isDark={isDark} lang={lang} t={t} onApplyMindmap={handleAiApplyMindmap} />
+      <GraphicSheetAiAssistant
+        isDark={isDark}
+        lang={lang}
+        t={t}
+        onApplyMindmap={handleAiApplyMindmap}
+        projectFiles={projectFiles}
+        projectDocuments={projectDocuments}
+      />
     </div>
   );
 }

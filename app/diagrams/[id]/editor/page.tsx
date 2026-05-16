@@ -1,17 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { auth, diagrams as diagramsStorage } from '@/lib/storage';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import {
+  auth,
+  diagrams as diagramsStorage,
+  projects as projectsStorage,
+  type ProcessedDocument,
+} from '@/lib/storage';
 import { useLanguage } from '@/app/contexts/LanguageContext';
-import GraphicDiagramEditor from '@/app/components/mindmap-editor/GraphicDiagramEditor';
+import GraphicDiagramEditor, {
+  type GraphicEditorProjectFile,
+} from '@/app/components/mindmap-editor/GraphicDiagramEditor';
 
 export default function DiagramGraphicEditorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLanguage();
   const diagramId = params?.id as string;
+  const fromProject = searchParams.get('fromProject');
   const [ready, setReady] = useState(false);
+  const [projectFiles, setProjectFiles] = useState<GraphicEditorProjectFile[]>([]);
+  const [projectDocuments, setProjectDocuments] = useState<ProcessedDocument[]>([]);
 
   useEffect(() => {
     if (!diagramId) {
@@ -36,8 +47,25 @@ export default function DiagramGraphicEditorPage() {
       return;
     }
 
+    const projectId = fromProject || diagram.selectedProject || null;
+    if (projectId) {
+      const project = projectsStorage.getById(projectId, currentUser.id);
+      if (project) {
+        const files: GraphicEditorProjectFile[] = Array.isArray(project.files)
+          ? project.files.map((f: any) => ({
+              name: typeof f?.name === 'string' ? f.name : 'Документ',
+              size: typeof f?.size === 'number' ? f.size : 0,
+            }))
+          : [];
+        setProjectFiles(files);
+        setProjectDocuments(
+          Array.isArray(project.processedDocuments) ? project.processedDocuments : []
+        );
+      }
+    }
+
     setReady(true);
-  }, [diagramId, router]);
+  }, [diagramId, fromProject, router]);
 
   if (!ready) {
     return (
@@ -47,5 +75,11 @@ export default function DiagramGraphicEditorPage() {
     );
   }
 
-  return <GraphicDiagramEditor diagramId={diagramId} />;
+  return (
+    <GraphicDiagramEditor
+      diagramId={diagramId}
+      projectFiles={projectFiles}
+      projectDocuments={projectDocuments}
+    />
+  );
 }

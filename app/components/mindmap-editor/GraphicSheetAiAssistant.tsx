@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SheetConnection, SheetItem } from '@/app/components/mindmap-editor/SheetEditorCanvas';
+import type { GraphicEditorProjectFile } from '@/app/components/mindmap-editor/GraphicDiagramEditor';
 
 export type AiChatMessage = {
   id: string;
@@ -9,6 +10,8 @@ export type AiChatMessage = {
   text: string;
   at: number;
 };
+
+const HINT_STORAGE_KEY = 'graphicEditor.aiHint.disabled';
 
 function newId() {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -38,30 +41,80 @@ function IconSendArrow({ className }: { className?: string }) {
   );
 }
 
+function formatProjectFilesLine(files: GraphicEditorProjectFile[]): string {
+  return files
+    .map((f) => {
+      const sizeKB = Math.round((f.size || 0) / 1024);
+      return `${f.name} (${sizeKB} KB)`;
+    })
+    .join(', ');
+}
+
 export default function GraphicSheetAiAssistant({
   isDark,
   lang,
   t,
   onApplyMindmap,
+  projectFiles = [],
+  projectDocuments = [],
 }: {
   isDark: boolean;
   lang: 'ru' | 'en';
   t: (key: string) => string;
   onApplyMindmap: (items: SheetItem[], connections: SheetConnection[]) => void;
+  projectFiles?: GraphicEditorProjectFile[];
+  projectDocuments?: unknown[];
 }) {
+  const hasProjectFiles = projectFiles.length > 0;
+
+  const initialMessage = useMemo(() => {
+    if (hasProjectFiles) {
+      const filesLine = formatProjectFilesLine(projectFiles);
+      const head = t('graphicEditor.ai.fromProject.documentsProcessed');
+      const tail = t('graphicEditor.ai.fromProject.enterObject');
+      return `${head} ${filesLine}. ${tail}`;
+    }
+    return t('graphicEditor.ai.initialMessage');
+  }, [hasProjectFiles, projectFiles, t]);
+
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [showHint, setShowHint] = useState(true);
+  const [showHint, setShowHint] = useState(false);
+  const [hintDisabled, setHintDisabled] = useState(false);
   const [messages, setMessages] = useState<AiChatMessage[]>(() => [
     {
       id: newId(),
       role: 'assistant',
-      text: t('graphicEditor.ai.initialMessage'),
+      text: initialMessage,
       at: Date.now(),
     },
   ]);
   const listEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 0) {
+        return [{ id: newId(), role: 'assistant', text: initialMessage, at: Date.now() }];
+      }
+      const [first, ...rest] = prev;
+      if (first.role === 'assistant' && first.text === initialMessage) return prev;
+      if (first.role !== 'assistant') return prev;
+      return [{ ...first, text: initialMessage }, ...rest];
+    });
+  }, [initialMessage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let disabled = false;
+    try {
+      disabled = window.localStorage.getItem(HINT_STORAGE_KEY) === 'true';
+    } catch {
+      disabled = false;
+    }
+    setHintDisabled(disabled);
+    setShowHint(!disabled);
+  }, []);
 
   const formatTime = useCallback(
     (at: number) =>
@@ -87,7 +140,12 @@ export default function GraphicSheetAiAssistant({
       const res = await fetch('/api/diagrams/sheet-canva-mindmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ objectDescription: text, language: lang }),
+        body: JSON.stringify({
+          objectDescription: text,
+          language: lang,
+          isFromProject: hasProjectFiles,
+          documents: hasProjectFiles ? projectDocuments : undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -109,13 +167,28 @@ export default function GraphicSheetAiAssistant({
     } finally {
       setSending(false);
     }
-  }, [input, sending, lang, onApplyMindmap, t]);
+  }, [input, sending, lang, hasProjectFiles, projectDocuments, onApplyMindmap, t]);
 
   const panelBg = isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-200';
   const bubbleUser = isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white';
   const bubbleAi = isDark ? 'bg-gray-800 text-gray-100 border border-gray-600' : 'bg-gray-50 text-gray-900 border border-gray-200';
 
   const dismissHint = useCallback(() => setShowHint(false), []);
+
+  const toggleHintDisabled = useCallback(() => {
+    setHintDisabled((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          if (next) window.localStorage.setItem(HINT_STORAGE_KEY, 'true');
+          else window.localStorage.removeItem(HINT_STORAGE_KEY);
+        } catch {
+          // ignore storage errors
+        }
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <>
@@ -128,7 +201,7 @@ export default function GraphicSheetAiAssistant({
             className="absolute inset-0 h-full w-full bg-black/40"
           />
           <div
-            className="pointer-events-auto absolute bottom-6 right-[5.75rem] z-[295] w-[15rem] rounded-2xl bg-black p-4 text-white shadow-2xl"
+            className="pointer-events-auto absolute bottom-6 right-[5.75rem] z-[295] w-[16rem] rounded-2xl bg-black p-4 text-white shadow-2xl"
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
@@ -140,8 +213,19 @@ export default function GraphicSheetAiAssistant({
             >
               <IconClose className="h-4 w-4" />
             </button>
-            <h3 className="pr-6 text-sm font-semibold leading-snug">{t('graphicEditor.ai.hint.title')}</h3>
-            <p className="mt-2 text-sm leading-snug text-white/85">{t('graphicEditor.ai.hint.text')}</p>
+            <h3 className="pr-6 text-sm font-semibold leading-snug" style={{ fontWeight: 600 }}>
+              {t('graphicEditor.ai.hint.title')}
+            </h3>
+            <p className="mt-2 mb-4 text-sm leading-snug text-white/85">{t('graphicEditor.ai.hint.text')}</p>
+            <label className="mt-1 flex cursor-pointer items-center gap-2 text-xs text-white/80 hover:text-white">
+              <input
+                type="checkbox"
+                checked={hintDisabled}
+                onChange={toggleHintDisabled}
+                className="h-3.5 w-3.5 cursor-pointer accent-white"
+              />
+              <span>{t('graphicEditor.ai.hint.dontShowAgain')}</span>
+            </label>
             <span
               aria-hidden
               className="absolute right-[-5px] bottom-[1.75rem] h-3 w-3 -translate-y-1/2 rotate-45 bg-black"
@@ -178,7 +262,7 @@ export default function GraphicSheetAiAssistant({
               isDark ? 'border-gray-700' : 'border-gray-200'
             }`}
           >
-            <h2 id="graphic-ai-chat-title" className="text-sm font-semibold">
+            <h2 id="graphic-ai-chat-title" className="text-sm font-semibold" style={{ fontWeight: 600 }}>
               {t('graphicEditor.ai.title')}
             </h2>
             <button

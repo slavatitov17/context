@@ -1,10 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Mistral } from '@mistralai/mistralai';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 function getMistralClient(): Mistral | null {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) return null;
   return new Mistral({ apiKey });
+}
+
+function loadMindmapInstructions(): string {
+  try {
+    const p = join(process.cwd(), 'prompts', 'mindmap-canva-instructions.md');
+    return readFileSync(p, 'utf-8');
+  } catch (error) {
+    console.error('sheet-canva-mindmap: failed to load instructions file', error);
+    return '';
+  }
+}
+
+function getContextFromDocuments(documents: unknown): string {
+  if (!Array.isArray(documents) || documents.length === 0) return '';
+  const allChunks: string[] = [];
+  for (const doc of documents) {
+    if (!doc || typeof doc !== 'object') continue;
+    const d = doc as Record<string, unknown>;
+    if (Array.isArray(d.chunks)) {
+      for (const c of d.chunks) {
+        if (typeof c === 'string' && c.trim()) allChunks.push(c);
+      }
+    } else if (typeof d.text === 'string' && d.text.trim()) {
+      const text = d.text as string;
+      const size = 1000;
+      for (let i = 0; i < text.length; i += size) {
+        allChunks.push(text.slice(i, i + size));
+      }
+    }
+  }
+  return allChunks.join('\n\n---\n\n');
 }
 
 function extractJsonObject(text: string): Record<string, unknown> {
@@ -61,15 +94,11 @@ function normalizeItem(raw: unknown, id: string): SheetItemOut | null {
   const height = clamp(Number(o.height) || (kind === 'element' ? 80 : 40), 24, 600);
   const text = typeof o.text === 'string' ? o.text.slice(0, 2000) : '';
   const fontId = normalizeFontId(o.fontId);
-  const color =
-    typeof o.color === 'string' && o.color.length > 0 ? String(o.color).slice(0, 32) : '#0f172a';
-  const bgRaw = typeof o.backgroundColor === 'string' ? o.backgroundColor.trim() : '';
-  const backgroundColor =
-    bgRaw.length > 0
-      ? bgRaw.slice(0, 32)
-      : kind === 'element'
-        ? '#e2e8f0'
-        : 'transparent';
+  // Принудительно используем единую палитру MindMap (фон #e2e8f0, текст #0f2429) для всех элементов.
+  const color = kind === 'element'
+    ? '#0f2429'
+    : (typeof o.color === 'string' && o.color.length > 0 ? String(o.color).slice(0, 32) : '#0f2429');
+  const backgroundColor = kind === 'element' ? '#e2e8f0' : 'transparent';
   const fontSize = clamp(Math.round(Number(o.fontSize) || (kind === 'element' ? 14 : 12)), 8, 48);
   return {
     id,
@@ -97,6 +126,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const objectDescription = typeof body.objectDescription === 'string' ? body.objectDescription.trim() : '';
     const language = body.language === 'en' ? 'en' : 'ru';
+    const isFromProject = Boolean(body.isFromProject);
+    const documents = body.documents;
 
     if (!objectDescription) {
       return NextResponse.json({ error: 'Описание не предоставлено' }, { status: 400 });
@@ -110,29 +141,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt =
+    const mindmapInstructions = loadMindmapInstructions();
+
+    const projectContext =
+      isFromProject && documents ? getContextFromDocuments(documents) : '';
+    const trimmedContext = projectContext.slice(0, 18000);
+
+    const systemHeader =
       language === 'en'
-        ? `You output ONLY valid JSON (no markdown, no commentary) for a canvas mind map editor.
-The canvas logical size is width 760px, height 1080px. All items must fit inside: x>=10, y>=10, x+width<=750, y+height<=1070.
-Use "element" kind for topic boxes (rounded rectangles with backgroundColor) and optionally "text" for short labels.
-Create 6–14 items: one central root element in the upper-middle area, branches arranged in a readable mind-map style (not all stacked on one line).
-Connections: array of edges between item INDICES (0-based) as they appear in the "items" array. Use fromHandle and toHandle as integers 0–3 where 0=top center, 1=right, 2=bottom, 3=left of the box.
-JSON shape exactly:
-{"items":[{"kind":"element","text":"...","x":...,"y":...,"width":...,"height":...,"fontId":"sans","color":"#0f172a","backgroundColor":"#e2e8f0","fontSize":14},...],"connections":[{"from":0,"fromHandle":2,"to":1,"toHandle":0},...]}
-fontId must be one of: sans, serif, mono. Colors as #RRGGBB or "transparent" for text backgrounds.`
-        : `Ты возвращаешь ТОЛЬКО валидный JSON (без markdown, без пояснений) для редактора интеллект-карты на холсте.
-Логический размер листа: ширина 760 px, высота 1080 px. Все элементы должны помещаться: x>=10, y>=10, x+width<=750, y+height<=1070.
-Используй kind "element" для блоков тем (прямоугольники с backgroundColor) и при необходимости "text" для коротких подписей.
-Создай 6–14 элементов: один корневой элемент по центру верхней части, ветви в виде читаемой mind map (не в одну линию).
-Связи: массив рёбер между ИНДЕКСАМИ элементов в массиве "items" (с нуля). fromHandle и toHandle — целые 0–3: 0 — середину верхней стороны, 1 — право, 2 — низ, 3 — лево блока.
-Точная форма JSON:
-{"items":[{"kind":"element","text":"...","x":...,"y":...,"width":...,"height":...,"fontId":"sans","color":"#0f172a","backgroundColor":"#e2e8f0","fontSize":14},...],"connections":[{"from":0,"fromHandle":2,"to":1,"toHandle":0},...]}
-fontId: только sans, serif или mono. Цвета в виде #RRGGBB; для фона текста можно "transparent". Все подписи на русском.`;
+        ? `You output ONLY valid JSON (no markdown, no commentary) for a canvas mind map editor.\nFollow the rules below EXACTLY. All node backgroundColor MUST be #e2e8f0 and text color MUST be #0f2429. There must be exactly one root element at the top, all other nodes go strictly below it, every connection goes from a node's bottom (fromHandle=2) to a child's top (toHandle=0). Avoid crossing connections by laying out subtrees in non-overlapping horizontal bands. Widen boxes so text fits on a single line.`
+        : `Ты возвращаешь ТОЛЬКО валидный JSON (без markdown, без пояснений) для редактора интеллект-карты на холсте.\nСтрого соблюдай правила ниже. У всех узлов backgroundColor ОБЯЗАТЕЛЬНО #e2e8f0, цвет текста — #0f2429. На диаграмме РОВНО ОДИН корневой элемент сверху, все остальные — ниже него, все связи идут от низа родителя (fromHandle=2) к верху потомка (toHandle=0). Раскладывай поддеревья так, чтобы связи не пересекались. Если текст длинный — увеличивай ширину блока так, чтобы текст помещался в одну строку. Все подписи на русском.`;
+
+    const systemPrompt = mindmapInstructions
+      ? `${systemHeader}\n\n=== ПОЛНЫЕ ПРАВИЛА ГЕНЕРАЦИИ MINDMAP ===\n${mindmapInstructions}`
+      : systemHeader;
+
+    const contextBlock = trimmedContext
+      ? language === 'en'
+        ? `\n\n=== PROJECT DOCUMENTS (use ONLY this information, do not invent anything outside it) ===\n${trimmedContext}\n=== END OF PROJECT DOCUMENTS ===`
+        : `\n\n=== ДОКУМЕНТЫ ПРОЕКТА (используй ТОЛЬКО эту информацию, ничего не выдумывай вне неё) ===\n${trimmedContext}\n=== КОНЕЦ ДОКУМЕНТОВ ПРОЕКТА ===`
+      : '';
 
     const userPrompt =
       language === 'en'
-        ? `Build a mind map for the following subject:\n\n${objectDescription}`
-        : `Построй интеллект-карту по следующему описанию объекта или темы:\n\n${objectDescription}`;
+        ? `Build a mind map for the following subject:\n\n${objectDescription}${contextBlock}`
+        : `Построй интеллект-карту по следующему описанию объекта или темы:\n\n${objectDescription}${contextBlock}`;
 
     const chatResponse = await client.chat.complete({
       model: 'pixtral-12b-2409',
