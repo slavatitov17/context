@@ -265,6 +265,9 @@ export default function GraphicDiagramEditor({
   const [saveToast, setSaveToast] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportSentOpen, setSupportSentOpen] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingItemId, setStreamingItemId] = useState<string | null>(null);
+  const streamRunIdRef = useRef(0);
   const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bgColorInputRef = useRef<HTMLInputElement>(null);
   const textColorInputRef = useRef<HTMLInputElement>(null);
@@ -615,10 +618,124 @@ export default function GraphicDiagramEditor({
     typeof document !== 'undefined' ? (document.getElementById('mindmap-sheet-print') as HTMLElement | null) : null;
 
   const handleAiApplyMindmap = useCallback(
-    (nextItems: SheetItem[], nextConnections: SheetConnection[]) => {
-      pushSnapshotWithData(nextItems, nextConnections);
+    async (nextItems: SheetItem[], nextConnections: SheetConnection[]) => {
+      if (!nextItems || nextItems.length === 0) return;
+
+      const runId = ++streamRunIdRef.current;
+      const isCancelled = () => streamRunIdRef.current !== runId;
+
+      const sleep = (ms: number) =>
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, ms);
+        });
+
+      // Сначала сбрасываем выделение и режим редактирования, чтобы не мешать анимации.
       setSelectedId(null);
       setEditingId(null);
+
+      // Пока идёт потоковая генерация — не пишем в историю на каждом промежуточном кадре.
+      skipHistoryCommitRef.current = true;
+      setIsStreaming(true);
+      setStreamingItemId(null);
+
+      // Полностью очищаем холст, чтобы анимация началась с пустого листа.
+      flushSync(() => {
+        setItems([]);
+        setConnections([]);
+      });
+
+      // Раскладываем индексы элементов в BFS-порядке от корня (items[0]),
+      // чтобы родители появлялись раньше своих детей.
+      const childrenByIndex: Record<number, number[]> = {};
+      for (let i = 0; i < nextItems.length; i++) childrenByIndex[i] = [];
+      const findIndexById = (id: string) => nextItems.findIndex((it) => it.id === id);
+      for (const c of nextConnections) {
+        const fromIdx = findIndexById(c.fromId);
+        const toIdx = findIndexById(c.toId);
+        if (fromIdx >= 0 && toIdx >= 0) childrenByIndex[fromIdx].push(toIdx);
+      }
+
+      const visited = new Set<number>();
+      const order: number[] = [];
+      const queue: number[] = [0];
+      visited.add(0);
+      while (queue.length) {
+        const i = queue.shift()!;
+        order.push(i);
+        for (const ch of childrenByIndex[i]) {
+          if (!visited.has(ch)) {
+            visited.add(ch);
+            queue.push(ch);
+          }
+        }
+      }
+      // Не связанные с корнем элементы добавляем в конце, чтобы ничего не потерять.
+      for (let i = 0; i < nextItems.length; i++) {
+        if (!visited.has(i)) order.push(i);
+      }
+
+      const addedIds = new Set<string>();
+      const addedConnectionIds = new Set<string>();
+
+      const APPEAR_DELAY_MS = 140;
+      const TYPING_STEP = 2;
+      const TYPING_DELAY_MS = 22;
+      const CONNECTION_DELAY_MS = 160;
+
+      try {
+        for (const idx of order) {
+          if (isCancelled()) return;
+          const item = nextItems[idx];
+          if (!item) continue;
+
+          // 1) Появление пустого блока на холсте.
+          flushSync(() => {
+            setItems((prev) => [...prev, { ...item, text: '' }]);
+            setStreamingItemId(item.id);
+          });
+          addedIds.add(item.id);
+          await sleep(APPEAR_DELAY_MS);
+          if (isCancelled()) return;
+
+          // 2) Печать текста по символам.
+          const fullText = item.text || '';
+          for (let i = TYPING_STEP; i < fullText.length; i += TYPING_STEP) {
+            if (isCancelled()) return;
+            const partial = fullText.slice(0, i);
+            flushSync(() => {
+              setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, text: partial } : it)));
+            });
+            await sleep(TYPING_DELAY_MS);
+          }
+          if (isCancelled()) return;
+          flushSync(() => {
+            setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, text: fullText } : it)));
+          });
+
+          // 3) Добавляем все связи, у которых оба конца уже на холсте, но ещё не нарисованы.
+          const readyConns = nextConnections.filter(
+            (c) => addedIds.has(c.fromId) && addedIds.has(c.toId) && !addedConnectionIds.has(c.id)
+          );
+          if (readyConns.length > 0) {
+            for (const c of readyConns) addedConnectionIds.add(c.id);
+            flushSync(() => {
+              setConnections((prev) => [...prev, ...readyConns]);
+            });
+            await sleep(CONNECTION_DELAY_MS);
+            if (isCancelled()) return;
+          }
+        }
+
+        // Финальный коммит: фиксируем итоговый снимок в истории для undo/redo.
+        skipHistoryCommitRef.current = false;
+        pushSnapshotWithData(nextItems, nextConnections);
+      } finally {
+        if (!isCancelled()) {
+          setIsStreaming(false);
+          setStreamingItemId(null);
+        }
+        skipHistoryCommitRef.current = false;
+      }
     },
     [pushSnapshotWithData]
   );
@@ -1253,6 +1370,8 @@ export default function GraphicDiagramEditor({
                 textPlaceholder={t('graphicEditor.insert.textPlaceholder')}
                 onSheetInteractionCommit={onCanvasCommit}
                 onTextEditCommit={onTextEditCommit}
+                isStreaming={isStreaming}
+                streamingItemId={streamingItemId}
               />
             </div>
           </div>
@@ -1293,6 +1412,7 @@ export default function GraphicDiagramEditor({
         onApplyMindmap={handleAiApplyMindmap}
         projectFiles={projectFiles}
         projectDocuments={projectDocuments}
+        isApplying={isStreaming}
       />
     </div>
   );

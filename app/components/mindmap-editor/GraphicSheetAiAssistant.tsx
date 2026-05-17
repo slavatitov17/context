@@ -55,13 +55,18 @@ export default function GraphicSheetAiAssistant({
   onApplyMindmap,
   projectFiles = [],
   projectDocuments = [],
+  isApplying = false,
 }: {
   isDark: boolean;
   lang: 'ru' | 'en';
   t: (key: string) => string;
-  onApplyMindmap: (items: SheetItem[], connections: SheetConnection[]) => void;
+  onApplyMindmap: (
+    items: SheetItem[],
+    connections: SheetConnection[]
+  ) => void | Promise<void>;
   projectFiles?: GraphicEditorProjectFile[];
   projectDocuments?: unknown[];
+  isApplying?: boolean;
 }) {
   const hasProjectFiles = projectFiles.length > 0;
 
@@ -113,9 +118,11 @@ export default function GraphicSheetAiAssistant({
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
+  const busy = sending || isApplying;
+
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || sending) return;
+    if (!text || sending || isApplying) return;
     const userAt = Date.now();
     setInput('');
     setMessages((m) => [...m, { id: newId(), role: 'user', text, at: userAt }]);
@@ -140,7 +147,7 @@ export default function GraphicSheetAiAssistant({
       if (!items || !Array.isArray(items) || items.length === 0) {
         throw new Error(t('graphicEditor.ai.errorEmpty'));
       }
-      onApplyMindmap(items, connections);
+      await Promise.resolve(onApplyMindmap(items, connections));
       setMessages((m) => [
         ...m,
         { id: newId(), role: 'assistant', text: t('graphicEditor.ai.successReply'), at: Date.now() },
@@ -151,7 +158,7 @@ export default function GraphicSheetAiAssistant({
     } finally {
       setSending(false);
     }
-  }, [input, sending, lang, hasProjectFiles, projectDocuments, onApplyMindmap, t]);
+  }, [input, sending, isApplying, lang, hasProjectFiles, projectDocuments, onApplyMindmap, t]);
 
   const panelBg = isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-200';
   const bubbleUser = isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white';
@@ -233,7 +240,7 @@ export default function GraphicSheetAiAssistant({
                   }
                 }}
                 rows={2}
-                disabled={sending}
+                disabled={busy}
                 placeholder={t('graphicEditor.ai.placeholder')}
                 className={`min-h-[3rem] flex-1 resize-none rounded-xl border px-3 py-2 text-sm outline-none ring-blue-500/30 focus:ring-2 ${
                   isDark
@@ -244,11 +251,11 @@ export default function GraphicSheetAiAssistant({
               <button
                 type="button"
                 onClick={() => void send()}
-                disabled={sending || !input.trim()}
+                disabled={busy || !input.trim()}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 shadow-sm transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label={t('graphicEditor.ai.send')}
               >
-                {sending ? (
+                {busy ? (
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                 ) : (
                   <IconSendArrow className="h-5 w-5" />

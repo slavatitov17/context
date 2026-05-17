@@ -68,6 +68,8 @@ export default function SheetEditorCanvas({
   textPlaceholder,
   onSheetInteractionCommit,
   onTextEditCommit,
+  isStreaming = false,
+  streamingItemId = null,
 }: {
   gridMode: 'none' | 'cells' | 'dots';
   items: SheetItem[];
@@ -84,6 +86,8 @@ export default function SheetEditorCanvas({
   textPlaceholder: string;
   onSheetInteractionCommit?: (nextItems: SheetItem[], nextConnections: SheetConnection[]) => void;
   onTextEditCommit?: () => void;
+  isStreaming?: boolean;
+  streamingItemId?: string | null;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; grabX: number; grabY: number } | null>(null);
@@ -258,6 +262,7 @@ export default function SheetEditorCanvas({
           if (!a || !b) return null;
           const p1 = handleCenter(a, c.fromHandle);
           const p2 = handleCenter(b, c.toHandle);
+          const len = Math.max(1, Math.round(Math.hypot(p2.x - p1.x, p2.y - p1.y)));
           return (
             <line
               key={c.id}
@@ -267,6 +272,8 @@ export default function SheetEditorCanvas({
               y2={p2.y}
               stroke="#64748b"
               strokeWidth={2}
+              className="mindmap-line-anim"
+              style={{ ['--mindmap-line-length' as string]: String(len) } as React.CSSProperties}
             />
           );
         })}
@@ -301,6 +308,7 @@ export default function SheetEditorCanvas({
                 ? '1px dashed rgba(148,163,184,0.35)'
                 : '1px dashed rgba(203,213,225,0.9)';
 
+        const isStreamingThis = isStreaming && streamingItemId === it.id;
         const innerBox = (
           <>
             {editingId === it.id ? (
@@ -320,15 +328,18 @@ export default function SheetEditorCanvas({
             ) : (
               <div
                 className={`relative h-full w-full overflow-hidden whitespace-pre-wrap break-words ${
-                  showElementCenter ? 'flex items-center justify-center text-center' : ''
+                  showElementCenter && !isStreamingThis ? 'flex items-center justify-center text-center' : ''
                 }`}
               >
-                {showElementCenter ? (
+                {showElementCenter && !isStreamingThis ? (
                   <span className="pointer-events-none text-gray-400/75 dark:text-gray-500/75">{newElementLabel}</span>
-                ) : showTextPlaceholder ? (
+                ) : showTextPlaceholder && !isStreamingThis ? (
                   <span className="pointer-events-none text-gray-400/75 dark:text-gray-500/75">{textPlaceholder}</span>
                 ) : (
-                  it.text
+                  <>
+                    {it.text}
+                    {isStreamingThis && <span className="mindmap-typing-caret" aria-hidden />}
+                  </>
                 )}
               </div>
             )}
@@ -354,7 +365,9 @@ export default function SheetEditorCanvas({
           return (
             <div
               key={it.id}
-              className="group/pad absolute z-[2] cursor-move select-none box-border"
+              className={`mindmap-item-appear group/pad absolute z-[2] select-none box-border ${
+                isStreaming ? 'cursor-default pointer-events-none' : 'cursor-move'
+              }`}
               style={{
                 left: it.x - HOVER_PAD,
                 top: it.y - HOVER_PAD,
@@ -391,7 +404,9 @@ export default function SheetEditorCanvas({
         return (
           <div
             key={it.id}
-            className="absolute z-[2] cursor-move select-none"
+            className={`mindmap-item-appear absolute z-[2] select-none ${
+              isStreaming ? 'cursor-default pointer-events-none' : 'cursor-move'
+            }`}
             style={{
               left: it.x,
               top: it.y,
