@@ -11,8 +11,6 @@ export type AiChatMessage = {
   at: number;
 };
 
-const HINT_STORAGE_KEY = 'graphicEditor.aiHint.disabled';
-
 function newId() {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -80,8 +78,6 @@ export default function GraphicSheetAiAssistant({
   const [open, setOpen] = useState(true);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [hintDisabled, setHintDisabled] = useState(false);
   const [messages, setMessages] = useState<AiChatMessage[]>(() => [
     {
       id: newId(),
@@ -103,18 +99,6 @@ export default function GraphicSheetAiAssistant({
       return [{ ...first, text: initialMessage }, ...rest];
     });
   }, [initialMessage]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    let disabled = false;
-    try {
-      disabled = window.localStorage.getItem(HINT_STORAGE_KEY) === 'true';
-    } catch {
-      disabled = false;
-    }
-    setHintDisabled(disabled);
-    setShowHint(!disabled);
-  }, []);
 
   const formatTime = useCallback(
     (at: number) =>
@@ -173,73 +157,11 @@ export default function GraphicSheetAiAssistant({
   const bubbleUser = isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white';
   const bubbleAi = isDark ? 'bg-gray-800 text-gray-100 border border-gray-600' : 'bg-gray-50 text-gray-900 border border-gray-200';
 
-  const dismissHint = useCallback(() => setShowHint(false), []);
-
-  const toggleHintDisabled = useCallback(() => {
-    setHintDisabled((prev) => {
-      const next = !prev;
-      if (typeof window !== 'undefined') {
-        try {
-          if (next) window.localStorage.setItem(HINT_STORAGE_KEY, 'true');
-          else window.localStorage.removeItem(HINT_STORAGE_KEY);
-        } catch {
-          // ignore storage errors
-        }
-      }
-      return next;
-    });
-  }, []);
-
   return (
     <>
-      {showHint && (
-        <div className="mindmap-no-print fixed inset-0 z-[290]" role="presentation">
-          <button
-            type="button"
-            aria-label={t('graphicEditor.ai.close')}
-            onClick={dismissHint}
-            className="absolute inset-0 h-full w-full bg-black/40"
-          />
-          <div
-            className="pointer-events-auto absolute bottom-6 right-[5.75rem] z-[295] w-[16rem] rounded-2xl bg-black p-4 text-white shadow-2xl"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={dismissHint}
-              aria-label={t('graphicEditor.ai.close')}
-              className="absolute right-2 top-2 rounded-md p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <IconClose className="h-4 w-4" />
-            </button>
-            <h3 className="pr-6 text-sm font-semibold leading-snug" style={{ fontWeight: 600 }}>
-              {t('graphicEditor.ai.hint.title')}
-            </h3>
-            <p className="mt-2 mb-4 text-sm leading-snug text-white/85">{t('graphicEditor.ai.hint.text')}</p>
-            <label className="mt-1 flex cursor-pointer items-center gap-2 text-xs text-white/80 hover:text-white">
-              <input
-                type="checkbox"
-                checked={hintDisabled}
-                onChange={toggleHintDisabled}
-                className="h-3.5 w-3.5 cursor-pointer accent-white"
-              />
-              <span>{t('graphicEditor.ai.hint.dontShowAgain')}</span>
-            </label>
-            <span
-              aria-hidden
-              className="absolute right-[-5px] bottom-[1.75rem] h-3 w-3 -translate-y-1/2 rotate-45 bg-black"
-            />
-          </div>
-        </div>
-      )}
-
       <button
         type="button"
-        onClick={() => {
-          setShowHint(false);
-          setOpen(true);
-        }}
+        onClick={() => setOpen(true)}
         className={`mindmap-no-print fixed bottom-6 right-6 z-[300] flex h-14 w-14 items-center justify-center rounded-full border-2 shadow-lg transition-transform hover:scale-105 active:scale-95 ${
           isDark
             ? 'border-blue-400/60 bg-blue-600 text-white hover:bg-blue-500'

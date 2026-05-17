@@ -31,7 +31,7 @@ type RibbonTab = 'file' | 'layout' | 'insert' | 'format';
 type Orientation = 'portrait' | 'landscape';
 
 const ZOOM_LEVELS = [40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200] as const;
-const DEFAULT_ZOOM_INDEX = ZOOM_LEVELS.indexOf(100);
+const DEFAULT_ZOOM_INDEX = ZOOM_LEVELS.indexOf(90);
 
 function OrientationIcon({ mode, className }: { mode: Orientation; className?: string }) {
   if (mode === 'portrait') {
