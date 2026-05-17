@@ -77,7 +77,7 @@ export default function GraphicSheetAiAssistant({
     return t('graphicEditor.ai.initialMessage');
   }, [hasProjectFiles, projectFiles, t]);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [showHint, setShowHint] = useState(false);
